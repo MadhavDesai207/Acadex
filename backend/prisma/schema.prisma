@@ -1,0 +1,268 @@
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+enum Role {
+  SUPER_ADMIN
+  ADMIN
+  FACULTY
+  STUDENT
+  RECEPTIONIST
+}
+
+enum Gender {
+  MALE
+  FEMALE
+  OTHER
+}
+
+enum InquiryStatus {
+  NEW
+  CONTACTED
+  INTERESTED
+  CONVERTED
+  DROPPED
+}
+
+enum AdmissionStatus {
+  APPLIED
+  UNDER_REVIEW
+  APPROVED
+  REJECTED
+  ENROLLED
+}
+
+enum AttendanceStatus {
+  PRESENT
+  ABSENT
+  HALF_DAY
+  ON_LEAVE
+}
+
+enum ExamType {
+  INTERNAL
+  EXTERNAL
+  PRACTICAL
+}
+
+enum ResultStatus {
+  PASS
+  FAIL
+  WITHHELD
+}
+
+model User {
+  id                 String              @id @default(uuid()) @db.Uuid
+  name               String
+  email              String              @unique
+  password           String
+  role               Role
+  phone              String?
+  isActive           Boolean             @default(true)
+  createdAt          DateTime            @default(now())
+  updatedAt          DateTime            @updatedAt
+  student            Student?
+  faculty            Faculty?
+  assignedInquiries  Inquiry[]
+  reviewedAdmissions Admission[]
+  markedAttendance   FacultyAttendance[]
+  paidSalaryRecords  SalaryRecord[]
+  createdExams       Exam[]
+  enteredExamResults ExamResult[]
+
+  @@map("users")
+  @@index([role])
+}
+
+model Student {
+  id          String       @id @default(uuid()) @db.Uuid
+  userId      String       @unique @db.Uuid
+  rollNumber  String       @unique
+  dateOfBirth DateTime     @db.Date
+  gender      Gender
+  address     String?
+  parentName  String
+  parentPhone String
+  courseId    String       @db.Uuid
+  batchId     String       @db.Uuid
+  enrolledAt  DateTime     @default(now())
+  isActive    Boolean      @default(true)
+  user        User         @relation(fields: [userId], references: [id], onDelete: Cascade, onUpdate: Cascade)
+  course      Course       @relation(fields: [courseId], references: [id], onDelete: Restrict, onUpdate: Cascade)
+  batch       Batch        @relation(fields: [batchId], references: [id], onDelete: Restrict, onUpdate: Cascade)
+  admission   Admission?
+  examResults ExamResult[]
+
+  @@map("students")
+  @@index([courseId])
+  @@index([batchId])
+}
+
+model Inquiry {
+  id             String        @id @default(uuid()) @db.Uuid
+  name           String
+  phone          String
+  email          String?
+  courseInterest String?
+  status         InquiryStatus @default(NEW)
+  source         String?
+  notes          String?
+  followUpDate   DateTime?     @db.Date
+  assignedTo     String?       @db.Uuid
+  createdAt      DateTime      @default(now())
+  updatedAt      DateTime      @updatedAt
+  assignedUser   User?         @relation(fields: [assignedTo], references: [id], onDelete: SetNull, onUpdate: Cascade)
+  admissions     Admission[]
+
+  @@map("inquiries")
+  @@index([status])
+  @@index([followUpDate])
+  @@index([assignedTo])
+}
+
+model Admission {
+  id                String          @id @default(uuid()) @db.Uuid
+  inquiryId         String?         @db.Uuid
+  studentName       String
+  phone             String
+  email             String?
+  courseId          String          @db.Uuid
+  status            AdmissionStatus @default(APPLIED)
+  appliedAt         DateTime        @default(now())
+  reviewedBy        String?         @db.Uuid
+  remarks           String?
+  enrolledStudentId String?         @unique @db.Uuid
+  inquiry           Inquiry?        @relation(fields: [inquiryId], references: [id], onDelete: SetNull, onUpdate: Cascade)
+  course            Course          @relation(fields: [courseId], references: [id], onDelete: Restrict, onUpdate: Cascade)
+  reviewer          User?           @relation(fields: [reviewedBy], references: [id], onDelete: SetNull, onUpdate: Cascade)
+  enrolledStudent   Student?        @relation(fields: [enrolledStudentId], references: [id], onDelete: SetNull, onUpdate: Cascade)
+
+  @@map("admissions")
+  @@index([status, courseId])
+}
+
+model Faculty {
+  id            String              @id @default(uuid()) @db.Uuid
+  userId        String              @unique @db.Uuid
+  employeeCode  String              @unique
+  designation   String
+  department    String?
+  dateOfJoining DateTime            @db.Date
+  qualification String?
+  bankAccount   String?
+  baseSalary    Decimal             @db.Decimal(10, 2)
+  isActive      Boolean             @default(true)
+  user          User                @relation(fields: [userId], references: [id], onDelete: Cascade, onUpdate: Cascade)
+  attendance    FacultyAttendance[]
+  salaryRecords SalaryRecord[]
+  batches       Batch[]
+
+  @@map("faculty")
+}
+
+model FacultyAttendance {
+  id        String           @id @default(uuid()) @db.Uuid
+  facultyId String           @db.Uuid
+  date      DateTime         @db.Date
+  status    AttendanceStatus
+  markedBy  String?          @db.Uuid
+  note      String?
+  faculty   Faculty          @relation(fields: [facultyId], references: [id], onDelete: Cascade, onUpdate: Cascade)
+  marker    User?            @relation(fields: [markedBy], references: [id], onDelete: SetNull, onUpdate: Cascade)
+
+  @@unique([facultyId, date])
+  @@map("faculty_attendance")
+  @@index([date])
+}
+
+model SalaryRecord {
+  id         String    @id @default(uuid()) @db.Uuid
+  facultyId  String    @db.Uuid
+  month      Int
+  year       Int
+  baseSalary Decimal   @db.Decimal(10, 2)
+  deductions Decimal   @default(0.00) @db.Decimal(10, 2)
+  bonus      Decimal   @default(0.00) @db.Decimal(10, 2)
+  netSalary  Decimal   @db.Decimal(10, 2)
+  paidAt     DateTime?
+  paidBy     String?   @db.Uuid
+  remarks    String?
+  faculty    Faculty   @relation(fields: [facultyId], references: [id], onDelete: Restrict, onUpdate: Cascade)
+  payer      User?     @relation(fields: [paidBy], references: [id], onDelete: SetNull, onUpdate: Cascade)
+
+  @@unique([facultyId, month, year])
+  @@map("salary_records")
+}
+
+model Course {
+  id             String      @id @default(uuid()) @db.Uuid
+  name           String
+  code           String      @unique
+  durationMonths Int
+  fees           Decimal     @db.Decimal(10, 2)
+  isActive       Boolean     @default(true)
+  students       Student[]
+  admissions     Admission[]
+  batches        Batch[]
+  exams          Exam[]
+
+  @@map("courses")
+}
+
+model Batch {
+  id        String    @id @default(uuid()) @db.Uuid
+  name      String
+  courseId  String    @db.Uuid
+  startDate DateTime  @db.Date
+  endDate   DateTime? @db.Date
+  facultyId String?   @db.Uuid
+  isActive  Boolean   @default(true)
+  course    Course    @relation(fields: [courseId], references: [id], onDelete: Restrict, onUpdate: Cascade)
+  faculty   Faculty?  @relation(fields: [facultyId], references: [id], onDelete: SetNull, onUpdate: Cascade)
+  students  Student[]
+  exams     Exam[]
+
+  @@map("batches")
+  @@index([courseId])
+}
+
+model Exam {
+  id           String       @id @default(uuid()) @db.Uuid
+  title        String
+  courseId     String       @db.Uuid
+  batchId      String?      @db.Uuid
+  examType     ExamType
+  examDate     DateTime     @db.Date
+  totalMarks   Int
+  passingMarks Int
+  createdBy    String       @db.Uuid
+  course       Course       @relation(fields: [courseId], references: [id], onDelete: Restrict, onUpdate: Cascade)
+  batch        Batch?       @relation(fields: [batchId], references: [id], onDelete: SetNull, onUpdate: Cascade)
+  creator      User         @relation(fields: [createdBy], references: [id], onDelete: Restrict, onUpdate: Cascade)
+  results      ExamResult[]
+
+  @@map("exams")
+  @@index([courseId, examDate])
+}
+
+model ExamResult {
+  id            String       @id @default(uuid()) @db.Uuid
+  examId        String       @db.Uuid
+  studentId     String       @db.Uuid
+  marksObtained Decimal      @db.Decimal(10, 2)
+  status        ResultStatus
+  remarks       String?
+  enteredBy     String       @db.Uuid
+  exam          Exam         @relation(fields: [examId], references: [id], onDelete: Cascade, onUpdate: Cascade)
+  student       Student      @relation(fields: [studentId], references: [id], onDelete: Cascade, onUpdate: Cascade)
+  recorder      User         @relation(fields: [enteredBy], references: [id], onDelete: Restrict, onUpdate: Cascade)
+
+  @@unique([examId, studentId])
+  @@map("exam_results")
+  @@index([studentId])
+}
