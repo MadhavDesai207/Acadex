@@ -69,7 +69,75 @@ const createCourse = async (req, res, next) => {
   }
 };
 
+const getCourseById = async (req, res, next) => {
+  try {
+    const { id } = req.params;
+    const course = await prisma.course.findUnique({
+      where: { id },
+      include: {
+        _count: { select: { batches: true, students: true, subjects: true } }
+      }
+    });
+    if (!course) return res.status(404).json({ success: false, message: 'Course not found' });
+    return res.status(200).json({ success: true, data: course });
+  } catch (error) {
+    next(error);
+  }
+};
+
+const updateCourse = async (req, res, next) => {
+  try {
+    const { id } = req.params;
+    const { name, code, durationMonths, fees } = req.body;
+
+    const existing = await prisma.course.findUnique({ where: { id } });
+    if (!existing) return res.status(404).json({ success: false, message: 'Course not found' });
+
+    const data = {};
+    if (name) data.name = name;
+    if (code) {
+      const normalized = code.toUpperCase().trim();
+      const conflict = await prisma.course.findUnique({ where: { code: normalized } });
+      if (conflict && conflict.id !== id) {
+        return res.status(400).json({ success: false, message: `Course code ${normalized} is already in use` });
+      }
+      data.code = normalized;
+    }
+    if (durationMonths !== undefined) data.durationMonths = parseInt(durationMonths, 10);
+    if (fees !== undefined) data.fees = parseFloat(fees);
+
+    const updated = await prisma.course.update({ where: { id }, data });
+    return res.status(200).json({ success: true, message: 'Course updated successfully', data: updated });
+  } catch (error) {
+    next(error);
+  }
+};
+
+const toggleCourseStatus = async (req, res, next) => {
+  try {
+    const { id } = req.params;
+    const course = await prisma.course.findUnique({ where: { id } });
+    if (!course) return res.status(404).json({ success: false, message: 'Course not found' });
+
+    const updated = await prisma.course.update({
+      where: { id },
+      data: { isActive: !course.isActive }
+    });
+
+    return res.status(200).json({
+      success: true,
+      message: `Course ${updated.isActive ? 'activated' : 'deactivated'} successfully`,
+      data: updated
+    });
+  } catch (error) {
+    next(error);
+  }
+};
+
 module.exports = {
   getCourses,
-  createCourse
+  createCourse,
+  getCourseById,
+  updateCourse,
+  toggleCourseStatus
 };

@@ -10,8 +10,11 @@ const Select = ({
   required = false,
   className = '',
   placeholder = 'Select an option',
+  children,
   ...props
 }) => {
+  const hasChildren = React.Children.count(children) > 0;
+
   return (
     <div className={`w-full flex flex-col gap-1.5 ${className}`}>
       {label && (
@@ -30,12 +33,16 @@ const Select = ({
         }`}
         {...props}
       >
-        {placeholder && <option value="">{placeholder}</option>}
-        {options.map((opt) => (
-          <option key={opt.value} value={opt.value} className="bg-bg-surface text-slate-200">
-            {opt.label}
-          </option>
-        ))}
+        {hasChildren ? children : (
+          <>
+            {placeholder && <option value="">{placeholder}</option>}
+            {options.map((opt) => (
+              <option key={opt.value} value={opt.value} className="bg-bg-surface text-slate-200">
+                {opt.label}
+              </option>
+            ))}
+          </>
+        )}
       </select>
       {error && (
         <p className="text-xs text-status-danger mt-1 font-medium">{error}</p>

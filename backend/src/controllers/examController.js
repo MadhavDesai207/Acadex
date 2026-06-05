@@ -139,7 +139,7 @@ const createExam = async (req, res, next) => {
  */
 const getExams = async (req, res, next) => {
   try {
-    const { courseId, batchId, examType, examDate } = req.query;
+    const { courseId, batchId, examType, examDate, fromDate, toDate } = req.query;
 
     const where = {};
 
@@ -159,7 +159,17 @@ const getExams = async (req, res, next) => {
       }
     }
 
-    if (examDate) {
+    if (fromDate || toDate) {
+      where.examDate = {};
+      if (fromDate) {
+        const d = new Date(fromDate);
+        if (!isNaN(d.getTime())) where.examDate.gte = d;
+      }
+      if (toDate) {
+        const d = new Date(toDate);
+        if (!isNaN(d.getTime())) where.examDate.lte = d;
+      }
+    } else if (examDate) {
       const parsedDate = new Date(examDate);
       if (!isNaN(parsedDate.getTime())) {
         where.examDate = parsedDate;

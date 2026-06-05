@@ -11,7 +11,17 @@ const attendanceRoutes = require('./attendanceRoutes');
 const salaryRoutes = require('./salaryRoutes');
 const examRoutes = require('./examRoutes');
 const courseRoutes = require('./courseRoutes');
+const subjectRoutes = require('./subjectRoutes');
 const batchRoutes = require('./batchRoutes');
+const timetableRoutes = require('./timetableRoutes');
+const studentAttendanceRoutes = require('./studentAttendanceRoutes');
+const syllabusRoutes = require('./syllabusRoutes');
+const materialRoutes = require('./materialRoutes');
+const assignmentRoutes = require('./assignmentRoutes');
+const feeRoutes = require('./feeRoutes');
+const questionBankRoutes = require('./questionBankRoutes');
+const dashboardRoutes = require('./dashboardRoutes');
+const reportRoutes = require('./reportRoutes');
 
 // Mount routes
 router.use('/auth', authRoutes);
@@ -24,6 +34,16 @@ router.use('/attendance', attendanceRoutes);
 router.use('/salary', salaryRoutes);
 router.use('/exams', examRoutes);
 router.use('/courses', courseRoutes);
+router.use('/subjects', subjectRoutes);
 router.use('/batches', batchRoutes);
+router.use('/timetable', timetableRoutes);
+router.use('/student-attendance', studentAttendanceRoutes);
+router.use('/syllabus', syllabusRoutes);
+router.use('/materials', materialRoutes);
+router.use('/assignments', assignmentRoutes);
+router.use('/fees', feeRoutes);
+router.use('/question-bank', questionBankRoutes);
+router.use('/dashboard', dashboardRoutes);
+router.use('/reports', reportRoutes);
 
 module.exports = router;
