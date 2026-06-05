@@ -1,18 +1,121 @@
-import React from 'react';
-import { NavLink, useNavigate } from 'react-router-dom';
-import { 
-  GraduationCap, 
-  LayoutDashboard, 
-  ClipboardList, 
-  CheckSquare, 
-  Users, 
-  UserSquare2, 
-  CalendarCheck, 
-  DollarSign, 
-  BookOpen, 
-  LogOut 
+import React, { useState } from 'react';
+import { NavLink, useNavigate, useLocation } from 'react-router-dom';
+import {
+  LayoutDashboard,
+  ClipboardList,
+  CheckSquare,
+  Users,
+  UserSquare2,
+  CalendarCheck,
+  DollarSign,
+  BookOpen,
+  LogOut,
+  GraduationCap,
+  Layers,
+  Clock,
+  UserCheck,
+  Library,
+  FolderOpen,
+  FileText,
+  ChevronDown,
+  ChevronRight
 } from 'lucide-react';
 import authService from '../services/authService';
+
+const NavItem = ({ item, role, onNavigate }) => {
+  const Icon = item.icon;
+  if (!item.roles.includes(role)) return null;
+
+  return (
+    <li>
+      <NavLink
+        to={item.path}
+        className={({ isActive }) =>
+          `flex items-center gap-3 px-4 py-2.5 rounded-lg text-sm font-medium transition-all duration-200 group ${
+            isActive
+              ? 'bg-brand text-white shadow-lg shadow-brand/20'
+              : 'text-slate-400 hover:bg-slate-800 hover:text-white'
+          }`
+        }
+        onClick={onNavigate}
+      >
+        {({ isActive }) => (
+          <>
+            <Icon className={`transition-colors ${isActive ? 'text-white' : 'text-slate-500 group-hover:text-slate-300'}`} size={18} />
+            <span>{item.label}</span>
+          </>
+        )}
+      </NavLink>
+    </li>
+  );
+};
+
+const NavGroup = ({ group, role, onNavigate }) => {
+  const location = useLocation();
+  const Icon = group.icon;
+
+  const visibleChildren = group.children.filter((c) => c.roles.includes(role));
+  if (visibleChildren.length === 0) return null;
+
+  const isAnyChildActive = visibleChildren.some((c) => location.pathname.startsWith(c.path));
+  const [open, setOpen] = useState(isAnyChildActive);
+
+  return (
+    <li>
+      <button
+        onClick={() => setOpen((o) => !o)}
+        className={`flex items-center gap-3 w-full px-4 py-2.5 rounded-lg text-sm font-medium transition-all duration-200 group ${
+          isAnyChildActive
+            ? 'bg-brand/10 text-brand-light'
+            : 'text-slate-400 hover:bg-slate-800 hover:text-white'
+        }`}
+      >
+        <Icon
+          className={`transition-colors shrink-0 ${isAnyChildActive ? 'text-brand-light' : 'text-slate-500 group-hover:text-slate-300'}`}
+          size={18}
+        />
+        <span className="flex-1 text-left">{group.label}</span>
+        {open
+          ? <ChevronDown size={14} className="text-slate-500" />
+          : <ChevronRight size={14} className="text-slate-500" />
+        }
+      </button>
+
+      {open && (
+        <ul className="mt-1 ml-4 pl-3 border-l border-slate-700/60 space-y-0.5">
+          {visibleChildren.map((child) => {
+            const ChildIcon = child.icon;
+            return (
+              <li key={child.path}>
+                <NavLink
+                  to={child.path}
+                  className={({ isActive }) =>
+                    `flex items-center gap-2.5 px-3 py-2 rounded-lg text-xs font-medium transition-all duration-200 group ${
+                      isActive
+                        ? 'bg-brand text-white shadow shadow-brand/20'
+                        : 'text-slate-500 hover:bg-slate-800 hover:text-white'
+                    }`
+                  }
+                  onClick={onNavigate}
+                >
+                  {({ isActive }) => (
+                    <>
+                      <ChildIcon
+                        className={`transition-colors shrink-0 ${isActive ? 'text-white' : 'text-slate-600 group-hover:text-slate-300'}`}
+                        size={14}
+                      />
+                      <span>{child.label}</span>
+                    </>
+                  )}
+                </NavLink>
+              </li>
+            );
+          })}
+        </ul>
+      )}
+    </li>
+  );
+};
 
 const Sidebar = ({ isOpen, toggleSidebar }) => {
   const navigate = useNavigate();
@@ -24,51 +127,76 @@ const Sidebar = ({ isOpen, toggleSidebar }) => {
     navigate('/login');
   };
 
-  // Define navigation items with their permissions
-  const navItems = [
+  const onNavigate = () => {
+    if (window.innerWidth < 768) toggleSidebar();
+  };
+
+  const navConfig = [
     {
+      type: 'item',
       label: 'Dashboard',
       path: '/dashboard',
       icon: LayoutDashboard,
       roles: ['SUPER_ADMIN', 'ADMIN', 'FACULTY', 'STUDENT', 'RECEPTIONIST']
     },
     {
+      type: 'item',
       label: 'Inquiries',
       path: '/inquiries',
       icon: ClipboardList,
       roles: ['SUPER_ADMIN', 'ADMIN', 'RECEPTIONIST']
     },
     {
+      type: 'item',
       label: 'Admissions',
       path: '/admissions',
       icon: CheckSquare,
       roles: ['SUPER_ADMIN', 'ADMIN', 'RECEPTIONIST']
     },
     {
+      type: 'item',
       label: 'Students',
       path: '/students',
       icon: Users,
       roles: ['SUPER_ADMIN', 'ADMIN', 'FACULTY']
     },
     {
+      type: 'item',
       label: 'Faculty',
       path: '/faculty',
       icon: UserSquare2,
       roles: ['SUPER_ADMIN', 'ADMIN']
     },
     {
-      label: 'Attendance',
+      type: 'group',
+      label: 'Academic',
+      icon: GraduationCap,
+      roles: ['SUPER_ADMIN', 'ADMIN', 'FACULTY', 'STUDENT'],
+      children: [
+        { label: 'Batches', path: '/batches', icon: Layers, roles: ['SUPER_ADMIN', 'ADMIN', 'FACULTY'] },
+        { label: 'Timetable', path: '/timetable', icon: Clock, roles: ['SUPER_ADMIN', 'ADMIN', 'FACULTY', 'STUDENT'] },
+        { label: 'Attendance', path: '/student-attendance', icon: UserCheck, roles: ['SUPER_ADMIN', 'ADMIN', 'FACULTY'] },
+        { label: 'Syllabus', path: '/syllabus', icon: Library, roles: ['SUPER_ADMIN', 'ADMIN', 'FACULTY', 'STUDENT'] },
+        { label: 'Materials', path: '/materials', icon: FolderOpen, roles: ['SUPER_ADMIN', 'ADMIN', 'FACULTY', 'STUDENT'] },
+        { label: 'Assignments', path: '/assignments', icon: FileText, roles: ['SUPER_ADMIN', 'ADMIN', 'FACULTY', 'STUDENT'] }
+      ]
+    },
+    {
+      type: 'item',
+      label: 'Faculty Attendance',
       path: '/attendance',
       icon: CalendarCheck,
       roles: ['SUPER_ADMIN', 'ADMIN', 'FACULTY']
     },
     {
+      type: 'item',
       label: 'Payroll / Salary',
       path: '/salary',
       icon: DollarSign,
       roles: ['SUPER_ADMIN', 'ADMIN', 'FACULTY']
     },
     {
+      type: 'item',
       label: 'Examinations',
       path: '/exams',
       icon: BookOpen,
@@ -76,11 +204,8 @@ const Sidebar = ({ isOpen, toggleSidebar }) => {
     }
   ];
 
-  // Filter menu items by user role
-  const filteredItems = navItems.filter(item => item.roles.includes(role));
-
   return (
-    <aside 
+    <aside
       className={`fixed top-0 left-0 z-40 w-64 h-screen pt-20 transition-transform ${
         isOpen ? 'translate-x-0' : '-translate-x-full'
       } bg-bg-surface border-r border-slate-700/50 md:translate-x-0`}
@@ -96,35 +221,14 @@ const Sidebar = ({ isOpen, toggleSidebar }) => {
         </div>
 
         {/* Navigation Menu */}
-        <ul className="space-y-1.5 flex-1">
-          {filteredItems.map((item) => {
-            const Icon = item.icon;
-            return (
-              <li key={item.path}>
-                <NavLink
-                  to={item.path}
-                  className={({ isActive }) => 
-                    `flex items-center gap-3 px-4 py-2.5 rounded-lg text-sm font-medium transition-all duration-200 group ${
-                      isActive 
-                        ? 'bg-brand text-white shadow-lg shadow-brand/20' 
-                        : 'text-slate-400 hover:bg-slate-800 hover:text-white'
-                    }`
-                  }
-                  onClick={() => {
-                    // Close sidebar on mobile after clicking
-                    if (window.innerWidth < 768) toggleSidebar();
-                  }}
-                >
-                  {({ isActive }) => (
-                    <>
-                      <Icon className={`transition-colors ${isActive ? 'text-white' : 'text-slate-500 group-hover:text-slate-300'}`} size={18} />
-                      <span>{item.label}</span>
-                    </>
-                  )}
-                </NavLink>
-              </li>
-            );
-          })}
+        <ul className="space-y-1 flex-1">
+          {navConfig.map((entry, idx) =>
+            entry.type === 'group' ? (
+              <NavGroup key={idx} group={entry} role={role} onNavigate={onNavigate} />
+            ) : (
+              <NavItem key={entry.path} item={entry} role={role} onNavigate={onNavigate} />
+            )
+          )}
         </ul>
 
         {/* Logout Trigger */}
