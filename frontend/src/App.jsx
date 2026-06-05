@@ -32,6 +32,14 @@ import StudentFeePage from './pages/Fees/StudentFeePage';
 import DueFeePage from './pages/Fees/DueFeePage';
 import ReceiptPage from './pages/Fees/ReceiptPage';
 import DiscountPage from './pages/Fees/DiscountPage';
+import QuestionBankPage from './pages/Examination/QuestionBankPage';
+import ExamListPage from './pages/Examination/ExamListPage';
+import ExamCreatePage from './pages/Examination/ExamCreatePage';
+import ExamDetailPage from './pages/Examination/ExamDetailPage';
+import ResultEntryPage from './pages/Examination/ResultEntryPage';
+import StudentResultPage from './pages/Examination/StudentResultPage';
+import ExamAnalyticsPage from './pages/Examination/ExamAnalyticsPage';
+import PerformanceReportPage from './pages/Examination/PerformanceReportPage';
 
 function App() {
   return (
@@ -328,6 +336,86 @@ function App() {
           element={
             <ProtectedRoute allowedRoles={['SUPER_ADMIN', 'ADMIN']}>
               <DiscountPage />
+            </ProtectedRoute>
+          }
+        />
+
+        {/* Question Bank */}
+        <Route
+          path="/question-bank"
+          element={
+            <ProtectedRoute allowedRoles={['SUPER_ADMIN', 'ADMIN', 'FACULTY']}>
+              <QuestionBankPage />
+            </ProtectedRoute>
+          }
+        />
+
+        {/* Exam List */}
+        <Route
+          path="/exams"
+          element={
+            <ProtectedRoute allowedRoles={['SUPER_ADMIN', 'ADMIN', 'FACULTY']}>
+              <ExamListPage />
+            </ProtectedRoute>
+          }
+        />
+
+        {/* Exam Create */}
+        <Route
+          path="/exams/create"
+          element={
+            <ProtectedRoute allowedRoles={['SUPER_ADMIN', 'ADMIN', 'FACULTY']}>
+              <ExamCreatePage />
+            </ProtectedRoute>
+          }
+        />
+
+        {/* Exam Detail */}
+        <Route
+          path="/exams/:id"
+          element={
+            <ProtectedRoute allowedRoles={['SUPER_ADMIN', 'ADMIN', 'FACULTY']}>
+              <ExamDetailPage />
+            </ProtectedRoute>
+          }
+        />
+
+        {/* Result Entry */}
+        <Route
+          path="/exams/:id/results"
+          element={
+            <ProtectedRoute allowedRoles={['SUPER_ADMIN', 'ADMIN', 'FACULTY']}>
+              <ResultEntryPage />
+            </ProtectedRoute>
+          }
+        />
+
+        {/* Student Result View */}
+        <Route
+          path="/results"
+          element={
+            <ProtectedRoute allowedRoles={['STUDENT']}>
+              <StudentResultPage />
+            </ProtectedRoute>
+          }
+        />
+
+        {/* Exam Analytics */}
+        <Route
+          path="/analytics/exams"
+          element={
+            <ProtectedRoute allowedRoles={['SUPER_ADMIN', 'ADMIN', 'FACULTY']}>
+              <ExamAnalyticsPage />
+            </ProtectedRoute>
+          }
+        />
+
+        {/* Performance Report */}
+        <Route
+          path="/reports/performance"
+          element={
+            <ProtectedRoute allowedRoles={['SUPER_ADMIN', 'ADMIN']}>
+              <PerformanceReportPage />
             </ProtectedRoute>
           }
         />

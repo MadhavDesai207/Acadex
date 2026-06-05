@@ -25,7 +25,13 @@ import {
   CreditCard,
   Receipt,
   AlertCircle,
-  Tag
+  Tag,
+  FlaskConical,
+  HelpCircle,
+  ClipboardCheck,
+  BarChart2,
+  ScrollText,
+  Star
 } from 'lucide-react';
 import authService from '../services/authService';
 
@@ -218,11 +224,17 @@ const Sidebar = ({ isOpen, toggleSidebar }) => {
       roles: ['SUPER_ADMIN', 'ADMIN', 'FACULTY']
     },
     {
-      type: 'item',
-      label: 'Examinations',
-      path: '/exams',
-      icon: BookOpen,
-      roles: ['SUPER_ADMIN', 'ADMIN', 'FACULTY', 'STUDENT']
+      type: 'group',
+      label: 'Examination',
+      icon: FlaskConical,
+      roles: ['SUPER_ADMIN', 'ADMIN', 'FACULTY', 'STUDENT'],
+      children: [
+        { label: 'Question Bank', path: '/question-bank', icon: HelpCircle, roles: ['SUPER_ADMIN', 'ADMIN', 'FACULTY'] },
+        { label: 'Exams', path: '/exams', icon: BookOpen, roles: ['SUPER_ADMIN', 'ADMIN', 'FACULTY'] },
+        { label: 'My Results', path: '/results', icon: Star, roles: ['STUDENT'] },
+        { label: 'Analytics', path: '/analytics/exams', icon: BarChart2, roles: ['SUPER_ADMIN', 'ADMIN', 'FACULTY'] },
+        { label: 'Performance Report', path: '/reports/performance', icon: ScrollText, roles: ['SUPER_ADMIN', 'ADMIN'] }
+      ]
     }
   ];
 

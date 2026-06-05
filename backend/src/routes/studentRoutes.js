@@ -6,7 +6,8 @@ const {
   getStudentById,
   updateStudent,
   deleteStudent,
-  getStudentResults
+  getStudentResults,
+  getMyResults
 } = require('../controllers/studentController');
 const { authenticate, authorize } = require('../middleware/authMiddleware');
 
@@ -23,6 +24,14 @@ router.get('/', authenticate, authorize('ADMIN', 'FACULTY'), getStudents);
  * @access  Private (ADMIN)
  */
 router.post('/', authenticate, authorize('ADMIN'), createStudent);
+
+/**
+ * @route   GET /api/v1/students/my-results
+ * @desc    Get exam results for the currently logged-in student
+ * @access  Private (STUDENT only)
+ * NOTE: must be registered before /:id to avoid "my-results" being treated as an ID
+ */
+router.get('/my-results', authenticate, authorize('STUDENT'), getMyResults);
 
 /**
  * @route   GET /api/v1/students/:id

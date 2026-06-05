@@ -582,11 +582,57 @@ const getStudentResults = async (req, res, next) => {
   }
 };
 
+/**
+ * @desc    Get exam results for the currently authenticated student
+ * @route   GET /api/v1/students/my-results
+ * @access  Private (STUDENT only)
+ */
+const getMyResults = async (req, res, next) => {
+  try {
+    const student = await prisma.student.findFirst({
+      where: { userId: req.user.userId }
+    });
+
+    if (!student) {
+      return res.status(404).json({
+        message: 'Student record not found for this account'
+      });
+    }
+
+    const results = await prisma.examResult.findMany({
+      where: { studentId: student.id },
+      include: {
+        exam: {
+          select: {
+            id: true,
+            title: true,
+            examType: true,
+            examDate: true,
+            totalMarks: true,
+            passingMarks: true,
+            course: {
+              select: { id: true, name: true, code: true }
+            }
+          }
+        }
+      },
+      orderBy: {
+        exam: { examDate: 'desc' }
+      }
+    });
+
+    return res.status(200).json(results);
+  } catch (error) {
+    next(error);
+  }
+};
+
 module.exports = {
   createStudent,
   getStudents,
   getStudentById,
   updateStudent,
   deleteStudent,
-  getStudentResults
+  getStudentResults,
+  getMyResults
 };

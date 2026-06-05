@@ -19,6 +19,7 @@ const syllabusRoutes = require('./syllabusRoutes');
 const materialRoutes = require('./materialRoutes');
 const assignmentRoutes = require('./assignmentRoutes');
 const feeRoutes = require('./feeRoutes');
+const questionBankRoutes = require('./questionBankRoutes');
 
 // Mount routes
 router.use('/auth', authRoutes);
@@ -39,5 +40,6 @@ router.use('/syllabus', syllabusRoutes);
 router.use('/materials', materialRoutes);
 router.use('/assignments', assignmentRoutes);
 router.use('/fees', feeRoutes);
+router.use('/question-bank', questionBankRoutes);
 
 module.exports = router;
