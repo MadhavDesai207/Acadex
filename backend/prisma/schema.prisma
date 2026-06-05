@@ -74,6 +74,7 @@ model User {
   paidSalaryRecords  SalaryRecord[]
   createdExams       Exam[]
   enteredExamResults ExamResult[]
+  createdQuestions   QuestionBank[]
 
   @@map("users")
   @@index([role])
@@ -210,6 +211,7 @@ model Course {
   admissions     Admission[]
   batches        Batch[]
   exams          Exam[]
+  subjects       Subject[]
 
   @@map("courses")
 }
@@ -265,4 +267,43 @@ model ExamResult {
   @@unique([examId, studentId])
   @@map("exam_results")
   @@index([studentId])
+}
+
+enum Difficulty {
+  EASY
+  MEDIUM
+  HARD
+}
+
+model Subject {
+  id        String         @id @default(uuid()) @db.Uuid
+  name      String
+  code      String         @unique
+  courseId  String         @db.Uuid
+  isActive  Boolean        @default(true)
+  createdAt DateTime       @default(now())
+  updatedAt DateTime       @updatedAt
+  course    Course         @relation(fields: [courseId], references: [id], onDelete: Restrict, onUpdate: Cascade)
+  questions QuestionBank[]
+
+  @@map("subjects")
+  @@index([courseId])
+}
+
+model QuestionBank {
+  id           String     @id @default(uuid()) @db.Uuid
+  subjectId    String     @db.Uuid
+  questionText String
+  options      String[]
+  correctAnswer String
+  marks        Int        @default(1)
+  difficulty   Difficulty @default(MEDIUM)
+  createdBy    String     @db.Uuid
+  createdAt    DateTime   @default(now())
+  updatedAt    DateTime   @updatedAt
+  subject      Subject    @relation(fields: [subjectId], references: [id], onDelete: Cascade, onUpdate: Cascade)
+  creator      User       @relation(fields: [createdBy], references: [id], onDelete: Restrict, onUpdate: Cascade)
+
+  @@map("question_bank")
+  @@index([subjectId])
 }
