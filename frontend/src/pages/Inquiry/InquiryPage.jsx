@@ -168,7 +168,7 @@ const InquiryPage = () => {
     {
       key: 'assignedTo',
       label: 'Assigned Staff',
-      render: (row) => row.assignedTo === 'st1' ? 'Alice Smith' : 'Bob Jones'
+      render: (row) => row.assignedUser?.name || 'Unassigned'
     }
   ];
 

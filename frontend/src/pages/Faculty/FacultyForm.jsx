@@ -28,7 +28,7 @@ const FacultyForm = ({ onSubmit, initialData = null, onClose }) => {
         phone: initialData.user?.phone || '',
         designation: initialData.designation || '',
         department: initialData.department || '',
-        dateOfJoining: initialData.dateOfJoining || '',
+        dateOfJoining: initialData.dateOfJoining ? initialData.dateOfJoining.split('T')[0] : '',
         qualification: initialData.qualification || '',
         bankAccount: initialData.bankAccount ? initialData.bankAccount.replace(/•/g, '') : '',
         baseSalary: initialData.baseSalary ? String(initialData.baseSalary) : '',

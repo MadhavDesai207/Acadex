@@ -105,7 +105,7 @@ const AdmissionPage = () => {
     {
       key: 'reviewer',
       label: 'Audited By',
-      render: (row) => row.reviewer || 'Pending'
+      render: (row) => row.reviewer?.name || 'Pending'
     }
   ];
 

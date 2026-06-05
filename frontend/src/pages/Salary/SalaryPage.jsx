@@ -135,8 +135,18 @@ const SalaryPage = () => {
 
   // Define Admin Payroll Table Headers
   const adminHeaders = [
-    { key: 'employeeCode', label: 'Faculty Code', sortable: true },
-    { key: 'facultyName', label: 'Full Name', sortable: true },
+    { 
+      key: 'employeeCode', 
+      label: 'Faculty Code', 
+      sortable: true,
+      render: (row) => row.faculty?.employeeCode || 'N/A'
+    },
+    { 
+      key: 'facultyName', 
+      label: 'Full Name', 
+      sortable: true,
+      render: (row) => row.faculty?.user?.name || 'N/A'
+    },
     { 
       key: 'baseSalary', 
       label: 'Base Salary',
@@ -398,7 +408,7 @@ const SalaryPage = () => {
             setIsAdjustOpen(false);
             setAdjustRecord(null);
           }}
-          title={adjustRecord ? `Payroll Adjustments — ${adjustRecord.facultyName}` : ''}
+          title={adjustRecord ? `Payroll Adjustments — ${adjustRecord.faculty?.user?.name}` : ''}
         >
           {adjustRecord && (
             <form onSubmit={handleAdjustSubmit} className="flex flex-col gap-4">
@@ -483,7 +493,7 @@ const SalaryPage = () => {
               <div className="p-3.5 rounded-lg bg-brand/10 border border-brand/20 flex flex-col gap-1.5">
                 <span className="text-[10px] text-slate-500 font-semibold uppercase tracking-wider block">Payout Amount</span>
                 <span className="text-2xl font-black text-white font-heading">${payRecord.netSalary.toLocaleString(undefined, { minimumFractionDigits: 2 })}</span>
-                <span className="text-xs text-slate-400 mt-1">Beneficiary: {payRecord.facultyName} ({payRecord.employeeCode})</span>
+                <span className="text-xs text-slate-400 mt-1">Beneficiary: {payRecord.faculty?.user?.name} ({payRecord.faculty?.employeeCode})</span>
               </div>
 
               <p>
