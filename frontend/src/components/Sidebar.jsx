@@ -18,7 +18,14 @@ import {
   FolderOpen,
   FileText,
   ChevronDown,
-  ChevronRight
+  ChevronRight,
+  BookMarked,
+  BookCopy,
+  Wallet,
+  CreditCard,
+  Receipt,
+  AlertCircle,
+  Tag
 } from 'lucide-react';
 import authService from '../services/authService';
 
@@ -173,12 +180,27 @@ const Sidebar = ({ isOpen, toggleSidebar }) => {
       icon: GraduationCap,
       roles: ['SUPER_ADMIN', 'ADMIN', 'FACULTY', 'STUDENT'],
       children: [
+        { label: 'Courses', path: '/courses', icon: BookMarked, roles: ['SUPER_ADMIN', 'ADMIN'] },
+        { label: 'Subjects', path: '/subjects', icon: BookCopy, roles: ['SUPER_ADMIN', 'ADMIN'] },
         { label: 'Batches', path: '/batches', icon: Layers, roles: ['SUPER_ADMIN', 'ADMIN', 'FACULTY'] },
         { label: 'Timetable', path: '/timetable', icon: Clock, roles: ['SUPER_ADMIN', 'ADMIN', 'FACULTY', 'STUDENT'] },
         { label: 'Attendance', path: '/student-attendance', icon: UserCheck, roles: ['SUPER_ADMIN', 'ADMIN', 'FACULTY'] },
         { label: 'Syllabus', path: '/syllabus', icon: Library, roles: ['SUPER_ADMIN', 'ADMIN', 'FACULTY', 'STUDENT'] },
         { label: 'Materials', path: '/materials', icon: FolderOpen, roles: ['SUPER_ADMIN', 'ADMIN', 'FACULTY', 'STUDENT'] },
         { label: 'Assignments', path: '/assignments', icon: FileText, roles: ['SUPER_ADMIN', 'ADMIN', 'FACULTY', 'STUDENT'] }
+      ]
+    },
+    {
+      type: 'group',
+      label: 'Finance',
+      icon: Wallet,
+      roles: ['SUPER_ADMIN', 'ADMIN', 'STUDENT'],
+      children: [
+        { label: 'Fee Structures', path: '/fees/structures', icon: CreditCard, roles: ['SUPER_ADMIN', 'ADMIN'] },
+        { label: 'Fee Collection', path: '/fees/collect', icon: Receipt, roles: ['SUPER_ADMIN', 'ADMIN'] },
+        { label: 'Student Fees', path: '/fees/students', icon: Users, roles: ['SUPER_ADMIN', 'ADMIN', 'STUDENT'] },
+        { label: 'Due Fees', path: '/fees/due', icon: AlertCircle, roles: ['SUPER_ADMIN', 'ADMIN'] },
+        { label: 'Discounts', path: '/fees/discounts', icon: Tag, roles: ['SUPER_ADMIN', 'ADMIN'] }
       ]
     },
     {

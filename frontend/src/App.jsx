@@ -14,6 +14,8 @@ import AttendanceMarkForm from './pages/Attendance/AttendanceMarkForm';
 import SalaryPage from './pages/Salary/SalaryPage';
 import UserAdminPage from './pages/Dashboard/UserAdminPage';
 import ProtectedRoute from './routes/ProtectedRoute';
+import CoursePage from './pages/Courses/CoursePage';
+import SubjectPage from './pages/Subjects/SubjectPage';
 import BatchPage from './pages/Batch/BatchPage';
 import BatchDetail from './pages/Batch/BatchDetail';
 import TimetablePage from './pages/Timetable/TimetablePage';
@@ -24,6 +26,12 @@ import SyllabusPage from './pages/Syllabus/SyllabusPage';
 import MaterialsPage from './pages/Materials/MaterialsPage';
 import AssignmentPage from './pages/Assignments/AssignmentPage';
 import AssignmentSubmissions from './pages/Assignments/AssignmentSubmissions';
+import FeeStructurePage from './pages/Fees/FeeStructurePage';
+import FeeCollectionPage from './pages/Fees/FeeCollectionPage';
+import StudentFeePage from './pages/Fees/StudentFeePage';
+import DueFeePage from './pages/Fees/DueFeePage';
+import ReceiptPage from './pages/Fees/ReceiptPage';
+import DiscountPage from './pages/Fees/DiscountPage';
 
 function App() {
   return (
@@ -152,6 +160,26 @@ function App() {
           } 
         />
 
+        {/* Course Management */}
+        <Route
+          path="/courses"
+          element={
+            <ProtectedRoute allowedRoles={['SUPER_ADMIN', 'ADMIN']}>
+              <CoursePage />
+            </ProtectedRoute>
+          }
+        />
+
+        {/* Subject Management */}
+        <Route
+          path="/subjects"
+          element={
+            <ProtectedRoute allowedRoles={['SUPER_ADMIN', 'ADMIN']}>
+              <SubjectPage />
+            </ProtectedRoute>
+          }
+        />
+
         {/* Batch Management */}
         <Route
           path="/batches"
@@ -240,6 +268,66 @@ function App() {
           element={
             <ProtectedRoute allowedRoles={['SUPER_ADMIN', 'ADMIN', 'FACULTY']}>
               <AssignmentSubmissions />
+            </ProtectedRoute>
+          }
+        />
+
+        {/* Fee Structures */}
+        <Route
+          path="/fees/structures"
+          element={
+            <ProtectedRoute allowedRoles={['SUPER_ADMIN', 'ADMIN']}>
+              <FeeStructurePage />
+            </ProtectedRoute>
+          }
+        />
+
+        {/* Fee Collection */}
+        <Route
+          path="/fees/collect"
+          element={
+            <ProtectedRoute allowedRoles={['SUPER_ADMIN', 'ADMIN']}>
+              <FeeCollectionPage />
+            </ProtectedRoute>
+          }
+        />
+
+        {/* Student Fee Summary */}
+        <Route
+          path="/fees/students"
+          element={
+            <ProtectedRoute allowedRoles={['SUPER_ADMIN', 'ADMIN', 'STUDENT']}>
+              <StudentFeePage />
+            </ProtectedRoute>
+          }
+        />
+
+        {/* Due Fees */}
+        <Route
+          path="/fees/due"
+          element={
+            <ProtectedRoute allowedRoles={['SUPER_ADMIN', 'ADMIN']}>
+              <DueFeePage />
+            </ProtectedRoute>
+          }
+        />
+
+        {/* Receipt View */}
+        <Route
+          path="/fees/receipt/:id"
+          element={
+            <ProtectedRoute allowedRoles={['SUPER_ADMIN', 'ADMIN', 'STUDENT']}>
+              <ReceiptPage />
+            </ProtectedRoute>
+          }
+        />
+
+        {/* Discounts & Scholarships */}
+        <Route
+          path="/fees/discounts"
+          element={
+            <ProtectedRoute allowedRoles={['SUPER_ADMIN', 'ADMIN']}>
+              <DiscountPage />
             </ProtectedRoute>
           }
         />

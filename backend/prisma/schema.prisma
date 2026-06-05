@@ -80,6 +80,7 @@ model User {
   uploadedMaterials        StudyMaterial[]
   createdAssignments       Assignment[]
   gradedSubmissions        AssignmentSubmission[]
+  collectedFees            FeePayment[]
 
   @@map("users")
   @@index([role])
@@ -105,6 +106,7 @@ model Student {
   examResults            ExamResult[]
   attendance             Attendance[]
   assignmentSubmissions  AssignmentSubmission[]
+  studentFees            StudentFee[]
 
   @@map("students")
   @@index([courseId])
@@ -221,6 +223,8 @@ model Course {
   exams          Exam[]
   subjects       Subject[]
   syllabusUnits  SyllabusUnit[]
+  feeStructures  FeeStructure[]
+  discounts      Discount[]
 
   @@map("courses")
 }
@@ -300,6 +304,35 @@ enum AssignmentStatus {
   DRAFT
   PUBLISHED
   CLOSED
+}
+
+enum FeeFrequency {
+  ONE_TIME
+  MONTHLY
+  QUARTERLY
+  ANNUALLY
+  CUSTOM
+}
+
+enum PaymentMethod {
+  CASH
+  BANK_TRANSFER
+  CHEQUE
+  ONLINE
+  UPI
+}
+
+enum PaymentStatus {
+  PENDING
+  PAID
+  PARTIALLY_PAID
+  OVERDUE
+  WAIVED
+}
+
+enum DiscountType {
+  PERCENTAGE
+  FIXED
 }
 
 model Subject {
@@ -467,4 +500,105 @@ model AssignmentSubmission {
 
   @@unique([assignmentId, studentId])
   @@map("assignment_submissions")
+}
+
+// ─── Finance & Fee Management ──────────────────────────────────────────────
+
+model FeeStructure {
+  id           String         @id @default(uuid()) @db.Uuid
+  name         String
+  courseId     String         @db.Uuid
+  totalAmount  Decimal        @db.Decimal(10, 2)
+  frequency    FeeFrequency   @default(ONE_TIME)
+  isActive     Boolean        @default(true)
+  createdAt    DateTime       @default(now())
+  updatedAt    DateTime       @updatedAt
+  course        Course           @relation(fields: [courseId], references: [id], onDelete: Restrict, onUpdate: Cascade)
+  installments  FeeInstallment[]
+  studentFees   StudentFee[]
+
+  @@map("fee_structures")
+  @@index([courseId])
+}
+
+model FeeInstallment {
+  id             String       @id @default(uuid()) @db.Uuid
+  feeStructureId String       @db.Uuid
+  installmentNo  Int
+  label          String
+  amount         Decimal      @db.Decimal(10, 2)
+  dueDate        DateTime     @db.Date
+  feeStructure   FeeStructure @relation(fields: [feeStructureId], references: [id], onDelete: Cascade, onUpdate: Cascade)
+  payments       FeePayment[]
+
+  @@unique([feeStructureId, installmentNo])
+  @@map("fee_installments")
+}
+
+model StudentFee {
+  id             String       @id @default(uuid()) @db.Uuid
+  studentId      String       @db.Uuid
+  feeStructureId String       @db.Uuid
+  discountId     String?      @db.Uuid
+  scholarshipId  String?      @db.Uuid
+  netPayable     Decimal      @db.Decimal(10, 2)
+  createdAt      DateTime     @default(now())
+  student        Student      @relation(fields: [studentId], references: [id], onDelete: Cascade, onUpdate: Cascade)
+  feeStructure   FeeStructure @relation(fields: [feeStructureId], references: [id], onDelete: Restrict, onUpdate: Cascade)
+  discount       Discount?    @relation(fields: [discountId], references: [id], onDelete: SetNull, onUpdate: Cascade)
+  scholarship    Scholarship? @relation(fields: [scholarshipId], references: [id], onDelete: SetNull, onUpdate: Cascade)
+  payments       FeePayment[]
+
+  @@unique([studentId, feeStructureId])
+  @@map("student_fees")
+}
+
+model FeePayment {
+  id             String         @id @default(uuid()) @db.Uuid
+  studentFeeId   String         @db.Uuid
+  installmentId  String?        @db.Uuid
+  amountPaid     Decimal        @db.Decimal(10, 2)
+  paymentMethod  PaymentMethod
+  paymentDate    DateTime       @default(now())
+  status         PaymentStatus  @default(PAID)
+  transactionRef String?
+  collectedBy    String         @db.Uuid
+  receiptNumber  String         @unique
+  remarks        String?
+  studentFee     StudentFee     @relation(fields: [studentFeeId], references: [id], onDelete: Restrict, onUpdate: Cascade)
+  installment    FeeInstallment? @relation(fields: [installmentId], references: [id], onDelete: SetNull, onUpdate: Cascade)
+  collector      User           @relation(fields: [collectedBy], references: [id], onDelete: Restrict, onUpdate: Cascade)
+
+  @@map("fee_payments")
+  @@index([studentFeeId])
+  @@index([paymentDate])
+}
+
+model Discount {
+  id          String       @id @default(uuid()) @db.Uuid
+  name        String
+  type        DiscountType
+  value       Decimal      @db.Decimal(10, 2)
+  courseId    String?      @db.Uuid
+  isActive    Boolean      @default(true)
+  createdAt   DateTime     @default(now())
+  updatedAt   DateTime     @updatedAt
+  course      Course?      @relation(fields: [courseId], references: [id], onDelete: SetNull, onUpdate: Cascade)
+  studentFees StudentFee[]
+
+  @@map("discounts")
+}
+
+model Scholarship {
+  id          String       @id @default(uuid()) @db.Uuid
+  name        String
+  type        DiscountType
+  value       Decimal      @db.Decimal(10, 2)
+  criteria    String?
+  isActive    Boolean      @default(true)
+  createdAt   DateTime     @default(now())
+  updatedAt   DateTime     @updatedAt
+  studentFees StudentFee[]
+
+  @@map("scholarships")
 }
