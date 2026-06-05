@@ -38,6 +38,10 @@ const SalaryPage = () => {
 
   const [isPayOpen, setIsPayOpen] = useState(false);
   const [payRecord, setPayRecord] = useState(null);
+  const [transactionRef, setTransactionRef] = useState('');
+
+  const [isSlipOpen, setIsSlipOpen] = useState(false);
+  const [slipRecord, setSlipRecord] = useState(null);
 
   // UI Toast State
   const [alert, setAlert] = useState(null);
@@ -123,14 +127,108 @@ const SalaryPage = () => {
   const handleMarkPaidSubmit = async () => {
     if (!payRecord) return;
 
-    const res = await salaryService.markSalaryPaid(payRecord.id);
+    const res = await salaryService.markSalaryPaid(payRecord.id, { transactionRef });
     if (res.success) {
       setAlert({ type: 'success', message: 'Salary payout logged successfully.' });
       setIsPayOpen(false);
       setPayRecord(null);
+      setTransactionRef('');
       loadSalaries();
       setTimeout(() => setAlert(null), 3000);
     }
+  };
+
+  // Print slip handler
+  const handlePrint = () => {
+    if (!slipRecord) return;
+    const printWindow = window.open('', '_blank');
+    printWindow.document.write(`
+      <html>
+        <head>
+          <title>Payslip - \${slipRecord.faculty?.user?.name || 'N/A'}</title>
+          <style>
+            body { font-family: 'Inter', sans-serif; padding: 40px; color: #333; }
+            .header { text-align: center; margin-bottom: 30px; }
+            .header h1 { margin: 0; font-size: 24px; color: #1e293b; }
+            .header p { margin: 5px 0 0; color: #64748b; font-size: 14px; }
+            .details-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; margin-bottom: 40px; border-bottom: 2px solid #e2e8f0; padding-bottom: 20px; }
+            .details-col div { margin-bottom: 8px; font-size: 14px; }
+            .label { color: #64748b; font-weight: 500; }
+            .value { font-weight: 600; color: #0f172a; }
+            .ledger-table { width: 100%; border-collapse: collapse; margin-bottom: 40px; }
+            .ledger-table th { background-color: #f8fafc; border-bottom: 2px solid #e2e8f0; padding: 12px; text-align: left; font-size: 12px; font-weight: 700; color: #64748b; }
+            .ledger-table td { padding: 12px; border-bottom: 1px solid #f1f5f9; font-size: 14px; }
+            .ledger-table tr.total-row td { font-weight: bold; font-size: 16px; border-top: 2px solid #e2e8f0; border-bottom: none; }
+            .footer { margin-top: 60px; font-size: 12px; text-align: center; color: #94a3b8; }
+            .signatures { display: flex; justify-content: space-between; margin-top: 60px; }
+            .sig-line { width: 200px; border-top: 1px solid #cbd5e1; text-align: center; padding-top: 8px; font-size: 13px; color: #64748b; }
+          </style>
+        </head>
+        <body>
+          <div class="header">
+            <h1>ACADEX EDUCATION ERP</h1>
+            <p>Salary Disbursement Slip</p>
+          </div>
+          <div class="details-grid">
+            <div class="details-col">
+              <div><span class="label">Employee Name:</span> <span class="value">\${slipRecord.faculty?.user?.name || 'N/A'}</span></div>
+              <div><span class="label">Employee Code:</span> <span class="value">\${slipRecord.faculty?.employeeCode || 'N/A'}</span></div>
+              <div><span class="label">Designation:</span> <span class="value">\${slipRecord.faculty?.designation || 'N/A'}</span></div>
+            </div>
+            <div class="details-col">
+              <div><span class="label">Pay Period:</span> <span class="value">\${months.find(m => Number(m.value) === slipRecord.month)?.label} \${slipRecord.year}</span></div>
+              <div><span class="label">Bank Account:</span> <span class="value">\${slipRecord.faculty?.bankAccount || 'N/A'}</span></div>
+              <div><span class="label">Disbursement Date:</span> <span class="value">\${slipRecord.paidAt ? new Date(slipRecord.paidAt).toLocaleDateString() : 'N/A'}</span></div>
+            </div>
+          </div>
+          <table class="ledger-table">
+            <thead>
+              <tr>
+                <th>Description</th>
+                <th style="text-align: right;">Amount</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr>
+                <td>Base Salary</td>
+                <td style="text-align: right;">$\${slipRecord.baseSalary.toLocaleString(undefined, { minimumFractionDigits: 2 })}</td>
+              </tr>
+              <tr>
+                <td>Bonus / Incentives</td>
+                <td style="text-align: right; color: #16a34a;">+$\${slipRecord.bonus.toLocaleString(undefined, { minimumFractionDigits: 2 })}</td>
+              </tr>
+              <tr>
+                <td>Deductions (Unpaid leaves/absences)</td>
+                <td style="text-align: right; color: #dc2626;">-$\${slipRecord.deductions.toLocaleString(undefined, { minimumFractionDigits: 2 })}</td>
+              </tr>
+              <tr class="total-row">
+                <td>Net Salary (Disbursed)</td>
+                <td style="text-align: right;">$\${slipRecord.netSalary.toLocaleString(undefined, { minimumFractionDigits: 2 })}</td>
+              </tr>
+            </tbody>
+          </table>
+          <div>
+            <p style="font-size: 13px; color: #64748b; margin-top: 20px;">
+              <strong>Remarks:</strong> \${slipRecord.remarks || 'Salary paid successfully.'}
+            </p>
+          </div>
+          <div class="signatures">
+            <div class="sig-line">Beneficiary Signature</div>
+            <div class="sig-line">Authorized Signatory<br/><small>Paid by: \${slipRecord.payer?.name || 'Administrator'}</small></div>
+          </div>
+          <div class="footer">
+            <p>This is a computer-generated document and does not require a physical stamp.</p>
+          </div>
+          <script>
+            window.onload = function() {
+              window.print();
+              window.close();
+            }
+          </script>
+        </body>
+      </html>
+    `);
+    printWindow.document.close();
   };
 
   // Define Admin Payroll Table Headers
@@ -252,7 +350,7 @@ const SalaryPage = () => {
                 setAdjustRemarks(row.remarks || '');
                 setIsAdjustOpen(true);
               }}
-              className="px-2 py-1 rounded bg-bg-surfaceLight hover:bg-slate-600 text-xs text-slate-300 hover:text-white transition-all flex items-center gap-1 border border-slate-700/50"
+              className="px-2 py-1 rounded bg-bg-surfaceLight hover:bg-slate-600 text-xs text-slate-300 hover:text-white transition-all flex items-center gap-1 border border-slate-700/50 cursor-pointer"
               title="Configure Adjustments"
             >
               <Edit size={13} />
@@ -261,9 +359,10 @@ const SalaryPage = () => {
             <button
               onClick={() => {
                 setPayRecord(row);
+                setTransactionRef('');
                 setIsPayOpen(true);
               }}
-              className="px-2 py-1 rounded bg-brand/10 hover:bg-brand text-xs text-brand-light hover:text-white transition-all flex items-center gap-1 border border-brand/20"
+              className="px-2 py-1 rounded bg-brand/10 hover:bg-brand text-xs text-brand-light hover:text-white transition-all flex items-center gap-1 border border-brand/20 cursor-pointer"
               title="Mark Paid"
             >
               <CreditCard size={13} />
@@ -271,7 +370,41 @@ const SalaryPage = () => {
             </button>
           </>
         ) : (
-          <span className="text-xs text-slate-500 font-medium italic pr-2">Locked</span>
+          <button
+            onClick={() => {
+              setSlipRecord(row);
+              setIsSlipOpen(true);
+            }}
+            className="px-2 py-1 rounded bg-brand/10 hover:bg-brand text-xs text-brand-light hover:text-white transition-all flex items-center gap-1.5 border border-brand/20 cursor-pointer"
+            title="View Payslip"
+          >
+            <FileText size={13} />
+            <span>Payslip</span>
+          </button>
+        )}
+      </div>
+    );
+  };
+
+  // Faculty Actions Row Cell Renders
+  const facultyActions = (row) => {
+    const isPaid = !!row.paidAt;
+    return (
+      <div className="flex gap-2 justify-end">
+        {isPaid ? (
+          <button
+            onClick={() => {
+              setSlipRecord(row);
+              setIsSlipOpen(true);
+            }}
+            className="px-2 py-1 rounded bg-brand/10 hover:bg-brand text-xs text-brand-light hover:text-white transition-all flex items-center gap-1.5 border border-brand/20 cursor-pointer"
+            title="View Payslip"
+          >
+            <FileText size={13} />
+            <span>Payslip</span>
+          </button>
+        ) : (
+          <span className="text-xs text-slate-500 font-medium italic pr-2">Processing</span>
         )}
       </div>
     );
@@ -362,6 +495,7 @@ const SalaryPage = () => {
             headers={facultyHeaders}
             data={personalHistory}
             loading={loading}
+            actions={facultyActions}
             emptyMessage="No salary history records logged for your profile."
           />
         )}
@@ -500,6 +634,17 @@ const SalaryPage = () => {
                 Confirming this logs the payout transaction under your Administrator profile ID, signs the voucher with a server timestamp, and locks the payroll line.
               </p>
 
+              <div className="flex flex-col gap-1.5">
+                <Input
+                  label="Bank Transfer / Transaction Ref (Optional)"
+                  name="transactionRef"
+                  type="text"
+                  placeholder="E.g., TXN1234567890"
+                  value={transactionRef}
+                  onChange={(e) => setTransactionRef(e.target.value)}
+                />
+              </div>
+
               <div className="flex items-center justify-end gap-3 pt-3 border-t border-slate-800">
                 <Button 
                   variant="outline" 
@@ -515,6 +660,122 @@ const SalaryPage = () => {
                   <span>Confirm Payout</span>
                 </Button>
               </div>
+            </div>
+          )}
+        </Modal>
+
+        {/* Payslip Voucher Preview Modal */}
+        <Modal
+          isOpen={isSlipOpen}
+          onClose={() => {
+            setIsSlipOpen(false);
+            setSlipRecord(null);
+          }}
+          title="Salary Slip Details"
+          maxWidth="max-w-xl"
+        >
+          {slipRecord && (
+            <div className="flex flex-col gap-6 text-slate-300">
+              
+              {/* Slip Document Frame */}
+              <div className="border border-slate-700/60 rounded-xl p-5 bg-slate-950/60 flex flex-col gap-5">
+                <div className="flex justify-between items-start border-b border-slate-800 pb-4">
+                  <div>
+                    <h3 className="font-extrabold text-white text-lg tracking-tight">ACADEX ERP</h3>
+                    <p className="text-[10px] text-slate-500 uppercase tracking-widest font-mono">Salary Disbursement Receipt</p>
+                  </div>
+                  <div className="text-right">
+                    <span className="text-[10px] text-slate-500 uppercase tracking-wider block">Pay Period</span>
+                    <span className="font-bold text-white text-sm">
+                      {months.find(m => Number(m.value) === slipRecord.month)?.label} {slipRecord.year}
+                    </span>
+                  </div>
+                </div>
+
+                {/* Employee / Institution Details */}
+                <div className="grid grid-cols-2 gap-4 text-xs">
+                  <div>
+                    <span className="text-slate-500 block">Beneficiary Name</span>
+                    <span className="font-semibold text-slate-200">{slipRecord.faculty?.user?.name}</span>
+                  </div>
+                  <div>
+                    <span className="text-slate-500 block">Employee Code</span>
+                    <span className="font-semibold text-slate-200">{slipRecord.faculty?.employeeCode || 'N/A'}</span>
+                  </div>
+                  <div>
+                    <span className="text-slate-500 block">Designation</span>
+                    <span className="font-semibold text-slate-200">{slipRecord.faculty?.designation || 'N/A'}</span>
+                  </div>
+                  <div>
+                    <span className="text-slate-500 block">Bank Account</span>
+                    <span className="font-semibold text-slate-200">{slipRecord.faculty?.bankAccount || 'N/A'}</span>
+                  </div>
+                </div>
+
+                {/* Financial Details Table */}
+                <div className="border border-slate-800/80 rounded-lg overflow-hidden text-xs mt-2">
+                  <div className="grid grid-cols-2 bg-slate-900/40 p-2 font-bold border-b border-slate-800 text-slate-400">
+                    <span>Description</span>
+                    <span className="text-right">Amount ($)</span>
+                  </div>
+                  <div className="divide-y divide-slate-800/50">
+                    <div className="grid grid-cols-2 p-2">
+                      <span className="text-slate-400">Base Salary</span>
+                      <span className="text-right font-medium text-slate-200">${slipRecord.baseSalary.toLocaleString(undefined, { minimumFractionDigits: 2 })}</span>
+                    </div>
+                    <div className="grid grid-cols-2 p-2">
+                      <span className="text-slate-400">Bonus & Allowances</span>
+                      <span className="text-right font-medium text-status-success">+${slipRecord.bonus.toLocaleString(undefined, { minimumFractionDigits: 2 })}</span>
+                    </div>
+                    <div className="grid grid-cols-2 p-2">
+                      <span className="text-slate-400">Deductions (Unpaid absence)</span>
+                      <span className="text-right font-medium text-status-danger">-${slipRecord.deductions.toLocaleString(undefined, { minimumFractionDigits: 2 })}</span>
+                    </div>
+                    <div className="grid grid-cols-2 p-2.5 font-extrabold bg-slate-900/20 border-t border-slate-700">
+                      <span className="text-white text-sm">Net Pay Disbursed</span>
+                      <span className="text-right text-brand-light text-sm">${slipRecord.netSalary.toLocaleString(undefined, { minimumFractionDigits: 2 })}</span>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Audit & Txn log details */}
+                <div className="bg-bg-deep/30 border border-slate-800/60 p-3 rounded-lg flex flex-col gap-1.5 text-[11px] text-slate-400">
+                  <div>
+                    <strong>Disbursement Status:</strong> <span className="text-status-success font-semibold">PAID</span>
+                  </div>
+                  {slipRecord.paidAt && (
+                    <div>
+                      <strong>Disbursed Date:</strong> {new Date(slipRecord.paidAt).toLocaleDateString()} {new Date(slipRecord.paidAt).toLocaleTimeString()}
+                    </div>
+                  )}
+                  {slipRecord.remarks && (
+                    <div>
+                      <strong>Payment Ledger Notes:</strong> {slipRecord.remarks}
+                    </div>
+                  )}
+                  {slipRecord.payer?.name && (
+                    <div>
+                      <strong>Authorized By:</strong> {slipRecord.payer.name}
+                    </div>
+                  )}
+                </div>
+
+              </div>
+
+              {/* Action Buttons */}
+              <div className="flex justify-end gap-3 pt-3 border-t border-slate-800">
+                <Button variant="outline" onClick={() => {
+                  setIsSlipOpen(false);
+                  setSlipRecord(null);
+                }}>
+                  Close
+                </Button>
+                <Button variant="primary" onClick={handlePrint} className="flex items-center gap-1.5">
+                  <FileText size={15} />
+                  <span>Print Slip</span>
+                </Button>
+              </div>
+
             </div>
           )}
         </Modal>

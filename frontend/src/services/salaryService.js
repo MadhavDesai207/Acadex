@@ -16,8 +16,8 @@ const salaryService = {
     return { success: true, ...response.data };
   },
 
-  markSalaryPaid: async (id) => {
-    const response = await apiClient.patch(`/salary/${id}/mark-paid`);
+  markSalaryPaid: async (id, data = {}) => {
+    const response = await apiClient.patch(`/salary/${id}/mark-paid`, data);
     return { success: true, ...response.data };
   },
 

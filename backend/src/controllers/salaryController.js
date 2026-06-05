@@ -446,7 +446,7 @@ const updateSalaryRecord = async (req, res, next) => {
 const markSalaryPaid = async (req, res, next) => {
   try {
     const { id } = req.params;
-    const { paidAt } = req.body;
+    const { paidAt, transactionRef } = req.body;
 
     const record = await prisma.salaryRecord.findUnique({
       where: { id }
@@ -468,11 +468,19 @@ const markSalaryPaid = async (req, res, next) => {
       }
     }
 
+    let updatedRemarks = record.remarks;
+    if (transactionRef) {
+      updatedRemarks = record.remarks 
+        ? `${record.remarks} (Bank Ref: ${transactionRef})` 
+        : `Bank Ref: ${transactionRef}`;
+    }
+
     const updatedRecord = await prisma.salaryRecord.update({
       where: { id },
       data: {
         paidAt: paidDateTime,
-        paidBy: req.user.userId
+        paidBy: req.user.userId,
+        remarks: updatedRemarks
       },
       include: {
         faculty: {

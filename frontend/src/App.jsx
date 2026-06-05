@@ -12,6 +12,7 @@ import FacultyPage from './pages/Faculty/FacultyPage';
 import AttendancePage from './pages/Attendance/AttendancePage';
 import AttendanceMarkForm from './pages/Attendance/AttendanceMarkForm';
 import SalaryPage from './pages/Salary/SalaryPage';
+import UserAdminPage from './pages/Dashboard/UserAdminPage';
 import ProtectedRoute from './routes/ProtectedRoute';
 
 function App() {
@@ -127,6 +128,16 @@ function App() {
           element={
             <ProtectedRoute allowedRoles={['SUPER_ADMIN', 'ADMIN', 'FACULTY']}>
               <SalaryPage />
+            </ProtectedRoute>
+          } 
+        />
+
+        {/* Protected User Accounts Admin Route */}
+        <Route 
+          path="/users/admin" 
+          element={
+            <ProtectedRoute allowedRoles={['SUPER_ADMIN', 'ADMIN']}>
+              <UserAdminPage />
             </ProtectedRoute>
           } 
         />
