@@ -156,11 +156,29 @@ You are all set! The Acadex application is now fully running.
 
 ---
 
-## ⚡ Quick Guide for Daily Use
+## 🔑 Default Accounts & Temporary Credentials
 
-If you want to start the project again in the future:
+After launching the application, you can log in using the following credentials:
 
-1. **Ensure the database is running** (Usually automatic on Windows/Linux; on macOS run `brew services start postgresql@16` if you turned it off).
-2. **Start Backend:** In the `/backend` folder, open your terminal and run `npm run dev`.
-3. **Start Frontend:** In the `/frontend` folder, open another terminal window and run `npm run dev`.
-4. **View Database Tables visually:** Run `npx prisma studio` in the `/backend` folder to open a clean dashboard in your browser to inspect database entries.
+### 1. Default Administrator / Super Admin Accounts
+These accounts are created automatically when you run the database seed command (`npx prisma db seed`).
+*   **Email:** `superadmin@eduerp.com`
+    *   **Password:** `AdminSecretPass123`
+*   **Email:** `mddesai207@gmail.com`
+    *   **Password:** `Madhav12@`
+
+### 2. Auto-Generated Credentials (Faculty & Students)
+When you register a new faculty member or enroll a student, the system automatically generates their credentials. The login email will be the one provided during registration, and the auto-generated temporary password follows these formats:
+
+*   **Faculty Members:**
+    *   **Email:** The email specified during faculty registration.
+    *   **Temporary Password:** `FAC@<employeeCode>`
+    *   *Example:* If the generated employee code is `FAC-2026-001`, the temporary password is `FAC@FAC-2026-001`.
+*   **Students:**
+    *   **Email:** The email specified during student enrollment/admission.
+    *   **Temporary Password:** `STUD@<rollNumber>`
+    *   *Example:* If the generated student roll number is `CS-2026-001`, the temporary password is `STUD@CS-2026-001`.
+
+> [!NOTE]
+> **First-Time Password Change:**
+> To ensure system security, when any Faculty or Student logs in for the first time using their auto-generated temporary password starting with `FAC@` or `STUD@`, the frontend will automatically intercept the login and prompt them to set a new, secure custom password before they can access the dashboard.
