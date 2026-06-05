@@ -29,6 +29,21 @@ const studentService = {
   createStudent: async (studentData) => {
     const response = await apiClient.post('/students', studentData);
     return { success: true, ...response.data };
+  },
+
+  getStudentById: async (id) => {
+    const response = await apiClient.get(`/students/${id}`);
+    return response.data.student || response.data;
+  },
+
+  getStudentResults: async (id) => {
+    const response = await apiClient.get(`/students/${id}/results`);
+    return response.data.results || response.data;
+  },
+
+  updateStudent: async (id, studentData) => {
+    const response = await apiClient.put(`/students/${id}`, studentData);
+    return { success: true, ...response.data };
   }
 };
 

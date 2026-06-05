@@ -4,6 +4,8 @@ import LoginPage from './pages/Login/LoginPage';
 import DashboardPage from './pages/Dashboard/DashboardPage';
 import StudentListPage from './pages/Students/StudentListPage';
 import AddStudentPage from './pages/Students/AddStudentPage';
+import StudentDetailPage from './pages/Students/StudentDetailPage';
+import EditStudentPage from './pages/Students/EditStudentPage';
 import InquiryPage from './pages/Inquiry/InquiryPage';
 import AdmissionPage from './pages/Admissions/AdmissionPage';
 import FacultyPage from './pages/Faculty/FacultyPage';
@@ -45,6 +47,26 @@ function App() {
           element={
             <ProtectedRoute>
               <AddStudentPage />
+            </ProtectedRoute>
+          } 
+        />
+
+        {/* Protected Student Details Route */}
+        <Route 
+          path="/students/:id" 
+          element={
+            <ProtectedRoute>
+              <StudentDetailPage />
+            </ProtectedRoute>
+          } 
+        />
+
+        {/* Protected Student Editing Route */}
+        <Route 
+          path="/students/edit/:id" 
+          element={
+            <ProtectedRoute>
+              <EditStudentPage />
             </ProtectedRoute>
           } 
         />

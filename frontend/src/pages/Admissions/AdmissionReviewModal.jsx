@@ -2,12 +2,19 @@ import React, { useState, useEffect } from 'react';
 import { ShieldCheck, ShieldAlert, Sparkles, UserCheck, HelpCircle } from 'lucide-react';
 import Select from '../../components/Select';
 import Button from '../../components/Button';
+import Input from '../../components/Input';
 import admissionService from '../../services/admissionService';
 import studentService from '../../services/studentService';
 
 const AdmissionReviewModal = ({ admission, onClose, onRefresh }) => {
   const [remarks, setRemarks] = useState(admission.remarks || '');
   const [selectedBatch, setSelectedBatch] = useState('');
+  const [dateOfBirth, setDateOfBirth] = useState('');
+  const [gender, setGender] = useState('MALE');
+  const [parentName, setParentName] = useState('');
+  const [parentPhone, setParentPhone] = useState('');
+  const [address, setAddress] = useState('');
+  const [email, setEmail] = useState(admission.email || '');
   const [batches, setBatches] = useState([]);
   const [error, setError] = useState(null);
   const [loading, setLoading] = useState(false);
@@ -60,10 +67,22 @@ const AdmissionReviewModal = ({ admission, onClose, onRefresh }) => {
       setError('Please select a batch to assign the student.');
       return;
     }
+    if (!dateOfBirth || !gender || !parentName || !parentPhone || !email) {
+      setError('Please fill out all student and guardian fields.');
+      return;
+    }
 
     setLoading(true);
     try {
-      const res = await admissionService.enrollAdmission(admission.id, selectedBatch);
+      const res = await admissionService.enrollAdmission(admission.id, {
+        batchId: selectedBatch,
+        dateOfBirth,
+        gender,
+        parentName,
+        parentPhone,
+        address,
+        email
+      });
       if (res.success) {
         onRefresh();
         onClose();
@@ -177,19 +196,87 @@ const AdmissionReviewModal = ({ admission, onClose, onRefresh }) => {
             <ShieldCheck size={18} className="shrink-0 mt-0.5" />
             <div>
               <p className="font-semibold">Application Approved</p>
-              <p className="text-[11px] opacity-90 mt-0.5">Assign an academic batch to complete student registration and generate system credentials.</p>
+              <p className="text-[11px] opacity-90 mt-0.5">Please review and complete the student parameters to generate academic system credentials and finalize enrollment.</p>
             </div>
           </div>
 
-          <Select
-            label="Assign Academic Batch"
-            name="enrollBatchId"
-            options={batches}
-            value={selectedBatch}
-            onChange={(e) => setSelectedBatch(e.target.value)}
-            placeholder="Choose Active Batch"
-            required
-          />
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            <Select
+              label="Assign Academic Batch"
+              name="enrollBatchId"
+              options={batches}
+              value={selectedBatch}
+              onChange={(e) => setSelectedBatch(e.target.value)}
+              placeholder="Choose Active Batch"
+              required
+            />
+            
+            <Input
+              label="Student Account Email"
+              name="enrollEmail"
+              type="email"
+              placeholder="student@eduerp.com"
+              value={email}
+              onChange={(e) => setEmail(e.target.value)}
+              required
+            />
+
+            <Input
+              label="Date of Birth"
+              name="enrollDOB"
+              type="date"
+              value={dateOfBirth}
+              onChange={(e) => setDateOfBirth(e.target.value)}
+              required
+            />
+
+            <Select
+              label="Gender"
+              name="enrollGender"
+              options={[
+                { value: 'MALE', label: 'Male' },
+                { value: 'FEMALE', label: 'Female' },
+                { value: 'OTHER', label: 'Other' }
+              ]}
+              value={gender}
+              onChange={(e) => setGender(e.target.value)}
+              placeholder="Select Gender"
+              required
+            />
+
+            <Input
+              label="Guardian Name"
+              name="enrollParentName"
+              placeholder="Robert Doe"
+              value={parentName}
+              onChange={(e) => setParentName(e.target.value)}
+              required
+            />
+
+            <Input
+              label="Guardian Phone"
+              name="enrollParentPhone"
+              placeholder="555-0102"
+              value={parentPhone}
+              onChange={(e) => setParentPhone(e.target.value)}
+              required
+            />
+          </div>
+
+          <div className="flex flex-col gap-1.5 w-full">
+            <label htmlFor="enrollAddress" className="text-sm font-medium text-slate-300">
+              Residential Address
+            </label>
+            <textarea
+              id="enrollAddress"
+              name="enrollAddress"
+              rows={2}
+              placeholder="123 Academic Way"
+              value={address}
+              onChange={(e) => setAddress(e.target.value)}
+              className="w-full px-3 py-2 rounded-lg text-sm outline-none glass-input resize-none"
+            />
+          </div>
 
           <div className="flex items-center justify-end gap-3 pt-2">
             <Button variant="outline" type="button" onClick={onClose} disabled={loading}>

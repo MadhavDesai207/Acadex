@@ -21,8 +21,8 @@ const admissionService = {
     return { success: true, ...response.data };
   },
 
-  enrollAdmission: async (id, batchId) => {
-    const response = await apiClient.post(`/admissions/${id}/enroll`, { batchId });
+  enrollAdmission: async (id, studentDetails) => {
+    const response = await apiClient.post(`/admissions/${id}/enroll`, studentDetails);
     return { success: true, ...response.data };
   }
 };
