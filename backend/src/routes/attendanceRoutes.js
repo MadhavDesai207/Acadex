@@ -3,7 +3,8 @@ const router = express.Router();
 const {
   markAttendance,
   getAttendanceList,
-  getMonthlySummary
+  getMonthlySummary,
+  getBulkMonthlySummary
 } = require('../controllers/attendanceController');
 const { authenticate, authorize } = require('../middleware/authMiddleware');
 
@@ -29,6 +30,18 @@ router.get(
   authenticate,
   authorize('ADMIN', 'SUPER_ADMIN', 'FACULTY'),
   getAttendanceList
+);
+
+/**
+ * @route   GET /api/v1/attendance/faculty/summary-bulk
+ * @desc    Get monthly summary for all active faculty members in bulk
+ * @access  Private (ADMIN, SUPER_ADMIN)
+ */
+router.get(
+  '/faculty/summary-bulk',
+  authenticate,
+  authorize('ADMIN', 'SUPER_ADMIN'),
+  getBulkMonthlySummary
 );
 
 /**

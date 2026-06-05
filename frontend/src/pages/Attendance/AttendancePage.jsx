@@ -43,36 +43,45 @@ const AttendancePage = () => {
   // Fetch summaries
   const loadData = async () => {
     setLoading(true);
-    if (isAdmin) {
-      // 1. Fetch active faculty list
-      const facList = await facultyService.getFaculty();
-      const activeFac = facList.filter(f => f.isActive);
-      
-      // 2. Fetch monthly summary for each faculty
-      const summaries = await Promise.all(
-        activeFac.map(async (fac) => {
-          const sum = await attendanceService.getFacultySummary(fac.id, selectedMonth, selectedYear);
+    try {
+      if (isAdmin) {
+        // 1. Fetch active faculty list
+        const facList = await facultyService.getFaculty();
+        const activeFac = facList.filter(f => f.isActive);
+        
+        // 2. Fetch monthly summaries in bulk
+        const bulkSummaries = await attendanceService.getBulkFacultySummary(selectedMonth, selectedYear);
+        
+        const summaries = activeFac.map((fac) => {
           return {
             ...fac,
-            summary: sum
+            summary: bulkSummaries[fac.id] || {
+              daysPresent: 0,
+              daysAbsent: 0,
+              halfDays: 0,
+              leaves: 0,
+              effectiveDays: 0,
+              records: [],
+              totalCalendarDays: 0
+            }
           };
-        })
-      );
-      setFacultySummaryList(summaries);
-    } else {
-      // Fetch personal faculty summary
-      // We need to match the current user email/id to a faculty profile. In mock data f1 corresponds to Dr Alan Turing.
-      // If no matching faculty exists, defaults to f1
-      const facList = await facultyService.getFaculty();
-      const facObj = facList.find(f => f.user?.email === currentUser.email) || facList[0];
-      
-      if (facObj) {
-        const sum = await attendanceService.getFacultySummary(facObj.id, selectedMonth, selectedYear);
-        setPersonalSummary({
-          profile: facObj,
-          summary: sum
         });
+        setFacultySummaryList(summaries);
+      } else {
+        // Fetch personal faculty summary
+        const facList = await facultyService.getFaculty();
+        const facObj = facList.find(f => f.user?.email === currentUser.email) || facList[0];
+        
+        if (facObj) {
+          const sum = await attendanceService.getFacultySummary(facObj.id, selectedMonth, selectedYear);
+          setPersonalSummary({
+            profile: facObj,
+            summary: sum
+          });
+        }
       }
+    } catch (err) {
+      console.error('Error loading attendance summaries:', err);
     }
     setLoading(false);
   };
@@ -98,7 +107,11 @@ const AttendancePage = () => {
     // 2. Calendar active day cells
     for (let day = 1; day <= daysInMonth; day++) {
       const dateStr = `${year}-${String(month).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
-      const record = records.find(r => r.date === dateStr);
+      const record = records.find(r => {
+        if (!r.date) return false;
+        const rDateStr = typeof r.date === 'string' ? r.date.split('T')[0] : new Date(r.date).toISOString().split('T')[0];
+        return rDateStr === dateStr;
+      });
       
       let statusColor = 'bg-slate-800/30 text-slate-500 border-slate-800/40';
       if (record) {

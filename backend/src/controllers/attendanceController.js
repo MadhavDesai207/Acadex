@@ -16,16 +16,104 @@ const normalizeToUTCDate = (dateInput) => {
  */
 const markAttendance = async (req, res, next) => {
   try {
-    const { facultyId, date, status, note } = req.body;
+    const { facultyId, date, status, note, records } = req.body;
 
-    // Validate required fields
+    // Check if we are receiving a bulk update array from the frontend
+    if (records && Array.isArray(records)) {
+      if (!date) {
+        return res.status(400).json({ message: 'Missing required field: date is required.' });
+      }
+
+      const normalizedDate = normalizeToUTCDate(date);
+      if (!normalizedDate) {
+        return res.status(400).json({ message: 'Invalid date format.' });
+      }
+
+      // Future dates check
+      const today = new Date();
+      const todayUTC = new Date(Date.UTC(today.getFullYear(), today.getMonth(), today.getDate()));
+      if (normalizedDate > todayUTC) {
+        return res.status(400).json({ message: 'Attendance cannot be marked for future dates.' });
+      }
+
+      const validStatuses = ['PRESENT', 'ABSENT', 'HALF_DAY', 'ON_LEAVE'];
+      const upsertPayloads = [];
+
+      // Validate all records before database write
+      for (const rec of records) {
+        const { facultyId: recFacId, status: recStatus, note: recNote } = rec;
+        if (!recFacId || !recStatus) {
+          return res.status(400).json({ message: 'Each record must contain facultyId and status.' });
+        }
+
+        const uppercaseStatus = recStatus.toUpperCase();
+        if (!validStatuses.includes(uppercaseStatus)) {
+          return res.status(400).json({ message: `Invalid status: ${recStatus}. Must be PRESENT, ABSENT, HALF_DAY, or ON_LEAVE.` });
+        }
+
+        // Verify faculty exists
+        const faculty = await prisma.faculty.findUnique({
+          where: { id: recFacId },
+          include: { user: true }
+        });
+
+        if (!faculty) {
+          return res.status(404).json({ message: `Faculty member with ID ${recFacId} not found.` });
+        }
+
+        if (!faculty.isActive || !faculty.user.isActive) {
+          return res.status(400).json({ message: `Cannot mark attendance for inactive faculty: ${faculty.user.name}` });
+        }
+
+        upsertPayloads.push({
+          facultyId: recFacId,
+          status: uppercaseStatus,
+          note: recNote || null
+        });
+      }
+
+      // Perform transaction
+      const savedRecords = await prisma.$transaction(async (tx) => {
+        const results = [];
+        for (const payload of upsertPayloads) {
+          const resObj = await tx.facultyAttendance.upsert({
+            where: {
+              facultyId_date: {
+                facultyId: payload.facultyId,
+                date: normalizedDate
+              }
+            },
+            update: {
+              status: payload.status,
+              note: payload.note,
+              markedBy: req.user.userId
+            },
+            create: {
+              facultyId: payload.facultyId,
+              date: normalizedDate,
+              status: payload.status,
+              note: payload.note,
+              markedBy: req.user.userId
+            }
+          });
+          results.push(resObj);
+        }
+        return results;
+      });
+
+      return res.status(200).json({
+        message: 'Bulk attendance recorded successfully',
+        data: savedRecords
+      });
+    }
+
+    // --- Backwards Compatibility: Single Record ---
     if (!facultyId || !date || !status) {
       return res.status(400).json({
         message: 'Missing required fields. facultyId, date, and status are required.'
       });
     }
 
-    // Validate status value
     const validStatuses = ['PRESENT', 'ABSENT', 'HALF_DAY', 'ON_LEAVE'];
     const uppercaseStatus = status.toUpperCase();
     if (!validStatuses.includes(uppercaseStatus)) {
@@ -34,7 +122,6 @@ const markAttendance = async (req, res, next) => {
       });
     }
 
-    // Parse and normalize the date
     const normalizedDate = normalizeToUTCDate(date);
     if (!normalizedDate) {
       return res.status(400).json({
@@ -42,7 +129,6 @@ const markAttendance = async (req, res, next) => {
       });
     }
 
-    // Future dates cannot be marked
     const today = new Date();
     const todayUTC = new Date(Date.UTC(today.getFullYear(), today.getMonth(), today.getDate()));
     if (normalizedDate > todayUTC) {
@@ -51,7 +137,6 @@ const markAttendance = async (req, res, next) => {
       });
     }
 
-    // Verify faculty exists
     const faculty = await prisma.faculty.findUnique({
       where: { id: facultyId },
       include: { user: true }
@@ -69,7 +154,6 @@ const markAttendance = async (req, res, next) => {
       });
     }
 
-    // Upsert attendance record
     const attendance = await prisma.facultyAttendance.upsert({
       where: {
         facultyId_date: {
@@ -310,14 +394,21 @@ const getAttendanceSummaryService = async (facultyId, month, year) => {
 
   const effectiveDays = present + (halfDay * 0.5);
   const totalDays = records.length;
+  const totalCalendarDays = new Date(Date.UTC(parsedYear, parsedMonth, 0)).getUTCDate();
 
   return {
     totalDays,
+    totalCalendarDays,
     present,
     absent,
     halfDay,
     onLeave,
-    effectiveDays
+    daysPresent: present,
+    daysAbsent: absent,
+    halfDays: halfDay,
+    leaves: onLeave,
+    effectiveDays,
+    records
   };
 };
 
@@ -366,9 +457,139 @@ const getMonthlySummary = async (req, res, next) => {
   }
 };
 
+/**
+ * @desc    Get monthly summary for all active faculty members in bulk
+ * @route   GET /api/v1/attendance/faculty/summary-bulk
+ * @access  Private (Admin only)
+ */
+const getBulkMonthlySummary = async (req, res, next) => {
+  try {
+    const { month, year } = req.query;
+
+    if (!month || !year) {
+      return res.status(400).json({
+        message: 'Missing required query parameters: month and year are required.'
+      });
+    }
+
+    const parsedMonth = parseInt(month, 10);
+    const parsedYear = parseInt(year, 10);
+
+    if (isNaN(parsedMonth) || parsedMonth < 1 || parsedMonth > 12) {
+      return res.status(400).json({ message: 'Invalid month. Must be between 1 and 12.' });
+    }
+    if (isNaN(parsedYear) || parsedYear <= 0) {
+      return res.status(400).json({ message: 'Invalid year. Must be a positive integer.' });
+    }
+
+    // 1. Fetch all active faculty
+    const activeFaculty = await prisma.faculty.findMany({
+      where: {
+        isActive: true,
+        user: {
+          isActive: true
+        }
+      },
+      include: {
+        user: {
+          select: {
+            id: true,
+            name: true,
+            email: true
+          }
+        }
+      }
+    });
+
+    const facultyIds = activeFaculty.map(f => f.id);
+
+    // Calculate start and end date for the month in UTC
+    const startDate = new Date(Date.UTC(parsedYear, parsedMonth - 1, 1));
+    const endDate = new Date(Date.UTC(parsedYear, parsedMonth, 0, 23, 59, 59, 999));
+
+    // 2. Fetch all attendance records for these faculties in the given month range
+    const allRecords = await prisma.facultyAttendance.findMany({
+      where: {
+        facultyId: {
+          in: facultyIds
+        },
+        date: {
+          gte: startDate,
+          lte: endDate
+        }
+      }
+    });
+
+    // Group records by facultyId
+    const recordsByFaculty = {};
+    facultyIds.forEach(id => {
+      recordsByFaculty[id] = [];
+    });
+    allRecords.forEach(record => {
+      if (recordsByFaculty[record.facultyId]) {
+        recordsByFaculty[record.facultyId].push(record);
+      }
+    });
+
+    // 3. Compute summary metrics for each faculty member
+    const summaries = {};
+    const totalCalendarDays = new Date(Date.UTC(parsedYear, parsedMonth, 0)).getUTCDate();
+
+    activeFaculty.forEach(fac => {
+      const records = recordsByFaculty[fac.id] || [];
+      let present = 0;
+      let absent = 0;
+      let halfDay = 0;
+      let onLeave = 0;
+
+      records.forEach((record) => {
+        switch (record.status) {
+          case 'PRESENT':
+            present++;
+            break;
+          case 'ABSENT':
+            absent++;
+            break;
+          case 'HALF_DAY':
+            halfDay++;
+            break;
+          case 'ON_LEAVE':
+            onLeave++;
+            break;
+          default:
+            break;
+        }
+      });
+
+      const effectiveDays = present + (halfDay * 0.5);
+      const totalDays = records.length;
+
+      summaries[fac.id] = {
+        totalDays,
+        totalCalendarDays,
+        present,
+        absent,
+        halfDay,
+        onLeave,
+        daysPresent: present,
+        daysAbsent: absent,
+        halfDays: halfDay,
+        leaves: onLeave,
+        effectiveDays,
+        records
+      };
+    });
+
+    return res.status(200).json(summaries);
+  } catch (error) {
+    next(error);
+  }
+};
+
 module.exports = {
   markAttendance,
   getAttendanceList,
   getMonthlySummary,
+  getBulkMonthlySummary,
   getAttendanceSummaryService
 };

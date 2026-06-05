@@ -25,7 +25,7 @@ function App() {
         <Route 
           path="/dashboard" 
           element={
-            <ProtectedRoute>
+            <ProtectedRoute allowedRoles={['SUPER_ADMIN', 'ADMIN', 'FACULTY', 'STUDENT', 'RECEPTIONIST']}>
               <DashboardPage />
             </ProtectedRoute>
           } 
@@ -35,7 +35,7 @@ function App() {
         <Route 
           path="/students" 
           element={
-            <ProtectedRoute>
+            <ProtectedRoute allowedRoles={['SUPER_ADMIN', 'ADMIN', 'FACULTY']}>
               <StudentListPage />
             </ProtectedRoute>
           } 
@@ -45,7 +45,7 @@ function App() {
         <Route 
           path="/students/add" 
           element={
-            <ProtectedRoute>
+            <ProtectedRoute allowedRoles={['SUPER_ADMIN', 'ADMIN']}>
               <AddStudentPage />
             </ProtectedRoute>
           } 
@@ -55,7 +55,7 @@ function App() {
         <Route 
           path="/students/:id" 
           element={
-            <ProtectedRoute>
+            <ProtectedRoute allowedRoles={['SUPER_ADMIN', 'ADMIN', 'FACULTY', 'STUDENT']}>
               <StudentDetailPage />
             </ProtectedRoute>
           } 
@@ -65,7 +65,7 @@ function App() {
         <Route 
           path="/students/edit/:id" 
           element={
-            <ProtectedRoute>
+            <ProtectedRoute allowedRoles={['SUPER_ADMIN', 'ADMIN']}>
               <EditStudentPage />
             </ProtectedRoute>
           } 
@@ -75,7 +75,7 @@ function App() {
         <Route 
           path="/inquiries" 
           element={
-            <ProtectedRoute>
+            <ProtectedRoute allowedRoles={['SUPER_ADMIN', 'ADMIN', 'RECEPTIONIST']}>
               <InquiryPage />
             </ProtectedRoute>
           } 
@@ -85,7 +85,7 @@ function App() {
         <Route 
           path="/admissions" 
           element={
-            <ProtectedRoute>
+            <ProtectedRoute allowedRoles={['SUPER_ADMIN', 'ADMIN', 'RECEPTIONIST']}>
               <AdmissionPage />
             </ProtectedRoute>
           } 
@@ -95,7 +95,7 @@ function App() {
         <Route 
           path="/faculty" 
           element={
-            <ProtectedRoute>
+            <ProtectedRoute allowedRoles={['SUPER_ADMIN', 'ADMIN']}>
               <FacultyPage />
             </ProtectedRoute>
           } 
@@ -105,7 +105,7 @@ function App() {
         <Route 
           path="/attendance" 
           element={
-            <ProtectedRoute>
+            <ProtectedRoute allowedRoles={['SUPER_ADMIN', 'ADMIN', 'FACULTY']}>
               <AttendancePage />
             </ProtectedRoute>
           } 
@@ -115,7 +115,7 @@ function App() {
         <Route 
           path="/attendance/mark" 
           element={
-            <ProtectedRoute>
+            <ProtectedRoute allowedRoles={['SUPER_ADMIN', 'ADMIN']}>
               <AttendanceMarkForm />
             </ProtectedRoute>
           } 
@@ -125,7 +125,7 @@ function App() {
         <Route 
           path="/salary" 
           element={
-            <ProtectedRoute>
+            <ProtectedRoute allowedRoles={['SUPER_ADMIN', 'ADMIN', 'FACULTY']}>
               <SalaryPage />
             </ProtectedRoute>
           } 

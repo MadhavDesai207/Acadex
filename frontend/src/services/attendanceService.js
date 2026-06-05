@@ -14,6 +14,11 @@ const attendanceService = {
   getFacultySummary: async (facultyId, month, year) => {
     const response = await apiClient.get(`/attendance/faculty/${facultyId}/summary`, { params: { month, year } });
     return response.data;
+  },
+
+  getBulkFacultySummary: async (month, year) => {
+    const response = await apiClient.get('/attendance/faculty/summary-bulk', { params: { month, year } });
+    return response.data;
   }
 };
 
