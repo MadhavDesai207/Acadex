@@ -41,6 +41,11 @@ const authorize = (...roles) => {
       return res.status(401).json({ message: 'Unauthorized' });
     }
 
+    // SUPER_ADMIN has access to all routes by default
+    if (req.user.role === 'SUPER_ADMIN') {
+      return next();
+    }
+
     if (!roles.includes(req.user.role)) {
       return res.status(403).json({ message: 'Insufficient role' });
     }

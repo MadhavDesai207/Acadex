@@ -6,7 +6,10 @@ const prisma = new PrismaClient();
 async function main() {
   console.log('Start seeding...');
 
-  // Clean up existing users
+  // Clean up existing records in reverse dependency order
+  await prisma.student.deleteMany();
+  await prisma.batch.deleteMany();
+  await prisma.course.deleteMany();
   await prisma.user.deleteMany();
 
   // Hash the passwords
@@ -40,10 +43,87 @@ async function main() {
     },
   });
 
+  // Seed default courses
+  const courseCS = await prisma.course.create({
+    data: {
+      name: 'Computer Science',
+      code: 'CS',
+      durationMonths: 36,
+      fees: 5000.00,
+      isActive: true,
+    },
+  });
+
+  const courseIT = await prisma.course.create({
+    data: {
+      name: 'Information Technology',
+      code: 'IT',
+      durationMonths: 36,
+      fees: 4500.00,
+      isActive: true,
+    },
+  });
+
+  const courseBS = await prisma.course.create({
+    data: {
+      name: 'Bio-Science',
+      code: 'BS',
+      durationMonths: 24,
+      fees: 4000.00,
+      isActive: true,
+    },
+  });
+
+  // Seed default batches
+  const batchCSA = await prisma.batch.create({
+    data: {
+      name: 'Batch 2026-A',
+      courseId: courseCS.id,
+      startDate: new Date('2026-06-01'),
+      isActive: true,
+    },
+  });
+
+  const batchCSB = await prisma.batch.create({
+    data: {
+      name: 'Batch 2026-B',
+      courseId: courseCS.id,
+      startDate: new Date('2026-06-15'),
+      isActive: true,
+    },
+  });
+
+  const batchITC = await prisma.batch.create({
+    data: {
+      name: 'Batch 2026-C',
+      courseId: courseIT.id,
+      startDate: new Date('2026-06-01'),
+      isActive: true,
+    },
+  });
+
+  const batchBSD = await prisma.batch.create({
+    data: {
+      name: 'Batch 2026-D',
+      courseId: courseBS.id,
+      startDate: new Date('2026-06-01'),
+      isActive: true,
+    },
+  });
+
   console.log('Seeding completed successfully!');
   console.log('Seeded Users:');
   console.log(`- Email: ${userAccount.email} | Role: ${userAccount.role}`);
   console.log(`- Email: ${defaultAdmin.email} | Role: ${defaultAdmin.role}`);
+  console.log('Seeded Courses:');
+  console.log(`- CS (ID: ${courseCS.id})`);
+  console.log(`- IT (ID: ${courseIT.id})`);
+  console.log(`- BS (ID: ${courseBS.id})`);
+  console.log('Seeded Batches:');
+  console.log(`- ${batchCSA.name} (CS)`);
+  console.log(`- ${batchCSB.name} (CS)`);
+  console.log(`- ${batchITC.name} (IT)`);
+  console.log(`- ${batchBSD.name} (BS)`);
 }
 
 main()
