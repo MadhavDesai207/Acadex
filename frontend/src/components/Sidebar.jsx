@@ -31,7 +31,11 @@ import {
   ClipboardCheck,
   BarChart2,
   ScrollText,
-  Star
+  Star,
+  FileBarChart2,
+  PieChart,
+  TrendingUp,
+  GanttChart
 } from 'lucide-react';
 import authService from '../services/authService';
 
@@ -232,8 +236,22 @@ const Sidebar = ({ isOpen, toggleSidebar }) => {
         { label: 'Question Bank', path: '/question-bank', icon: HelpCircle, roles: ['SUPER_ADMIN', 'ADMIN', 'FACULTY'] },
         { label: 'Exams', path: '/exams', icon: BookOpen, roles: ['SUPER_ADMIN', 'ADMIN', 'FACULTY'] },
         { label: 'My Results', path: '/results', icon: Star, roles: ['STUDENT'] },
-        { label: 'Analytics', path: '/analytics/exams', icon: BarChart2, roles: ['SUPER_ADMIN', 'ADMIN', 'FACULTY'] },
-        { label: 'Performance Report', path: '/reports/performance', icon: ScrollText, roles: ['SUPER_ADMIN', 'ADMIN'] }
+        { label: 'Analytics', path: '/analytics/exams', icon: BarChart2, roles: ['SUPER_ADMIN', 'ADMIN', 'FACULTY'] }
+      ]
+    },
+    {
+      type: 'group',
+      label: 'Reports',
+      icon: FileBarChart2,
+      roles: ['SUPER_ADMIN', 'ADMIN', 'FACULTY', 'STUDENT'],
+      children: [
+        { label: 'Revenue', path: '/reports/revenue', icon: TrendingUp, roles: ['SUPER_ADMIN', 'ADMIN'] },
+        { label: 'Attendance', path: '/reports/attendance', icon: UserCheck, roles: ['SUPER_ADMIN', 'ADMIN', 'FACULTY'] },
+        { label: 'Academic', path: '/reports/academic', icon: GanttChart, roles: ['SUPER_ADMIN', 'ADMIN', 'FACULTY'] },
+        { label: 'Examination', path: '/reports/examination', icon: FlaskConical, roles: ['SUPER_ADMIN', 'ADMIN', 'FACULTY'] },
+        { label: 'Performance', path: '/reports/performance', icon: ScrollText, roles: ['SUPER_ADMIN', 'ADMIN', 'FACULTY', 'STUDENT'] },
+        { label: 'Conversion', path: '/reports/conversion', icon: PieChart, roles: ['SUPER_ADMIN', 'ADMIN'] },
+        { label: 'Due Fees', path: '/reports/due-fees', icon: AlertCircle, roles: ['SUPER_ADMIN', 'ADMIN'] }
       ]
     }
   ];

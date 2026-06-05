@@ -39,7 +39,13 @@ import ExamDetailPage from './pages/Examination/ExamDetailPage';
 import ResultEntryPage from './pages/Examination/ResultEntryPage';
 import StudentResultPage from './pages/Examination/StudentResultPage';
 import ExamAnalyticsPage from './pages/Examination/ExamAnalyticsPage';
-import PerformanceReportPage from './pages/Examination/PerformanceReportPage';
+import RevenueReportPage from './pages/Reports/RevenueReportPage';
+import AttendanceReportPage from './pages/Reports/AttendanceReportPage';
+import AcademicReportPage from './pages/Reports/AcademicReportPage';
+import ExaminationReportPage from './pages/Reports/ExaminationReportPage';
+import PerformanceReportPage from './pages/Reports/PerformanceReportPage';
+import ConversionReportPage from './pages/Reports/ConversionReportPage';
+import DueFeeReportPage from './pages/Reports/DueFeeReportPage';
 
 function App() {
   return (
@@ -410,12 +416,60 @@ function App() {
           }
         />
 
-        {/* Performance Report */}
+        {/* Reports Module */}
+        <Route
+          path="/reports/revenue"
+          element={
+            <ProtectedRoute allowedRoles={['SUPER_ADMIN', 'ADMIN']}>
+              <RevenueReportPage />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/reports/attendance"
+          element={
+            <ProtectedRoute allowedRoles={['SUPER_ADMIN', 'ADMIN', 'FACULTY']}>
+              <AttendanceReportPage />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/reports/academic"
+          element={
+            <ProtectedRoute allowedRoles={['SUPER_ADMIN', 'ADMIN', 'FACULTY']}>
+              <AcademicReportPage />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/reports/examination"
+          element={
+            <ProtectedRoute allowedRoles={['SUPER_ADMIN', 'ADMIN', 'FACULTY']}>
+              <ExaminationReportPage />
+            </ProtectedRoute>
+          }
+        />
         <Route
           path="/reports/performance"
           element={
-            <ProtectedRoute allowedRoles={['SUPER_ADMIN', 'ADMIN']}>
+            <ProtectedRoute allowedRoles={['SUPER_ADMIN', 'ADMIN', 'FACULTY', 'STUDENT']}>
               <PerformanceReportPage />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/reports/conversion"
+          element={
+            <ProtectedRoute allowedRoles={['SUPER_ADMIN', 'ADMIN']}>
+              <ConversionReportPage />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/reports/due-fees"
+          element={
+            <ProtectedRoute allowedRoles={['SUPER_ADMIN', 'ADMIN']}>
+              <DueFeeReportPage />
             </ProtectedRoute>
           }
         />
