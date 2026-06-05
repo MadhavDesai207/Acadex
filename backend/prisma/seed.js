@@ -6,7 +6,7 @@ const prisma = new PrismaClient();
 async function main() {
   console.log('Start seeding...');
 
-  // Clean up existing users (optional, but good for clean runs)
+  // Clean up existing users
   await prisma.user.deleteMany();
 
   // Hash the passwords
