@@ -10,7 +10,8 @@ import {
   History, 
   ShieldAlert, 
   CheckCircle,
-  FileText
+  FileText,
+  AlertCircle
 } from 'lucide-react';
 import DashboardLayout from '../../layouts/DashboardLayout';
 import Table from '../../components/Table';
@@ -20,6 +21,7 @@ import Select from '../../components/Select';
 import Input from '../../components/Input';
 import InquiryForm from './InquiryForm';
 import inquiryService from '../../services/inquiryService';
+import studentService from '../../services/studentService';
 
 const InquiryPage = () => {
   const navigate = useNavigate();
@@ -32,6 +34,20 @@ const InquiryPage = () => {
   // Data State
   const [inquiries, setInquiries] = useState([]);
   const [loading, setLoading] = useState(false);
+  const [courses, setCourses] = useState([]);
+
+  // Load courses lookup on mount
+  useEffect(() => {
+    const fetchCourses = async () => {
+      try {
+        const courseList = await studentService.getCourses();
+        setCourses(courseList);
+      } catch (err) {
+        console.error('Failed to load courses lookup:', err);
+      }
+    };
+    fetchCourses();
+  }, []);
 
   // Modal State
   const [isFormOpen, setIsFormOpen] = useState(false);
@@ -113,24 +129,49 @@ const InquiryPage = () => {
 
   // Status Conversion to Admissions
   const handleConvert = async (id, name) => {
-    const confirm = window.confirm(`Convert ${name} to an active admission file? This updates their status to CONVERTED.`);
+    const confirm = window.confirm(`Are you sure you want to convert ${name} to an active admission file? WARNING: This action cannot be undone, and the inquiry record will be locked.`);
     if (confirm) {
-      const res = await inquiryService.updateInquiry(id, { status: 'CONVERTED' });
-      if (res.success) {
-        setAlert({ type: 'success', message: `${name} has been converted. You can now process their enrollment details in Admissions.` });
-        loadInquiries();
-        setTimeout(() => setAlert(null), 4000);
+      try {
+        const res = await inquiryService.updateInquiry(id, { status: 'CONVERTED' });
+        if (res.success) {
+          setAlert({ type: 'success', message: `${name} has been converted. You can now process their enrollment details in Admissions.` });
+          loadInquiries();
+          setTimeout(() => setAlert(null), 4000);
+        }
+      } catch (err) {
+        setAlert({
+          type: 'error',
+          message: err.response?.data?.message || 'Failed to convert inquiry. Please check if the lead has a valid course interest selected.'
+        });
+        setTimeout(() => setAlert(null), 6000);
       }
     }
   };
 
   // Quick Status Dropdown Changes
-  const handleQuickStatusChange = async (id, status) => {
-    const res = await inquiryService.updateInquiry(id, { status });
-    if (res.success) {
-      setAlert({ type: 'success', message: 'Lead status updated successfully.' });
+  const handleQuickStatusChange = async (id, status, name) => {
+    if (status === 'CONVERTED') {
+      const confirm = window.confirm(`Are you sure you want to convert ${name} to an active admission file? WARNING: This action cannot be undone, and the inquiry record will be locked.`);
+      if (!confirm) {
+        loadInquiries();
+        return;
+      }
+    }
+
+    try {
+      const res = await inquiryService.updateInquiry(id, { status });
+      if (res.success) {
+        setAlert({ type: 'success', message: 'Lead status updated successfully.' });
+        loadInquiries();
+        setTimeout(() => setAlert(null), 3000);
+      }
+    } catch (err) {
+      setAlert({
+        type: 'error',
+        message: err.response?.data?.message || 'Failed to update lead status.'
+      });
       loadInquiries();
-      setTimeout(() => setAlert(null), 3000);
+      setTimeout(() => setAlert(null), 4000);
     }
   };
 
@@ -144,7 +185,19 @@ const InquiryPage = () => {
   const tableHeaders = [
     { key: 'name', label: 'Prospect Name', sortable: true },
     { key: 'phone', label: 'Phone' },
-    { key: 'courseInterest', label: 'Course Interest' },
+    { 
+      key: 'courseInterest', 
+      label: 'Course Interest',
+      render: (row) => {
+        if (!row.courseInterest) return '—';
+        const isUuid = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(row.courseInterest);
+        if (isUuid) {
+          const matched = courses.find(c => c.id === row.courseInterest);
+          return matched ? `${matched.name} (${matched.code})` : 'Unknown Course';
+        }
+        return row.courseInterest;
+      }
+    },
     { 
       key: 'followUpDate', 
       label: 'Follow-up Date',
@@ -179,7 +232,7 @@ const InquiryPage = () => {
         {/* Quick change status dropdown */}
         <select
           value={row.status}
-          onChange={(e) => handleQuickStatusChange(row.id, e.target.value)}
+          onChange={(e) => handleQuickStatusChange(row.id, e.target.value, row.name)}
           className="bg-bg-surfaceLight border border-slate-700 rounded px-1.5 py-0.5 text-xs text-slate-300 focus:outline-none focus:border-brand cursor-pointer"
         >
           {tabs.filter(t => t !== 'ALL').map(t => (
@@ -262,8 +315,16 @@ const InquiryPage = () => {
 
         {/* Alerts Banner */}
         {alert && (
-          <div className="flex gap-2.5 p-3 rounded-lg bg-status-success/15 border border-status-success/30 text-status-success text-sm">
-            <CheckCircle size={18} className="shrink-0 mt-0.5" />
+          <div className={`flex gap-2.5 p-3 rounded-lg border text-sm ${
+            alert.type === 'error' 
+              ? 'bg-status-danger/15 border-status-danger/30 text-status-danger' 
+              : 'bg-status-success/15 border-status-success/30 text-status-success'
+          }`}>
+            {alert.type === 'error' ? (
+              <AlertCircle size={18} className="shrink-0 mt-0.5" />
+            ) : (
+              <CheckCircle size={18} className="shrink-0 mt-0.5" />
+            )}
             <span>{alert.message}</span>
           </div>
         )}

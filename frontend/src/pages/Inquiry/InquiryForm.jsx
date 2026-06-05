@@ -3,6 +3,7 @@ import Input from '../../components/Input';
 import Select from '../../components/Select';
 import Button from '../../components/Button';
 import inquiryService from '../../services/inquiryService';
+import studentService from '../../services/studentService';
 
 const InquiryForm = ({ onSubmit, initialData = null, onClose }) => {
   const [formData, setFormData] = useState({
@@ -17,22 +18,52 @@ const InquiryForm = ({ onSubmit, initialData = null, onClose }) => {
   });
 
   const [staffList, setStaffList] = useState([]);
+  const [courses, setCourses] = useState([]);
   const [errors, setErrors] = useState({});
   const [phoneWarning, setPhoneWarning] = useState('');
   const [loading, setLoading] = useState(false);
 
-  // Load staff on mount
+  // Load staff and courses on mount
   useEffect(() => {
-    const fetchStaff = async () => {
-      const staff = await inquiryService.getStaffUsers();
-      setStaffList(staff.map(s => ({ value: s.id, label: `${s.name} (${s.role.toLowerCase()})` })));
+    const fetchDependencies = async () => {
+      try {
+        const staff = await inquiryService.getStaffUsers();
+        setStaffList(staff.map(s => ({ value: s.id, label: `${s.name} (${s.role.toLowerCase()})` })));
+
+        const courseList = await studentService.getCourses();
+        const activeCourses = courseList.filter(c => c.isActive);
+        setCourses(activeCourses.map(c => ({ value: c.id, label: `${c.name} (${c.code})` })));
+      } catch (err) {
+        console.error('Failed to load dependency data for Inquiry Form:', err);
+      }
     };
-    fetchStaff();
+    fetchDependencies();
   }, []);
 
   // Hydrate fields if editing
   useEffect(() => {
-    if (initialData) {
+    if (initialData && courses.length > 0) {
+      let resolvedCourseInterest = initialData.courseInterest || '';
+      
+      const matched = courses.find(
+        c => c.value === resolvedCourseInterest || 
+             c.label.toLowerCase().includes(resolvedCourseInterest.toLowerCase())
+      );
+      if (matched) {
+        resolvedCourseInterest = matched.value;
+      }
+
+      setFormData({
+        name: initialData.name || '',
+        phone: initialData.phone || '',
+        email: initialData.email || '',
+        courseInterest: resolvedCourseInterest,
+        source: initialData.source || 'Website',
+        assignedTo: initialData.assignedTo || '',
+        followUpDate: initialData.followUpDate ? initialData.followUpDate.split('T')[0] : '',
+        notes: initialData.notes || '',
+      });
+    } else if (initialData) {
       setFormData({
         name: initialData.name || '',
         phone: initialData.phone || '',
@@ -40,11 +71,11 @@ const InquiryForm = ({ onSubmit, initialData = null, onClose }) => {
         courseInterest: initialData.courseInterest || '',
         source: initialData.source || 'Website',
         assignedTo: initialData.assignedTo || '',
-        followUpDate: initialData.followUpDate || '',
+        followUpDate: initialData.followUpDate ? initialData.followUpDate.split('T')[0] : '',
         notes: initialData.notes || '',
       });
     }
-  }, [initialData]);
+  }, [initialData, courses]);
 
   const handleChange = (e) => {
     const { name, value } = e.target;
@@ -76,6 +107,7 @@ const InquiryForm = ({ onSubmit, initialData = null, onClose }) => {
     const newErrors = {};
     if (!formData.name.trim()) newErrors.name = 'Prospect Name is required';
     if (!formData.phone.trim()) newErrors.phone = 'Phone number is required';
+    if (!formData.courseInterest) newErrors.courseInterest = 'Please select a course of interest';
     
     if (formData.email.trim() && !/\S+@\S+\.\S+/.test(formData.email)) {
       newErrors.email = 'Please enter a valid email address';
@@ -134,12 +166,15 @@ const InquiryForm = ({ onSubmit, initialData = null, onClose }) => {
         error={errors.email}
       />
 
-      <Input
+      <Select
         label="Course Interest"
         name="courseInterest"
-        placeholder="Applied Physics or Computer Science"
+        options={courses}
         value={formData.courseInterest}
         onChange={handleChange}
+        placeholder="Select interested course"
+        error={errors.courseInterest}
+        required
       />
 
       <div className="grid grid-cols-2 gap-4">
