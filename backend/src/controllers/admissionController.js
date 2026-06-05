@@ -298,6 +298,16 @@ const updateAdmissionStatus = async (req, res, next) => {
       });
     }
 
+    // Verify reviewer user exists in database to prevent foreign key constraint violations (e.g. stale JWT token after db re-seed)
+    const reviewerExists = await prisma.user.findUnique({
+      where: { id: req.user.userId }
+    });
+    if (!reviewerExists) {
+      return res.status(401).json({
+        message: 'Reviewer user not found in the database. Please log out and log back in to refresh your session.'
+      });
+    }
+
     const updatedAdmission = await prisma.admission.update({
       where: { id },
       data: {
