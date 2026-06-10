@@ -1,7 +1,10 @@
-import React, { useState, useRef, useEffect } from 'react';
+import { useState, useRef, useEffect } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
-import { Bell, Menu, User, Settings, ShieldAlert, LogOut, ChevronDown } from 'lucide-react';
+import { Bell, Menu, User, Settings, ShieldAlert, LogOut, ChevronDown, KeyRound, CheckCircle2, Mail } from 'lucide-react';
 import authService from '../services/authService';
+import Modal from './Modal';
+import Input from './Input';
+import Button from './Button';
 
 const Navbar = ({ onToggleSidebar }) => {
   const navigate = useNavigate();
@@ -9,6 +12,78 @@ const Navbar = ({ onToggleSidebar }) => {
   const [showNotifications, setShowNotifications] = useState(false);
   const [showProfileMenu, setShowProfileMenu] = useState(false);
   const user = authService.getLocalUser() || { name: 'User', email: 'user@eduerp.com', role: 'STUDENT' };
+
+  // Quick Settings States
+  const [showQuickSettings, setShowQuickSettings] = useState(false);
+  const [currentPassword, setCurrentPassword] = useState('');
+  const [newPassword, setNewPassword] = useState('');
+  const [confirmPassword, setConfirmPassword] = useState('');
+  const [qsError, setQsError] = useState('');
+  const [qsSuccess, setQsSuccess] = useState('');
+  const [qsLoading, setQsLoading] = useState(false);
+
+  const openQuickSettings = () => {
+    setShowQuickSettings(true);
+    setShowProfileMenu(false);
+    setCurrentPassword('');
+    setNewPassword('');
+    setConfirmPassword('');
+    setQsError('');
+    setQsSuccess('');
+    setQsLoading(false);
+  };
+
+  const closeQuickSettings = () => {
+    setShowQuickSettings(false);
+    setCurrentPassword('');
+    setNewPassword('');
+    setConfirmPassword('');
+    setQsError('');
+    setQsSuccess('');
+    setQsLoading(false);
+  };
+
+  const handlePasswordChange = async (e) => {
+    e.preventDefault();
+    setQsError('');
+    setQsSuccess('');
+
+    if (!currentPassword || !newPassword || !confirmPassword) {
+      setQsError('All password fields are required.');
+      return;
+    }
+
+    if (newPassword.length < 8) {
+      setQsError('New password must be at least 8 characters long.');
+      return;
+    }
+
+    if (newPassword === currentPassword) {
+      setQsError('New password must be different from your current password.');
+      return;
+    }
+
+    if (newPassword !== confirmPassword) {
+      setQsError('New passwords do not match.');
+      return;
+    }
+
+    setQsLoading(true);
+    try {
+      await authService.changePassword(currentPassword, newPassword);
+      setQsSuccess('Password updated successfully!');
+      setCurrentPassword('');
+      setNewPassword('');
+      setConfirmPassword('');
+    } catch (err) {
+      setQsError(
+        err.response?.data?.message || 
+        'Failed to update password. Please verify your current password.'
+      );
+    } finally {
+      setQsLoading(false);
+    }
+  };
 
   const notifRef = useRef(null);
   const profileRef = useRef(null);
@@ -158,7 +233,7 @@ const Navbar = ({ onToggleSidebar }) => {
                     <span>My Profile</span>
                   </button>
                   <button 
-                    onClick={() => navigate('/dashboard')} // Redirects to same path or handles password modal
+                    onClick={openQuickSettings}
                     className="flex items-center gap-2.5 w-full px-4 py-2 text-slate-300 hover:bg-slate-800 hover:text-white text-left transition-colors"
                   >
                     <Settings size={16} />
@@ -182,6 +257,94 @@ const Navbar = ({ onToggleSidebar }) => {
         </div>
 
       </div>
+
+      {/* Quick Settings Modal */}
+      <Modal isOpen={showQuickSettings} onClose={closeQuickSettings} title="Quick Settings">
+        <div className="flex flex-col gap-6">
+          {/* Profile Details Card */}
+          <div className="p-4 rounded-xl bg-slate-800/40 border border-slate-700/40 flex flex-col gap-4">
+            <div className="flex items-center gap-3">
+              <div className="w-12 h-12 rounded-full bg-brand/20 border border-brand/40 flex items-center justify-center text-brand-light font-bold text-lg">
+                {user.name.split(' ').map(n => n[0]).join('').toUpperCase().substring(0, 2)}
+              </div>
+              <div>
+                <h4 className="text-sm font-bold text-white flex items-center gap-1.5">
+                  {user.name}
+                </h4>
+                <span className="text-[10px] px-2 py-0.5 rounded-full bg-brand/20 text-brand-light font-bold border border-brand/10 uppercase mt-1 inline-block">
+                  {user.role}
+                </span>
+              </div>
+            </div>
+            
+            <div className="h-px bg-slate-700/40" />
+
+            <div className="grid grid-cols-1 gap-2 text-xs text-slate-300">
+              <div className="flex items-center gap-2">
+                <Mail size={14} className="text-slate-500" />
+                <span className="truncate">{user.email}</span>
+              </div>
+            </div>
+          </div>
+
+          {/* Change Password Form */}
+          <div>
+            <h4 className="text-sm font-bold text-white mb-3">Update Password</h4>
+            <form onSubmit={handlePasswordChange} className="flex flex-col gap-4">
+              <Input
+                label="Current Password"
+                name="currentPassword"
+                type="password"
+                placeholder="••••••••"
+                value={currentPassword}
+                onChange={(e) => setCurrentPassword(e.target.value)}
+                icon={KeyRound}
+                required
+              />
+
+              <Input
+                label="New Password"
+                name="newPassword"
+                type="password"
+                placeholder="••••••••"
+                value={newPassword}
+                onChange={(e) => setNewPassword(e.target.value)}
+                icon={KeyRound}
+                required
+              />
+
+              <Input
+                label="Confirm New Password"
+                name="confirmPassword"
+                type="password"
+                placeholder="••••••••"
+                value={confirmPassword}
+                onChange={(e) => setConfirmPassword(e.target.value)}
+                icon={KeyRound}
+                required
+              />
+
+              {qsError && (
+                <div className="flex gap-2 p-2.5 rounded bg-status-danger/10 border border-status-danger/20 text-status-danger text-xs">
+                  <ShieldAlert size={14} className="shrink-0 mt-0.5" />
+                  <span>{qsError}</span>
+                </div>
+              )}
+
+              {qsSuccess && (
+                <div className="flex gap-2 p-2.5 rounded bg-status-success/10 border border-status-success/20 text-status-success text-xs">
+                  <CheckCircle2 size={14} className="shrink-0 mt-0.5" />
+                  <span>{qsSuccess}</span>
+                </div>
+              )}
+
+              <Button type="submit" loading={qsLoading} className="w-full mt-2">
+                Save Password
+              </Button>
+            </form>
+          </div>
+        </div>
+      </Modal>
     </nav>
   );
 };
