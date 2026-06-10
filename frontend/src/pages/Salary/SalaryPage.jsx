@@ -143,87 +143,127 @@ const SalaryPage = () => {
     if (!slipRecord) return;
     const printWindow = window.open('', '_blank');
     printWindow.document.write(`
+      <!DOCTYPE html>
       <html>
         <head>
-          <title>Payslip - \${slipRecord.faculty?.user?.name || 'N/A'}</title>
+          <meta charset="utf-8" />
+          <title>Payslip — \${slipRecord.faculty?.user?.name || 'N/A'}</title>
           <style>
-            body { font-family: 'Inter', sans-serif; padding: 40px; color: #333; }
-            .header { text-align: center; margin-bottom: 30px; }
-            .header h1 { margin: 0; font-size: 24px; color: #1e293b; }
-            .header p { margin: 5px 0 0; color: #64748b; font-size: 14px; }
-            .details-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; margin-bottom: 40px; border-bottom: 2px solid #e2e8f0; padding-bottom: 20px; }
-            .details-col div { margin-bottom: 8px; font-size: 14px; }
-            .label { color: #64748b; font-weight: 500; }
+            *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+            @page { size: A4 portrait; margin: 18mm 20mm; }
+            body { font-family: Arial, Helvetica, sans-serif; font-size: 13px; color: #1e293b; background: #fff; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+            /* ── Branding header ── */
+            .page-header { display: flex; justify-content: space-between; align-items: flex-start; border-bottom: 3px solid #4f46e5; padding-bottom: 14px; margin-bottom: 22px; }
+            .org-name { font-size: 20px; font-weight: 800; color: #4f46e5; letter-spacing: -0.5px; }
+            .org-sub { font-size: 11px; color: #64748b; margin-top: 3px; }
+            .slip-title { text-align: right; }
+            .slip-title h2 { font-size: 15px; font-weight: 700; color: #1e293b; }
+            .slip-title p { font-size: 11px; color: #64748b; margin-top: 2px; }
+            /* ── Employee details grid ── */
+            .details-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 6px 24px; margin-bottom: 22px; padding: 14px 16px; background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 6px; page-break-inside: avoid; }
+            .detail-row { display: flex; gap: 6px; font-size: 12.5px; padding: 3px 0; }
+            .label { color: #64748b; min-width: 130px; flex-shrink: 0; }
             .value { font-weight: 600; color: #0f172a; }
-            .ledger-table { width: 100%; border-collapse: collapse; margin-bottom: 40px; }
-            .ledger-table th { background-color: #f8fafc; border-bottom: 2px solid #e2e8f0; padding: 12px; text-align: left; font-size: 12px; font-weight: 700; color: #64748b; }
-            .ledger-table td { padding: 12px; border-bottom: 1px solid #f1f5f9; font-size: 14px; }
-            .ledger-table tr.total-row td { font-weight: bold; font-size: 16px; border-top: 2px solid #e2e8f0; border-bottom: none; }
-            .footer { margin-top: 60px; font-size: 12px; text-align: center; color: #94a3b8; }
-            .signatures { display: flex; justify-content: space-between; margin-top: 60px; }
-            .sig-line { width: 200px; border-top: 1px solid #cbd5e1; text-align: center; padding-top: 8px; font-size: 13px; color: #64748b; }
+            /* ── Earnings table ── */
+            .section-title { font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.6px; color: #64748b; margin-bottom: 8px; }
+            .ledger-table { width: 100%; border-collapse: collapse; margin-bottom: 22px; page-break-inside: avoid; }
+            .ledger-table thead tr { background: #4f46e5; }
+            .ledger-table th { padding: 9px 12px; text-align: left; font-size: 11px; font-weight: 700; color: #fff; text-transform: uppercase; letter-spacing: 0.5px; }
+            .ledger-table th:last-child { text-align: right; }
+            .ledger-table td { padding: 10px 12px; border-bottom: 1px solid #f1f5f9; font-size: 13px; vertical-align: middle; }
+            .ledger-table td:last-child { text-align: right; }
+            .ledger-table tr:last-child td { border-bottom: none; }
+            .ledger-table tr.total-row { background: #f0fdf4; }
+            .ledger-table tr.total-row td { font-weight: 700; font-size: 15px; border-top: 2px solid #d1fae5; color: #15803d; }
+            .credit { color: #16a34a; }
+            .debit { color: #dc2626; }
+            /* ── Remarks ── */
+            .remarks { font-size: 12px; color: #64748b; padding: 10px 14px; background: #fffbeb; border: 1px solid #fde68a; border-radius: 5px; margin-bottom: 32px; page-break-inside: avoid; }
+            .remarks strong { color: #92400e; }
+            /* ── Signatures ── */
+            .signatures { display: flex; justify-content: space-between; margin-top: 40px; page-break-inside: avoid; }
+            .sig-block { width: 44%; }
+            .sig-line { border-top: 1.5px solid #94a3b8; padding-top: 8px; font-size: 12px; color: #475569; text-align: center; }
+            .sig-name { font-size: 11px; color: #94a3b8; margin-top: 3px; text-align: center; }
+            /* ── Footer ── */
+            .page-footer { margin-top: 36px; border-top: 1px solid #e2e8f0; padding-top: 10px; font-size: 10.5px; color: #94a3b8; text-align: center; }
           </style>
         </head>
         <body>
-          <div class="header">
-            <h1>ACADEX EDUCATION ERP</h1>
-            <p>Salary Disbursement Slip</p>
+          <div class="page-header">
+            <div>
+              <div class="org-name">Acadex ERP</div>
+              <div class="org-sub">Human Resources · Payroll Management</div>
+            </div>
+            <div class="slip-title">
+              <h2>Salary Disbursement Slip</h2>
+              <p>Pay Period: \${months.find(m => Number(m.value) === slipRecord.month)?.label || ''} \${slipRecord.year}</p>
+            </div>
           </div>
+
           <div class="details-grid">
-            <div class="details-col">
-              <div><span class="label">Employee Name:</span> <span class="value">\${slipRecord.faculty?.user?.name || 'N/A'}</span></div>
-              <div><span class="label">Employee Code:</span> <span class="value">\${slipRecord.faculty?.employeeCode || 'N/A'}</span></div>
-              <div><span class="label">Designation:</span> <span class="value">\${slipRecord.faculty?.designation || 'N/A'}</span></div>
-            </div>
-            <div class="details-col">
-              <div><span class="label">Pay Period:</span> <span class="value">\${months.find(m => Number(m.value) === slipRecord.month)?.label} \${slipRecord.year}</span></div>
-              <div><span class="label">Bank Account:</span> <span class="value">\${slipRecord.faculty?.bankAccount || 'N/A'}</span></div>
-              <div><span class="label">Disbursement Date:</span> <span class="value">\${slipRecord.paidAt ? new Date(slipRecord.paidAt).toLocaleDateString() : 'N/A'}</span></div>
-            </div>
+            <div class="detail-row"><span class="label">Employee Name</span><span class="value">\${slipRecord.faculty?.user?.name || 'N/A'}</span></div>
+            <div class="detail-row"><span class="label">Pay Period</span><span class="value">\${months.find(m => Number(m.value) === slipRecord.month)?.label} \${slipRecord.year}</span></div>
+            <div class="detail-row"><span class="label">Employee Code</span><span class="value">\${slipRecord.faculty?.employeeCode || 'N/A'}</span></div>
+            <div class="detail-row"><span class="label">Disbursement Date</span><span class="value">\${slipRecord.paidAt ? new Date(slipRecord.paidAt).toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric' }) : 'N/A'}</span></div>
+            <div class="detail-row"><span class="label">Designation</span><span class="value">\${slipRecord.faculty?.designation || 'N/A'}</span></div>
+            <div class="detail-row"><span class="label">Bank Account</span><span class="value">\${slipRecord.faculty?.bankAccount || 'N/A'}</span></div>
+            <div class="detail-row"><span class="label">Department</span><span class="value">\${slipRecord.faculty?.department || 'N/A'}</span></div>
+            <div class="detail-row"><span class="label">IFSC Code</span><span class="value">\${slipRecord.faculty?.ifscCode || 'N/A'}</span></div>
           </div>
+
+          <p class="section-title">Earnings &amp; Deductions</p>
           <table class="ledger-table">
             <thead>
               <tr>
                 <th>Description</th>
-                <th style="text-align: right;">Amount</th>
+                <th>Amount (₹)</th>
               </tr>
             </thead>
             <tbody>
               <tr>
                 <td>Base Salary</td>
-                <td style="text-align: right;">$\${slipRecord.baseSalary.toLocaleString(undefined, { minimumFractionDigits: 2 })}</td>
+                <td>₹\${Number(slipRecord.baseSalary).toLocaleString('en-IN', { minimumFractionDigits: 2 })}</td>
               </tr>
               <tr>
                 <td>Bonus / Incentives</td>
-                <td style="text-align: right; color: #16a34a;">+$\${slipRecord.bonus.toLocaleString(undefined, { minimumFractionDigits: 2 })}</td>
+                <td class="credit">+ ₹\${Number(slipRecord.bonus).toLocaleString('en-IN', { minimumFractionDigits: 2 })}</td>
               </tr>
               <tr>
-                <td>Deductions (Unpaid leaves/absences)</td>
-                <td style="text-align: right; color: #dc2626;">-$\${slipRecord.deductions.toLocaleString(undefined, { minimumFractionDigits: 2 })}</td>
+                <td>Deductions (Unpaid leaves / Absences)</td>
+                <td class="debit">− ₹\${Number(slipRecord.deductions).toLocaleString('en-IN', { minimumFractionDigits: 2 })}</td>
               </tr>
               <tr class="total-row">
-                <td>Net Salary (Disbursed)</td>
-                <td style="text-align: right;">$\${slipRecord.netSalary.toLocaleString(undefined, { minimumFractionDigits: 2 })}</td>
+                <td>Net Salary Disbursed</td>
+                <td>₹\${Number(slipRecord.netSalary).toLocaleString('en-IN', { minimumFractionDigits: 2 })}</td>
               </tr>
             </tbody>
           </table>
-          <div>
-            <p style="font-size: 13px; color: #64748b; margin-top: 20px;">
-              <strong>Remarks:</strong> \${slipRecord.remarks || 'Salary paid successfully.'}
-            </p>
+
+          <div class="remarks">
+            <strong>Remarks:</strong> \${slipRecord.remarks || 'Salary disbursed as per approved payroll cycle.'}
           </div>
+
           <div class="signatures">
-            <div class="sig-line">Beneficiary Signature</div>
-            <div class="sig-line">Authorized Signatory<br/><small>Paid by: \${slipRecord.payer?.name || 'Administrator'}</small></div>
+            <div class="sig-block">
+              <div class="sig-line">Beneficiary Signature</div>
+              <div class="sig-name">\${slipRecord.faculty?.user?.name || ''}</div>
+            </div>
+            <div class="sig-block">
+              <div class="sig-line">Authorised Signatory</div>
+              <div class="sig-name">Paid by: \${slipRecord.payer?.name || 'Administrator'}</div>
+            </div>
           </div>
-          <div class="footer">
-            <p>This is a computer-generated document and does not require a physical stamp.</p>
+
+          <div class="page-footer">
+            <p>This is a system-generated document. No physical stamp required. · Acadex Education ERP</p>
           </div>
+
           <script>
             window.onload = function() {
               window.print();
-              window.close();
-            }
+              window.addEventListener('afterprint', function() { window.close(); });
+            };
           </script>
         </body>
       </html>
@@ -248,24 +288,24 @@ const SalaryPage = () => {
     { 
       key: 'baseSalary', 
       label: 'Base Salary',
-      render: (row) => `$${row.baseSalary.toLocaleString(undefined, { minimumFractionDigits: 2 })}`
+      render: (row) => `₹${row.baseSalary.toLocaleString(undefined, { minimumFractionDigits: 2 })}`
     },
     { 
       key: 'deductions', 
       label: 'Deductions',
-      render: (row) => `$${row.deductions.toLocaleString(undefined, { minimumFractionDigits: 2 })}`
+      render: (row) => `₹${row.deductions.toLocaleString(undefined, { minimumFractionDigits: 2 })}`
     },
     { 
       key: 'bonus', 
       label: 'Bonus',
-      render: (row) => `$${row.bonus.toLocaleString(undefined, { minimumFractionDigits: 2 })}`
+      render: (row) => `₹${row.bonus.toLocaleString(undefined, { minimumFractionDigits: 2 })}`
     },
     { 
       key: 'netSalary', 
       label: 'Net Salary',
       render: (row) => (
         <span className="font-bold text-white">
-          ${row.netSalary.toLocaleString(undefined, { minimumFractionDigits: 2 })}
+          ₹{row.netSalary.toLocaleString(undefined, { minimumFractionDigits: 2 })}
         </span>
       )
     },
@@ -294,24 +334,24 @@ const SalaryPage = () => {
     { 
       key: 'baseSalary', 
       label: 'Base Salary',
-      render: (row) => `$${row.baseSalary.toLocaleString(undefined, { minimumFractionDigits: 2 })}`
+      render: (row) => `₹${row.baseSalary.toLocaleString(undefined, { minimumFractionDigits: 2 })}`
     },
     { 
       key: 'deductions', 
       label: 'Deductions',
-      render: (row) => `$${row.deductions.toLocaleString(undefined, { minimumFractionDigits: 2 })}`
+      render: (row) => `₹${row.deductions.toLocaleString(undefined, { minimumFractionDigits: 2 })}`
     },
     { 
       key: 'bonus', 
       label: 'Bonus',
-      render: (row) => `$${row.bonus.toLocaleString(undefined, { minimumFractionDigits: 2 })}`
+      render: (row) => `₹${row.bonus.toLocaleString(undefined, { minimumFractionDigits: 2 })}`
     },
     { 
       key: 'netSalary', 
       label: 'Net Salary',
       render: (row) => (
         <span className="font-bold text-brand-light">
-          ${row.netSalary.toLocaleString(undefined, { minimumFractionDigits: 2 })}
+          ₹{row.netSalary.toLocaleString(undefined, { minimumFractionDigits: 2 })}
         </span>
       )
     },
@@ -549,19 +589,19 @@ const SalaryPage = () => {
               <div className="p-3 rounded-lg bg-bg-deep/40 border border-slate-700/30 grid grid-cols-2 gap-3 text-xs">
                 <div>
                   <span className="text-[10px] text-slate-500 block">Base Salary</span>
-                  <span className="font-semibold text-slate-300">${adjustRecord.baseSalary.toLocaleString()}</span>
+                  <span className="font-semibold text-slate-300">₹{adjustRecord.baseSalary.toLocaleString()}</span>
                 </div>
                 <div>
                   <span className="text-[10px] text-slate-500 block">Realtime Net Salary Preview</span>
                   <span className="font-bold text-white text-sm">
-                    ${(adjustRecord.baseSalary - parseFloat(adjustDeductions || 0) + parseFloat(adjustBonus || 0)).toLocaleString(undefined, { minimumFractionDigits: 2 })}
+                    ₹{(adjustRecord.baseSalary - parseFloat(adjustDeductions || 0) + parseFloat(adjustBonus || 0)).toLocaleString(undefined, { minimumFractionDigits: 2 })}
                   </span>
                 </div>
               </div>
 
               <div className="grid grid-cols-2 gap-4">
                 <Input
-                  label="Deductions ($)"
+                  label="Deductions (₹)"
                   name="adjustDeductions"
                   type="number"
                   placeholder="0.00"
@@ -570,7 +610,7 @@ const SalaryPage = () => {
                   required
                 />
                 <Input
-                  label="Bonus ($)"
+                  label="Bonus (₹)"
                   name="adjustBonus"
                   type="number"
                   placeholder="0.00"
@@ -626,7 +666,7 @@ const SalaryPage = () => {
             <div className="flex flex-col gap-4 text-sm text-slate-300">
               <div className="p-3.5 rounded-lg bg-brand/10 border border-brand/20 flex flex-col gap-1.5">
                 <span className="text-[10px] text-slate-500 font-semibold uppercase tracking-wider block">Payout Amount</span>
-                <span className="text-2xl font-black text-white font-heading">${payRecord.netSalary.toLocaleString(undefined, { minimumFractionDigits: 2 })}</span>
+                <span className="text-2xl font-black text-white font-heading">₹{payRecord.netSalary.toLocaleString(undefined, { minimumFractionDigits: 2 })}</span>
                 <span className="text-xs text-slate-400 mt-1">Beneficiary: {payRecord.faculty?.user?.name} ({payRecord.faculty?.employeeCode})</span>
               </div>
 
@@ -716,24 +756,24 @@ const SalaryPage = () => {
                 <div className="border border-slate-800/80 rounded-lg overflow-hidden text-xs mt-2">
                   <div className="grid grid-cols-2 bg-slate-900/40 p-2 font-bold border-b border-slate-800 text-slate-400">
                     <span>Description</span>
-                    <span className="text-right">Amount ($)</span>
+                    <span className="text-right">Amount (₹)</span>
                   </div>
                   <div className="divide-y divide-slate-800/50">
                     <div className="grid grid-cols-2 p-2">
                       <span className="text-slate-400">Base Salary</span>
-                      <span className="text-right font-medium text-slate-200">${slipRecord.baseSalary.toLocaleString(undefined, { minimumFractionDigits: 2 })}</span>
+                      <span className="text-right font-medium text-slate-200">₹{slipRecord.baseSalary.toLocaleString(undefined, { minimumFractionDigits: 2 })}</span>
                     </div>
                     <div className="grid grid-cols-2 p-2">
                       <span className="text-slate-400">Bonus & Allowances</span>
-                      <span className="text-right font-medium text-status-success">+${slipRecord.bonus.toLocaleString(undefined, { minimumFractionDigits: 2 })}</span>
+                      <span className="text-right font-medium text-status-success">+₹{slipRecord.bonus.toLocaleString(undefined, { minimumFractionDigits: 2 })}</span>
                     </div>
                     <div className="grid grid-cols-2 p-2">
                       <span className="text-slate-400">Deductions (Unpaid absence)</span>
-                      <span className="text-right font-medium text-status-danger">-${slipRecord.deductions.toLocaleString(undefined, { minimumFractionDigits: 2 })}</span>
+                      <span className="text-right font-medium text-status-danger">-₹{slipRecord.deductions.toLocaleString(undefined, { minimumFractionDigits: 2 })}</span>
                     </div>
                     <div className="grid grid-cols-2 p-2.5 font-extrabold bg-slate-900/20 border-t border-slate-700">
                       <span className="text-white text-sm">Net Pay Disbursed</span>
-                      <span className="text-right text-brand-light text-sm">${slipRecord.netSalary.toLocaleString(undefined, { minimumFractionDigits: 2 })}</span>
+                      <span className="text-right text-brand-light text-sm">₹{slipRecord.netSalary.toLocaleString(undefined, { minimumFractionDigits: 2 })}</span>
                     </div>
                   </div>
                 </div>

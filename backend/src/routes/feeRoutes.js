@@ -6,6 +6,7 @@ const {
   getFeeStructureById,
   updateFeeStructure,
   deleteFeeStructure,
+  toggleFeeStructureStatus,
   addInstallment,
   updateInstallment,
   deleteInstallment,
@@ -34,6 +35,7 @@ router.get('/structures', authenticate, adminOnly, getFeeStructures);
 router.post('/structures', authenticate, adminOnly, createFeeStructure);
 router.get('/structures/:id', authenticate, adminOnly, getFeeStructureById);
 router.put('/structures/:id', authenticate, adminOnly, updateFeeStructure);
+router.patch('/structures/:id/toggle-status', authenticate, adminOnly, toggleFeeStructureStatus);
 router.delete('/structures/:id', authenticate, adminOnly, deleteFeeStructure);
 
 // Installments

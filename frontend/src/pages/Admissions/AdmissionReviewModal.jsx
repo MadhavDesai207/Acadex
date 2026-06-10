@@ -71,6 +71,14 @@ const AdmissionReviewModal = ({ admission, onClose, onRefresh }) => {
       setError('Please fill out all student and guardian fields.');
       return;
     }
+    if (!/\S+@\S+\.\S+/.test(email)) {
+      setError('Please enter a valid email address.');
+      return;
+    }
+    if (!/^\+?[\d\s\-().]{7,15}$/.test(parentPhone)) {
+      setError('Please enter a valid guardian phone number.');
+      return;
+    }
 
     setLoading(true);
     try {
@@ -161,14 +169,16 @@ const AdmissionReviewModal = ({ admission, onClose, onRefresh }) => {
           </div>
 
           <div className="flex flex-wrap gap-2.5 justify-end mt-1">
-            <Button
-              variant="outline"
-              onClick={() => handleReviewStatus('UNDER_REVIEW')}
-              disabled={loading}
-              className="px-3"
-            >
-              Mark Under Review
-            </Button>
+            {admission.status !== 'UNDER_REVIEW' && (
+              <Button
+                variant="outline"
+                onClick={() => handleReviewStatus('UNDER_REVIEW')}
+                disabled={loading}
+                className="px-3"
+              >
+                Mark Under Review
+              </Button>
+            )}
             <Button
               variant="danger"
               onClick={() => handleReviewStatus('REJECTED')}
@@ -303,7 +313,7 @@ const AdmissionReviewModal = ({ admission, onClose, onRefresh }) => {
             <div>
               <p className="font-bold text-slate-300">Audited Application Log</p>
               <p className="text-slate-400 mt-1">
-                <span className="font-semibold">Reviewer:</span> {admission.reviewer || 'Active Administrator'}
+                <span className="font-semibold">Reviewer:</span> {admission.reviewer?.name || 'Active Administrator'}
               </p>
               {admission.remarks && (
                 <p className="text-slate-400 mt-1">

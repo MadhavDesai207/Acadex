@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { Search, UserCheck, Receipt, Plus, CheckCircle, AlertCircle } from 'lucide-react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useSearchParams } from 'react-router-dom';
 import DashboardLayout from '../../layouts/DashboardLayout';
 import Modal from '../../components/Modal';
 import Button from '../../components/Button';
@@ -128,13 +128,17 @@ const AssignFeeModal = ({ studentId, onClose, onSuccess }) => {
 
 const StudentFeePage = () => {
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
   const currentUser = authService.getLocalUser() || {};
   const isAdmin = ['ADMIN', 'SUPER_ADMIN'].includes(currentUser.role);
+
+  const fromDueFees = searchParams.get('fromDueFees') === 'true';
 
   const [studentSearch, setStudentSearch] = useState('');
   const [students, setStudents] = useState([]);
   const [selectedStudent, setSelectedStudent] = useState(null);
   const [studentFees, setStudentFees] = useState([]);
+  const [overdueItems, setOverdueItems] = useState([]);
   const [loading, setLoading] = useState(false);
   const [searching, setSearching] = useState(false);
   const [isAssignOpen, setIsAssignOpen] = useState(false);
@@ -144,6 +148,19 @@ const StudentFeePage = () => {
     setAlert({ type, message });
     setTimeout(() => setAlert(null), 3500);
   };
+
+  // Auto-load student when navigated with ?studentId=
+  useEffect(() => {
+    const sid = searchParams.get('studentId');
+    if (!sid) return;
+    setLoading(true);
+    apiClient.get(`/students/${sid}`)
+      .then((r) => {
+        const s = r.data.data || r.data;
+        if (s?.id) loadStudentFees(s);
+      })
+      .catch(() => setLoading(false));
+  }, []);
 
   const searchStudents = async () => {
     if (!studentSearch.trim()) return;
@@ -163,17 +180,22 @@ const StudentFeePage = () => {
     setSelectedStudent(student);
     setLoading(true);
     try {
-      const res = await feeService.getStudentFee(student.id);
-      setStudentFees(res.data || []);
+      const [feeRes, dueRes] = await Promise.all([
+        feeService.getStudentFee(student.id),
+        feeService.getStudentDueFees(student.id)
+      ]);
+      setStudentFees(feeRes.data || []);
+      setOverdueItems(dueRes.data || []);
     } catch {
       setStudentFees([]);
+      setOverdueItems([]);
     } finally {
       setLoading(false);
     }
   };
 
   const totalPayments = (payments) =>
-    payments.reduce((s, p) => s + parseFloat(p.amountPaid), 0);
+    payments.reduce((s, p) => s + parseFloat(p.amountPaid) + parseFloat(p.creditApplied || 0), 0);
 
   return (
     <DashboardLayout>
@@ -245,11 +267,47 @@ const StudentFeePage = () => {
               )}
             </div>
 
+            {/* Overdue installments view (from Due Fees) */}
+            {fromDueFees && !loading && (
+              <div className="glass-card flex flex-col gap-3">
+                <p className="text-sm font-bold text-status-danger flex items-center gap-2">
+                  <AlertCircle size={15} /> Overdue Installments
+                </p>
+                {overdueItems.length === 0 ? (
+                  <p className="text-sm text-slate-500">No overdue installments found.</p>
+                ) : (
+                  overdueItems.map((item) => {
+                    const paymentStatus = item.amountPaid >= item.amount - 0.001
+                      ? { label: 'Paid', cls: 'text-status-success bg-status-success/15 border-status-success/30' }
+                      : item.amountPaid > 0
+                      ? { label: 'Partial', cls: 'text-yellow-400 bg-yellow-400/10 border-yellow-400/30' }
+                      : { label: 'Unpaid', cls: 'text-status-danger bg-status-danger/15 border-status-danger/30' };
+                    return (
+                      <div key={item.installmentId} className="flex items-center justify-between px-4 py-3 rounded-xl bg-bg-deep/40 border border-slate-700/40">
+                        <div>
+                          <p className="text-sm font-semibold text-white">{item.label}</p>
+                          <p className="text-xs text-slate-400">{item.feeStructureName} · Due: {new Date(item.dueDate).toLocaleDateString()}</p>
+                        </div>
+                        <div className="flex items-center gap-3 shrink-0">
+                          <span className={`text-xs font-semibold px-2 py-0.5 rounded-full border ${paymentStatus.cls}`}>{paymentStatus.label}</span>
+                          <span className="text-xs font-semibold px-2 py-0.5 rounded-full border text-status-danger bg-status-danger/15 border-status-danger/30">Overdue</span>
+                          <div className="text-right">
+                            <p className="text-xs text-slate-400">Outstanding</p>
+                            <p className="text-sm font-bold text-status-danger">{new Intl.NumberFormat('en-IN', { style: 'currency', currency: 'INR', maximumFractionDigits: 0 }).format(item.amountDue)}</p>
+                          </div>
+                        </div>
+                      </div>
+                    );
+                  })
+                )}
+              </div>
+            )}
+
             {loading ? (
               <p className="text-sm text-slate-400 text-center py-6">Loading fee records...</p>
-            ) : studentFees.length === 0 ? (
+            ) : !fromDueFees && studentFees.length === 0 ? (
               <p className="text-sm text-slate-500 text-center py-6">No fee records assigned.</p>
-            ) : (
+            ) : !fromDueFees && (
               studentFees.map((sf) => {
                 const paid = totalPayments(sf.payments);
                 const balance = Math.max(0, parseFloat(sf.netPayable) - paid);
@@ -288,6 +346,8 @@ const StudentFeePage = () => {
                         <InstallmentTimeline
                           installments={sf.feeStructure.installments}
                           payments={sf.payments}
+                          netPayable={parseFloat(sf.netPayable)}
+                          totalAmount={parseFloat(sf.feeStructure.totalAmount)}
                         />
                       </div>
                     )}

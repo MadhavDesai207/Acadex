@@ -4,93 +4,78 @@ import DashboardLayout from '../../layouts/DashboardLayout';
 import Table from '../../components/Table';
 import Button from '../../components/Button';
 import Modal from '../../components/Modal';
-import Select from '../../components/Select';
-import SubjectForm from './SubjectForm';
-import subjectService from '../../services/subjectService';
+import DepartmentForm from './DepartmentForm';
+import departmentService from '../../services/departmentService';
 import authService from '../../services/authService';
-import apiClient from '../../services/apiClient';
 
-const SubjectPage = () => {
+const DepartmentPage = () => {
   const currentUser = authService.getLocalUser() || {};
   const isAdmin = ['ADMIN', 'SUPER_ADMIN'].includes(currentUser.role);
 
-  const [subjects, setSubjects] = useState([]);
-  const [courses, setCourses] = useState([]);
+  const [departments, setDepartments] = useState([]);
   const [search, setSearch] = useState('');
-  const [filterCourse, setFilterCourse] = useState('');
   const [loading, setLoading] = useState(false);
   const [isFormOpen, setIsFormOpen] = useState(false);
-  const [editingSubject, setEditingSubject] = useState(null);
+  const [editingDepartment, setEditingDepartment] = useState(null);
   const [alert, setAlert] = useState(null);
   const [currentPage, setCurrentPage] = useState(1);
   const limit = 10;
 
-  useEffect(() => {
-    apiClient.get('/courses').then((r) => {
-      const list = r.data.courses || r.data || [];
-      setCourses(list.filter((c) => c.isActive));
-    });
-  }, []);
-
-  const loadSubjects = async () => {
+  const loadDepartments = async () => {
     setLoading(true);
-    const params = {};
-    if (filterCourse) params.courseId = filterCourse;
-    if (search) params.search = search;
-    const data = await subjectService.getSubjects(params);
+    const data = await departmentService.getDepartments();
     const list = Array.isArray(data) ? data : [];
-    setSubjects(list);
+    const filtered = search
+      ? list.filter(
+          (d) =>
+            d.name.toLowerCase().includes(search.toLowerCase()) ||
+            d.code.toLowerCase().includes(search.toLowerCase())
+        )
+      : list;
+    setDepartments(filtered);
     setLoading(false);
   };
 
   useEffect(() => {
-    loadSubjects();
+    loadDepartments();
     setCurrentPage(1);
-  }, [search, filterCourse]);
+  }, [search]);
 
   const handleFormSubmit = async (formData) => {
-    const res = editingSubject
-      ? await subjectService.updateSubject(editingSubject.id, formData)
-      : await subjectService.createSubject(formData);
+    const res = editingDepartment
+      ? await departmentService.updateDepartment(editingDepartment.id, formData)
+      : await departmentService.createDepartment(formData);
 
     if (res.success) {
-      setAlert({ message: res.message || (editingSubject ? 'Subject updated' : 'Subject created') });
+      setAlert({ message: res.message });
       setIsFormOpen(false);
-      setEditingSubject(null);
-      loadSubjects();
+      setEditingDepartment(null);
+      loadDepartments();
       setTimeout(() => setAlert(null), 3000);
     }
   };
 
-  const handleToggle = async (subject) => {
-    if (!window.confirm(`${subject.isActive ? 'Deactivate' : 'Activate'} subject "${subject.name}"?`)) return;
-    const res = await subjectService.toggleSubjectStatus(subject.id);
+  const handleToggle = async (department) => {
+    if (!window.confirm(`${department.isActive ? 'Deactivate' : 'Activate'} department "${department.name}"?`)) return;
+    const res = await departmentService.toggleDepartmentStatus(department.id);
     if (res.success) {
-      setAlert({ message: res.message || `Subject ${subject.isActive ? 'deactivated' : 'activated'}` });
-      loadSubjects();
+      setAlert({ message: res.message });
+      loadDepartments();
       setTimeout(() => setAlert(null), 3000);
     }
   };
 
   const headers = [
     { key: 'code', label: 'Code', sortable: true },
-    { key: 'name', label: 'Subject Name', sortable: true },
-    {
-      key: 'course',
-      label: 'Course',
-      render: (row) => row.course ? `${row.course.name} (${row.course.code})` : '—'
-    },
+    { key: 'name', label: 'Department Name', sortable: true },
+    { key: 'description', label: 'Description', render: (row) => row.description || '—' },
     {
       key: 'isActive',
       label: 'Status',
       render: (row) => (
-        <span
-          className={`inline-flex px-2 py-0.5 text-xs font-bold rounded-full ${
-            row.isActive
-              ? 'bg-status-success/15 text-status-success'
-              : 'bg-status-danger/15 text-status-danger'
-          }`}
-        >
+        <span className={`inline-flex px-2 py-0.5 text-xs font-bold rounded-full ${
+          row.isActive ? 'bg-status-success/15 text-status-success' : 'bg-status-danger/15 text-status-danger'
+        }`}>
           {row.isActive ? 'Active' : 'Inactive'}
         </span>
       )
@@ -101,7 +86,7 @@ const SubjectPage = () => {
     ? (row) => (
         <div className="flex gap-2 justify-end">
           <button
-            onClick={() => { setEditingSubject(row); setIsFormOpen(true); }}
+            onClick={() => { setEditingDepartment(row); setIsFormOpen(true); }}
             className="p-1.5 rounded bg-brand/10 hover:bg-brand text-brand-light hover:text-white transition-colors"
             title="Edit"
           >
@@ -122,8 +107,8 @@ const SubjectPage = () => {
       )
     : null;
 
-  const totalPages = Math.ceil(subjects.length / limit) || 1;
-  const paginatedData = subjects.slice((currentPage - 1) * limit, currentPage * limit);
+  const totalPages = Math.ceil(departments.length / limit) || 1;
+  const paginatedData = departments.slice((currentPage - 1) * limit, currentPage * limit);
 
   return (
     <DashboardLayout>
@@ -131,20 +116,20 @@ const SubjectPage = () => {
         <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
           <div>
             <h1 className="text-2xl md:text-3xl font-extrabold tracking-tight text-white font-heading">
-              Subjects
+              Departments
             </h1>
             <p className="text-xs md:text-sm text-slate-400">
-              Manage subjects per course. Subjects are used in timetables, syllabus, materials, and assignments.
+              Manage faculty departments. These are used when registering faculty profiles.
             </p>
           </div>
           {isAdmin && (
             <Button
               variant="primary"
-              onClick={() => { setEditingSubject(null); setIsFormOpen(true); }}
+              onClick={() => { setEditingDepartment(null); setIsFormOpen(true); }}
               className="flex items-center gap-2"
             >
               <Plus size={16} />
-              <span>New Subject</span>
+              <span>New Department</span>
             </Button>
           )}
         </div>
@@ -156,8 +141,8 @@ const SubjectPage = () => {
           </div>
         )}
 
-        <div className="glass-card flex flex-col md:flex-row gap-4">
-          <div className="flex flex-col gap-1.5 flex-1">
+        <div className="glass-card max-w-md">
+          <div className="flex flex-col gap-1.5">
             <label className="text-sm font-medium text-slate-300">Search</label>
             <div className="relative flex items-center">
               <Search size={16} className="absolute left-3 text-slate-500 pointer-events-none" />
@@ -170,15 +155,6 @@ const SubjectPage = () => {
               />
             </div>
           </div>
-          <div className="flex flex-col gap-1.5 w-full md:w-56">
-            <label className="text-sm font-medium text-slate-300">Filter by Course</label>
-            <Select value={filterCourse} onChange={(e) => setFilterCourse(e.target.value)}>
-              <option value="">All courses</option>
-              {courses.map((c) => (
-                <option key={c.id} value={c.id}>{c.name}</option>
-              ))}
-            </Select>
-          </div>
         </div>
 
         <Table
@@ -186,7 +162,7 @@ const SubjectPage = () => {
           data={paginatedData}
           loading={loading}
           actions={tableActions}
-          emptyMessage="No subjects found. Create a course first, then add subjects."
+          emptyMessage="No departments found. Add one to get started."
           pagination={{
             currentPage,
             totalPages,
@@ -198,13 +174,13 @@ const SubjectPage = () => {
 
         <Modal
           isOpen={isFormOpen}
-          onClose={() => { setIsFormOpen(false); setEditingSubject(null); }}
-          title={editingSubject ? 'Edit Subject' : 'Create New Subject'}
+          onClose={() => { setIsFormOpen(false); setEditingDepartment(null); }}
+          title={editingDepartment ? 'Edit Department' : 'Create New Department'}
         >
-          <SubjectForm
+          <DepartmentForm
             onSubmit={handleFormSubmit}
-            initialData={editingSubject}
-            onClose={() => { setIsFormOpen(false); setEditingSubject(null); }}
+            initialData={editingDepartment}
+            onClose={() => { setIsFormOpen(false); setEditingDepartment(null); }}
           />
         </Modal>
       </div>
@@ -212,4 +188,4 @@ const SubjectPage = () => {
   );
 };
 
-export default SubjectPage;
+export default DepartmentPage;

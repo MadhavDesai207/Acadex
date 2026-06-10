@@ -8,7 +8,7 @@ const prisma = new PrismaClient();
  */
 const createExam = async (req, res, next) => {
   try {
-    const { title, courseId, batchId, examType, examDate, totalMarks, passingMarks } = req.body;
+    const { title, courseId, batchId, examType, examDate, totalMarks, passingMarks, questionIds } = req.body;
 
     // Validate required fields
     if (!title || !courseId || !examType || !examDate || totalMarks === undefined || passingMarks === undefined) {
@@ -111,17 +111,19 @@ const createExam = async (req, res, next) => {
         createdBy: req.user.userId
       },
       include: {
-        course: {
-          select: { id: true, name: true, code: true }
-        },
-        batch: {
-          select: { id: true, name: true }
-        },
-        creator: {
-          select: { id: true, name: true, email: true, role: true }
-        }
+        course: { select: { id: true, name: true, code: true } },
+        batch: { select: { id: true, name: true } },
+        creator: { select: { id: true, name: true, email: true, role: true } }
       }
     });
+
+    // Link questions if provided
+    if (Array.isArray(questionIds) && questionIds.length > 0) {
+      await prisma.examQuestion.createMany({
+        data: questionIds.map((qId) => ({ examId: exam.id, questionId: qId })),
+        skipDuplicates: true
+      });
+    }
 
     return res.status(201).json({
       message: 'Exam created successfully',
@@ -212,14 +214,21 @@ const getExamById = async (req, res, next) => {
     const exam = await prisma.exam.findUnique({
       where: { id },
       include: {
-        course: {
-          select: { id: true, name: true, code: true }
-        },
-        batch: {
-          select: { id: true, name: true }
-        },
-        creator: {
-          select: { id: true, name: true, email: true, role: true }
+        course: { select: { id: true, name: true, code: true } },
+        batch: { select: { id: true, name: true } },
+        creator: { select: { id: true, name: true, email: true, role: true } },
+        questions: {
+          include: {
+            question: {
+              select: {
+                id: true,
+                questionText: true,
+                marks: true,
+                difficulty: true,
+                subject: { select: { name: true } }
+              }
+            }
+          }
         }
       }
     });

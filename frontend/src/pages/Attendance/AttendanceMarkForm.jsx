@@ -4,6 +4,7 @@ import { ArrowLeft, Check, Search, Calendar, AlertCircle } from 'lucide-react';
 import DashboardLayout from '../../layouts/DashboardLayout';
 import Button from '../../components/Button';
 import Input from '../../components/Input';
+import Select from '../../components/Select';
 import facultyService from '../../services/facultyService';
 import attendanceService from '../../services/attendanceService';
 

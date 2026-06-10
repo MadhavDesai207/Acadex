@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Plus, Search, Edit2, Trash2, Eye, CheckCircle, AlertCircle } from 'lucide-react';
+import { Plus, Search, Edit2, Eye, CheckCircle, AlertCircle, ToggleLeft, ToggleRight } from 'lucide-react';
 import DashboardLayout from '../../layouts/DashboardLayout';
 import Table from '../../components/Table';
 import Button from '../../components/Button';
@@ -89,14 +89,14 @@ const FeeStructurePage = () => {
     }
   };
 
-  const handleDelete = async (structure) => {
-    if (!window.confirm(`Deactivate fee structure "${structure.name}"?`)) return;
+  const handleToggle = async (structure) => {
+    if (!window.confirm(`${structure.isActive ? 'Deactivate' : 'Activate'} fee structure "${structure.name}"?`)) return;
     try {
-      await feeService.deleteStructure(structure.id);
-      showAlert('success', 'Fee structure deactivated.');
+      const res = await feeService.toggleStructureStatus(structure.id);
+      showAlert('success', res.message || `Fee structure ${structure.isActive ? 'deactivated' : 'activated'}.`);
       loadStructures();
     } catch (err) {
-      showAlert('error', err.response?.data?.message || 'Failed to deactivate.');
+      showAlert('error', err.response?.data?.message || 'Failed to update status.');
     }
   };
 
@@ -213,11 +213,13 @@ const FeeStructurePage = () => {
       <button onClick={() => { setEditingStructure(row); setIsFormOpen(true); }} className="p-1.5 rounded bg-brand/10 hover:bg-brand text-brand-light hover:text-white transition-colors" title="Edit">
         <Edit2 size={14} />
       </button>
-      {row.isActive && (
-        <button onClick={() => handleDelete(row)} className="p-1.5 rounded bg-status-danger/10 hover:bg-status-danger text-status-danger hover:text-white transition-colors" title="Deactivate">
-          <Trash2 size={14} />
-        </button>
-      )}
+      <button
+        onClick={() => handleToggle(row)}
+        className={`p-1.5 rounded transition-colors ${row.isActive ? 'bg-status-danger/10 hover:bg-status-danger text-status-danger hover:text-white' : 'bg-status-success/10 hover:bg-status-success text-status-success hover:text-white'}`}
+        title={row.isActive ? 'Deactivate' : 'Activate'}
+      >
+        {row.isActive ? <ToggleLeft size={14} /> : <ToggleRight size={14} />}
+      </button>
     </div>
   );
 

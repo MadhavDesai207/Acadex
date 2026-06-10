@@ -46,6 +46,7 @@ router.get('/:id', authenticate, authorize('ADMIN', 'FACULTY', 'STUDENT'), getSt
  * @access  Private (ADMIN)
  */
 router.put('/:id', authenticate, authorize('ADMIN'), updateStudent);
+router.patch('/:id/toggle-status', authenticate, authorize('ADMIN'), updateStudent);
 
 /**
  * @route   DELETE /api/v1/students/:id

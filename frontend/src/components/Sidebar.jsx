@@ -35,7 +35,9 @@ import {
   FileBarChart2,
   PieChart,
   TrendingUp,
-  GanttChart
+  GanttChart,
+  Briefcase,
+  Building2
 } from 'lucide-react';
 import authService from '../services/authService';
 
@@ -106,6 +108,7 @@ const NavGroup = ({ group, role, onNavigate }) => {
               <li key={child.path}>
                 <NavLink
                   to={child.path}
+                  end={!!child.end}
                   className={({ isActive }) =>
                     `flex items-center gap-2.5 px-3 py-2 rounded-lg text-xs font-medium transition-all duration-200 group ${
                       isActive
@@ -178,11 +181,15 @@ const Sidebar = ({ isOpen, toggleSidebar }) => {
       roles: ['SUPER_ADMIN', 'ADMIN', 'FACULTY']
     },
     {
-      type: 'item',
+      type: 'group',
       label: 'Faculty',
-      path: '/faculty',
       icon: UserSquare2,
-      roles: ['SUPER_ADMIN', 'ADMIN']
+      roles: ['SUPER_ADMIN', 'ADMIN'],
+      children: [
+        { label: 'Faculty Registry', path: '/faculty', icon: UserSquare2, roles: ['SUPER_ADMIN', 'ADMIN'], end: true },
+        { label: 'Designations', path: '/faculty/designations', icon: Briefcase, roles: ['SUPER_ADMIN', 'ADMIN'] },
+        { label: 'Departments', path: '/faculty/departments', icon: Building2, roles: ['SUPER_ADMIN', 'ADMIN'] }
+      ]
     },
     {
       type: 'group',

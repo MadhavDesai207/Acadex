@@ -16,17 +16,64 @@ const createFaculty = async (req, res, next) => {
       phone,
       designation,
       department,
+      designationId,
+      departmentId,
       dateOfJoining,
       qualification,
       bankAccount,
+      ifscCode,
       baseSalary
     } = req.body;
 
+    // Resolve designation: prefer DB record, fallback to free text
+    let resolvedDesignation = designation;
+    let resolvedDesignationId = null;
+    if (designationId) {
+      const desigRecord = await prisma.designation.findUnique({ where: { id: designationId } });
+      if (!desigRecord) return res.status(400).json({ message: 'Selected designation not found.' });
+      resolvedDesignation = desigRecord.name;
+      resolvedDesignationId = desigRecord.id;
+    }
+
+    // Resolve department: prefer DB record, fallback to free text
+    let resolvedDepartment = department || null;
+    let resolvedDepartmentId = null;
+    if (departmentId) {
+      const deptRecord = await prisma.department.findUnique({ where: { id: departmentId } });
+      if (!deptRecord) return res.status(400).json({ message: 'Selected department not found.' });
+      resolvedDepartment = deptRecord.name;
+      resolvedDepartmentId = deptRecord.id;
+    }
+
     // Validate required fields
-    if (!name || !email || !designation || !dateOfJoining || baseSalary === undefined) {
+    if (!name || !email || !phone || !qualification || !resolvedDesignation || !dateOfJoining || baseSalary === undefined) {
       return res.status(400).json({
-        message: 'Missing required fields. name, email, designation, dateOfJoining, and baseSalary are required.'
+        message: 'Missing required fields: name, email, phone, qualification, designation, dateOfJoining, baseSalary.'
       });
+    }
+
+    if (name.trim().length < 2) {
+      return res.status(400).json({ message: 'Full Name must be at least 2 characters.' });
+    }
+
+    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email.trim())) {
+      return res.status(400).json({ message: 'Please provide a valid email address.' });
+    }
+
+    if (!/^\+?[\d\s\-().]{7,15}$/.test(phone.trim())) {
+      return res.status(400).json({ message: 'Please provide a valid phone number (7–15 digits).' });
+    }
+
+    if (qualification.trim().length < 3) {
+      return res.status(400).json({ message: 'Qualification must be at least 3 characters.' });
+    }
+
+    if (bankAccount && !/^\d{9,18}$/.test(bankAccount.trim())) {
+      return res.status(400).json({ message: 'Bank account must be 9–18 digits.' });
+    }
+
+    if (ifscCode && !/^[A-Z]{4}0[A-Z0-9]{6}$/i.test(ifscCode.trim())) {
+      return res.status(400).json({ message: 'IFSC code must be in format: ABCD0123456.' });
     }
 
     // Check if user already exists
@@ -107,11 +154,14 @@ const createFaculty = async (req, res, next) => {
         data: {
           userId: user.id,
           employeeCode,
-          designation,
-          department: department || null,
+          designation: resolvedDesignation,
+          department: resolvedDepartment,
+          designationId: resolvedDesignationId,
+          departmentId: resolvedDepartmentId,
           dateOfJoining: joiningDate,
           qualification: qualification || null,
           bankAccount: bankAccount || null,
+          ifscCode: ifscCode || null,
           baseSalary: salary,
           isActive: true
         },
@@ -180,19 +230,12 @@ const getFaculty = async (req, res, next) => {
       where,
       include: {
         user: {
-          select: {
-            id: true,
-            name: true,
-            email: true,
-            phone: true,
-            role: true,
-            isActive: true
-          }
-        }
+          select: { id: true, name: true, email: true, phone: true, role: true, isActive: true }
+        },
+        designationRecord: { select: { id: true, name: true } },
+        departmentRecord: { select: { id: true, name: true } }
       },
-      orderBy: {
-        employeeCode: 'asc'
-      }
+      orderBy: { employeeCode: 'asc' }
     });
 
     return res.status(200).json(facultyList);
@@ -214,15 +257,10 @@ const getFacultyById = async (req, res, next) => {
       where: { id },
       include: {
         user: {
-          select: {
-            id: true,
-            name: true,
-            email: true,
-            phone: true,
-            role: true,
-            isActive: true
-          }
-        }
+          select: { id: true, name: true, email: true, phone: true, role: true, isActive: true }
+        },
+        designationRecord: { select: { id: true, name: true } },
+        departmentRecord: { select: { id: true, name: true } }
       }
     });
 
@@ -259,9 +297,12 @@ const updateFaculty = async (req, res, next) => {
       phone,
       designation,
       department,
+      designationId,
+      departmentId,
       dateOfJoining,
       qualification,
       bankAccount,
+      ifscCode,
       baseSalary,
       isActive
     } = req.body;
@@ -307,11 +348,31 @@ const updateFaculty = async (req, res, next) => {
     let salary;
     if (baseSalary !== undefined) {
       salary = parseFloat(baseSalary);
-      if (isNaN(salary) || salary < 0) {
+      if (isNaN(salary) || salary <= 0) {
         return res.status(400).json({
           message: 'Invalid baseSalary. Please provide a positive numeric value.'
         });
       }
+    }
+
+    if (name !== undefined && name.trim().length < 2) {
+      return res.status(400).json({ message: 'Full Name must be at least 2 characters.' });
+    }
+
+    if (phone !== undefined && phone.trim() && !/^\+?[\d\s\-().]{7,15}$/.test(phone.trim())) {
+      return res.status(400).json({ message: 'Please provide a valid phone number (7–15 digits).' });
+    }
+
+    if (qualification !== undefined && qualification.trim().length < 3) {
+      return res.status(400).json({ message: 'Qualification must be at least 3 characters.' });
+    }
+
+    if (bankAccount !== undefined && bankAccount.trim() && !/^\d{9,18}$/.test(bankAccount.trim())) {
+      return res.status(400).json({ message: 'Bank account must be 9–18 digits.' });
+    }
+
+    if (ifscCode !== undefined && ifscCode.trim() && !/^[A-Z]{4}0[A-Z0-9]{6}$/i.test(ifscCode.trim())) {
+      return res.status(400).json({ message: 'IFSC code must be in format: ABCD0123456.' });
     }
 
     // Execute updates in a transaction
@@ -332,11 +393,35 @@ const updateFaculty = async (req, res, next) => {
 
       // 2. Update Faculty fields
       const facultyUpdateData = {};
-      if (designation) facultyUpdateData.designation = designation;
-      if (department !== undefined) facultyUpdateData.department = department;
+
+      // Resolve designation
+      if (designationId) {
+        const desigRecord = await tx.designation.findUnique({ where: { id: designationId } });
+        if (!desigRecord) throw new Error('Selected designation not found.');
+        facultyUpdateData.designation = desigRecord.name;
+        facultyUpdateData.designationId = desigRecord.id;
+      } else if (designation) {
+        facultyUpdateData.designation = designation;
+      }
+
+      // Resolve department
+      if (departmentId !== undefined) {
+        if (departmentId) {
+          const deptRecord = await tx.department.findUnique({ where: { id: departmentId } });
+          if (!deptRecord) throw new Error('Selected department not found.');
+          facultyUpdateData.department = deptRecord.name;
+          facultyUpdateData.departmentId = deptRecord.id;
+        } else {
+          facultyUpdateData.department = null;
+          facultyUpdateData.departmentId = null;
+        }
+      } else if (department !== undefined) {
+        facultyUpdateData.department = department;
+      }
       if (dateOfJoining) facultyUpdateData.dateOfJoining = joiningDate;
       if (qualification !== undefined) facultyUpdateData.qualification = qualification;
       if (bankAccount !== undefined) facultyUpdateData.bankAccount = bankAccount;
+      if (ifscCode !== undefined) facultyUpdateData.ifscCode = ifscCode;
       if (baseSalary !== undefined) facultyUpdateData.baseSalary = salary;
       if (isActive !== undefined) facultyUpdateData.isActive = isActive;
 

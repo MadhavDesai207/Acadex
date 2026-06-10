@@ -8,7 +8,7 @@ const examService = {
 
   getExamById: async (id) => {
     const response = await apiClient.get(`/exams/${id}`);
-    return response.data.data;
+    return response.data.data ?? response.data;
   },
 
   createExam: async (data) => {

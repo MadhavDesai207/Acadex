@@ -6,13 +6,15 @@ const {
   getSubjects,
   getSubjectById,
   updateSubject,
-  deleteSubject
+  deleteSubject,
+  toggleSubjectStatus
 } = require('../controllers/subjectController');
 
 router.get('/', authenticate, getSubjects);
 router.post('/', authenticate, authorize('ADMIN', 'SUPER_ADMIN'), createSubject);
 router.get('/:id', authenticate, getSubjectById);
 router.put('/:id', authenticate, authorize('ADMIN', 'SUPER_ADMIN'), updateSubject);
+router.patch('/:id/toggle-status', authenticate, authorize('ADMIN', 'SUPER_ADMIN'), toggleSubjectStatus);
 router.delete('/:id', authenticate, authorize('ADMIN', 'SUPER_ADMIN'), deleteSubject);
 
 module.exports = router;

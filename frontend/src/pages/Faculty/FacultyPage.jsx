@@ -113,7 +113,7 @@ const FacultyPage = () => {
     { 
       key: 'baseSalary', 
       label: 'Base Salary',
-      render: (row) => `$${row.baseSalary.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`
+      render: (row) => `₹${row.baseSalary.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`
     },
     { 
       key: 'isActive', 
@@ -308,11 +308,15 @@ const FacultyPage = () => {
                 </div>
                 <div>
                   <span className="text-[10px] text-slate-500 block">Base Salary</span>
-                  <span className="font-medium text-status-success">${detailsFaculty.baseSalary.toLocaleString(undefined, { minimumFractionDigits: 2 })}</span>
+                  <span className="font-medium text-status-success">₹{detailsFaculty.baseSalary.toLocaleString(undefined, { minimumFractionDigits: 2 })}</span>
                 </div>
                 <div>
                   <span className="text-[10px] text-slate-500 block">Bank Account Details</span>
                   <span className="font-medium text-slate-200">{detailsFaculty.bankAccount}</span>
+                </div>
+                <div>
+                  <span className="text-[10px] text-slate-500 block">IFSC Code</span>
+                  <span className="font-medium text-slate-200">{detailsFaculty.ifscCode || '—'}</span>
                 </div>
               </div>
 

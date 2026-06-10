@@ -22,6 +22,8 @@ const feeRoutes = require('./feeRoutes');
 const questionBankRoutes = require('./questionBankRoutes');
 const dashboardRoutes = require('./dashboardRoutes');
 const reportRoutes = require('./reportRoutes');
+const designationRoutes = require('./designationRoutes');
+const departmentRoutes = require('./departmentRoutes');
 
 // Mount routes
 router.use('/auth', authRoutes);
@@ -45,5 +47,7 @@ router.use('/fees', feeRoutes);
 router.use('/question-bank', questionBankRoutes);
 router.use('/dashboard', dashboardRoutes);
 router.use('/reports', reportRoutes);
+router.use('/designations', designationRoutes);
+router.use('/departments', departmentRoutes);
 
 module.exports = router;

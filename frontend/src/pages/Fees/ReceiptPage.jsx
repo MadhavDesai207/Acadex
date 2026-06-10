@@ -69,10 +69,14 @@ const ReceiptPage = () => {
 
       <style>{`
         @media print {
-          body { background: white; }
+          @page { size: A4 portrait; margin: 15mm 18mm; }
+          *, *::before, *::after { -webkit-print-color-adjust: exact !important; print-color-adjust: exact !important; }
+          body { background: white !important; }
           .print\\:hidden { display: none !important; }
-          aside, nav { display: none !important; }
-          header { display: none !important; }
+          aside, nav, header { display: none !important; }
+          main, [class*="ml-"], [class*="pl-"] { margin-left: 0 !important; padding-left: 0 !important; }
+          .flex.flex-col.gap-6 { gap: 0 !important; }
+          .flex.justify-center.py-4 { padding: 0 !important; }
         }
       `}</style>
     </DashboardLayout>

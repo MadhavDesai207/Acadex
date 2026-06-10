@@ -171,6 +171,19 @@ const deleteFeeStructure = async (req, res, next) => {
   }
 };
 
+const toggleFeeStructureStatus = async (req, res, next) => {
+  try {
+    const { id } = req.params;
+    const existing = await prisma.feeStructure.findUnique({ where: { id } });
+    if (!existing) return res.status(404).json({ success: false, message: 'Fee structure not found.' });
+
+    const updated = await prisma.feeStructure.update({ where: { id }, data: { isActive: !existing.isActive } });
+    return res.status(200).json({ success: true, message: `Fee structure ${updated.isActive ? 'activated' : 'deactivated'} successfully.`, data: updated });
+  } catch (error) {
+    next(error);
+  }
+};
+
 // ─── Installments ─────────────────────────────────────────────────────────────
 
 const addInstallment = async (req, res, next) => {
@@ -336,22 +349,25 @@ const getStudentFee = async (req, res, next) => {
     const student = await prisma.student.findUnique({ where: { id: studentId } });
     if (!student) return res.status(404).json({ success: false, message: 'Student not found.' });
 
-    const studentFees = await prisma.studentFee.findMany({
-      where: { studentId },
-      include: {
-        feeStructure: {
-          include: { installments: { orderBy: { installmentNo: 'asc' } } }
-        },
-        discount: true,
-        scholarship: true,
-        payments: {
-          include: { installment: true, collector: { select: { name: true } } },
-          orderBy: { paymentDate: 'desc' }
+    const [studentFees, studentRecord] = await Promise.all([
+      prisma.studentFee.findMany({
+        where: { studentId },
+        include: {
+          feeStructure: {
+            include: { installments: { orderBy: { installmentNo: 'asc' } } }
+          },
+          discount: true,
+          scholarship: true,
+          payments: {
+            include: { installment: true, collector: { select: { name: true } } },
+            orderBy: { paymentDate: 'desc' }
+          }
         }
-      }
-    });
+      }),
+      prisma.student.findUnique({ where: { id: studentId }, select: { creditBalance: true } })
+    ]);
 
-    return res.status(200).json({ success: true, data: studentFees });
+    return res.status(200).json({ success: true, data: studentFees, creditBalance: parseFloat(studentRecord?.creditBalance ?? 0) });
   } catch (error) {
     next(error);
   }
@@ -421,42 +437,85 @@ const applyScholarship = async (req, res, next) => {
 
 const collectFee = async (req, res, next) => {
   try {
-    const { studentFeeId, installmentId, amountPaid, paymentMethod, transactionRef, remarks } = req.body;
+    const { studentFeeId, installmentId, amountPaid, paymentMethod, transactionRef, remarks, applyCredit } = req.body;
 
     if (!studentFeeId || amountPaid === undefined || !paymentMethod) {
       return res.status(400).json({ success: false, message: 'studentFeeId, amountPaid, and paymentMethod are required.' });
     }
-    if (parseFloat(amountPaid) <= 0) {
+    if (parseFloat(amountPaid) < 0) {
+      return res.status(400).json({ success: false, message: 'amountPaid cannot be negative.' });
+    }
+    if (parseFloat(amountPaid) === 0 && !applyCredit) {
       return res.status(400).json({ success: false, message: 'amountPaid must be positive.' });
     }
 
     const studentFee = await prisma.studentFee.findUnique({ where: { id: studentFeeId } });
     if (!studentFee) return res.status(400).json({ success: false, message: 'Student fee record not found.' });
 
+    if (parseFloat(studentFee.netPayable) <= 0) {
+      return res.status(400).json({ success: false, message: 'This fee is fully covered by discount/scholarship. No payment required.' });
+    }
+
+    // Load student + feeStructure for credit balance and discount ratio
+    const [student, feeStructure] = await Promise.all([
+      prisma.student.findUnique({ where: { id: studentFee.studentId } }),
+      prisma.feeStructure.findUnique({ where: { id: studentFee.feeStructureId }, select: { totalAmount: true } })
+    ]);
+
     let installment = null;
     if (installmentId) {
       installment = await prisma.feeInstallment.findUnique({ where: { id: installmentId } });
       if (!installment) return res.status(400).json({ success: false, message: 'Installment not found.' });
+
+      const existingPaid = await prisma.feePayment.findFirst({
+        where: { installmentId, status: { in: ['PAID', 'WAIVED'] } }
+      });
+      if (existingPaid) {
+        return res.status(400).json({ success: false, message: 'This installment is already fully paid.' });
+      }
     }
 
-    const status =
-      installment && parseFloat(amountPaid) < parseFloat(installment.amount)
-        ? 'PARTIALLY_PAID'
-        : 'PAID';
+    const cash = parseFloat(amountPaid);
+    const creditAvailable = parseFloat(student.creditBalance);
+
+    // Target = net installment amount after discount (proportional), or total netPayable
+    let target;
+    if (installment) {
+      const totalAmount = parseFloat(feeStructure.totalAmount) || 1;
+      const discountRatio = Math.min(1, parseFloat(studentFee.netPayable) / totalAmount);
+      target = parseFloat((parseFloat(installment.amount) * discountRatio).toFixed(2));
+    } else {
+      target = parseFloat(studentFee.netPayable);
+    }
+
+    // Apply credit only when admin explicitly opts in
+    const creditToApply = applyCredit
+      ? Math.min(creditAvailable, Math.max(0, parseFloat((target - cash).toFixed(2))))
+      : 0;
+    const effectiveTotal = parseFloat((cash + creditToApply).toFixed(2));
+
+    // Any excess over target becomes new credit
+    const excess = parseFloat(Math.max(0, effectiveTotal - target).toFixed(2));
+
+    // Net credit balance change
+    const newCreditBalance = parseFloat((creditAvailable - creditToApply + excess).toFixed(2));
+
+    const status = effectiveTotal >= target ? 'PAID' : 'PARTIALLY_PAID';
 
     // Wrap receipt number generation + insert in a transaction so concurrent requests
     // cannot generate the same receipt number.
     const payment = await prisma.$transaction(async (tx) => {
       const receiptNumber = await nextReceiptNumber(tx);
-      return tx.feePayment.create({
+      const p = await tx.feePayment.create({
         data: {
           studentFeeId,
           installmentId: installmentId || null,
-          amountPaid: parseFloat(amountPaid),
+          amountPaid: cash,
+          creditApplied: creditToApply,
           paymentMethod,
           status,
           transactionRef: transactionRef || null,
-          collectedBy: req.user.userId,  // auth middleware sets req.user.userId
+          collectedBy: req.user.userId,
           receiptNumber,
           remarks: remarks || null
         },
@@ -475,6 +534,16 @@ const collectFee = async (req, res, next) => {
           collector: { select: { name: true } }
         }
       });
+
+      // Update student credit balance if changed
+      if (creditToApply > 0 || excess > 0) {
+        await tx.student.update({
+          where: { id: studentFee.studentId },
+          data: { creditBalance: newCreditBalance }
+        });
+      }
+
+      return p;
     });
 
     return res.status(201).json({ success: true, message: 'Payment recorded.', data: payment });
@@ -842,6 +911,7 @@ module.exports = {
   getFeeStructureById,
   updateFeeStructure,
   deleteFeeStructure,
+  toggleFeeStructureStatus,
   addInstallment,
   updateInstallment,
   deleteInstallment,

@@ -20,8 +20,10 @@ const CollectForm = ({ onClose, onSuccess }) => {
   const [students, setStudents] = useState([]);
   const [selectedStudent, setSelectedStudent] = useState(null);
   const [studentFees, setStudentFees] = useState([]);
+  const [creditBalance, setCreditBalance] = useState(0);
   const [selectedFee, setSelectedFee] = useState(null);
   const [form, setForm] = useState({ installmentId: '', amountPaid: '', paymentMethod: 'CASH', transactionRef: '', remarks: '' });
+  const [applyCredit, setApplyCredit] = useState(false);
   const [errors, setErrors] = useState({});
   const [loading, setLoading] = useState(false);
   const [searching, setSearching] = useState(false);
@@ -46,6 +48,7 @@ const CollectForm = ({ onClose, onSuccess }) => {
     try {
       const res = await feeService.getStudentFee(student.id);
       setStudentFees(res.data || []);
+      setCreditBalance(parseFloat(res.creditBalance ?? 0));
       setStep(2);
     } catch {
       setStudentFees([]);
@@ -61,8 +64,11 @@ const CollectForm = ({ onClose, onSuccess }) => {
     setStep(3);
   };
 
+  const fullyCoveredByCredit = applyCredit && parseFloat(form.amountPaid || 0) > 0 && creditBalance >= parseFloat(form.amountPaid || 0);
+
   const validate = () => {
     const e = {};
+    if (fullyCoveredByCredit) { setErrors({}); return true; }
     if (!form.amountPaid || parseFloat(form.amountPaid) <= 0) e.amountPaid = 'Enter a valid amount.';
     if (!form.paymentMethod) e.paymentMethod = 'Select a payment method.';
     setErrors(e);
@@ -77,10 +83,11 @@ const CollectForm = ({ onClose, onSuccess }) => {
       const res = await feeService.collectFee({
         studentFeeId: selectedFee.id,
         installmentId: form.installmentId || undefined,
-        amountPaid: parseFloat(form.amountPaid),
-        paymentMethod: form.paymentMethod,
+        amountPaid: fullyCoveredByCredit ? 0 : parseFloat(form.amountPaid),
+        paymentMethod: fullyCoveredByCredit ? 'CREDIT_ADJUSTMENT' : form.paymentMethod,
         transactionRef: form.transactionRef || undefined,
-        remarks: form.remarks || undefined
+        remarks: form.remarks || undefined,
+        applyCredit
       });
       onSuccess('Payment recorded successfully.', res.data?.id);
     } catch (err) {
@@ -147,31 +154,53 @@ const CollectForm = ({ onClose, onSuccess }) => {
       {/* Step 2: Select fee record */}
       {step === 2 && (
         <div className="flex flex-col gap-3">
-          <div className="flex items-center gap-2 p-3 rounded-xl bg-brand/10 border border-brand/30">
+          <div className="flex items-center justify-between p-3 rounded-xl bg-brand/10 border border-brand/30">
             <div>
               <p className="text-sm font-bold text-white">{selectedStudent?.user?.name}</p>
               <p className="text-xs text-slate-400">{selectedStudent?.rollNumber} · {selectedStudent?.course?.name}</p>
             </div>
+            {creditBalance > 0 && (
+              <div className="text-right">
+                <p className="text-xs text-slate-400">Credit Balance</p>
+                <p className="text-sm font-bold text-status-success">{fmt(creditBalance)}</p>
+              </div>
+            )}
           </div>
           {loading ? (
             <p className="text-sm text-slate-400 text-center py-3">Loading fee records...</p>
           ) : studentFees.length === 0 ? (
-            <p className="text-sm text-slate-500 text-center py-3">No fee records assigned to this student.</p>
+            <p className="text-sm text-slate-500 text-center py-3">No fee records assigned.</p>
           ) : (
-            studentFees.map((sf) => (
-              <button
-                key={sf.id}
-                type="button"
-                onClick={() => selectFee(sf)}
-                className="flex items-center justify-between px-4 py-3 rounded-xl bg-bg-deep/40 border border-slate-700/40 hover:border-brand/50 hover:bg-brand/5 transition-all text-left"
-              >
-                <div>
-                  <p className="text-sm font-semibold text-white">{sf.feeStructure?.name}</p>
-                  <p className="text-xs text-slate-400">{sf.feeStructure?.installments?.length || 0} installments</p>
-                </div>
-                <p className="text-sm font-bold text-brand-light">{fmt(sf.netPayable)}</p>
-              </button>
-            ))
+            studentFees.map((sf) => {
+              const netPayable = parseFloat(sf.netPayable);
+              const effectivePaid = (sf.payments || []).reduce((s, p) => s + parseFloat(p.amountPaid) + parseFloat(p.creditApplied || 0), 0);
+              const isFullyPaid = netPayable <= 0 || effectivePaid >= netPayable - 0.001;
+              const isPartial = !isFullyPaid && effectivePaid > 0;
+              const hasCreditAdj = (sf.payments || []).some((p) => p.paymentMethod === 'CREDIT_ADJUSTMENT' || parseFloat(p.creditApplied || 0) > 0);
+              const badge = isFullyPaid
+                ? { label: hasCreditAdj ? 'Credit Paid' : 'Paid', cls: 'text-status-success bg-status-success/15 border-status-success/30' }
+                : isPartial
+                ? { label: 'Partial', cls: 'text-yellow-400 bg-yellow-400/10 border-yellow-400/30' }
+                : { label: 'Unpaid', cls: 'text-slate-400 bg-slate-700/30 border-slate-600/30' };
+              return (
+                <button
+                  key={sf.id}
+                  type="button"
+                  onClick={() => !isFullyPaid && selectFee(sf)}
+                  disabled={isFullyPaid}
+                  className={`flex items-center justify-between px-4 py-3 rounded-xl bg-bg-deep/40 border transition-all text-left ${isFullyPaid ? 'border-slate-700/20 opacity-60 cursor-not-allowed' : 'border-slate-700/40 hover:border-brand/50 hover:bg-brand/5 cursor-pointer'}`}
+                >
+                  <div>
+                    <p className="text-sm font-semibold text-white">{sf.feeStructure?.name}</p>
+                    <p className="text-xs text-slate-400">{sf.feeStructure?.installments?.length || 0} installments</p>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <span className={`text-xs font-semibold px-2 py-0.5 rounded-full border ${badge.cls}`}>{badge.label}</span>
+                    <p className="text-sm font-bold text-brand-light">{fmt(netPayable)}</p>
+                  </div>
+                </button>
+              );
+            })
           )}
           <Button variant="outline" onClick={() => { setStep(1); setStudents([]); }}>Back</Button>
         </div>
@@ -188,54 +217,104 @@ const CollectForm = ({ onClose, onSuccess }) => {
             <p className="font-bold text-white">{selectedStudent?.user?.name}</p>
             <p className="text-xs text-slate-400 mt-0.5">{selectedFee?.feeStructure?.name} · Net Payable: {fmt(selectedFee?.netPayable)}</p>
           </div>
+          {creditBalance > 0 && (
+            <div className="p-2.5 rounded-xl bg-status-success/10 border border-status-success/30 text-xs text-status-success flex items-center justify-between gap-3">
+              <span>Credit balance available: <strong>{fmt(creditBalance)}</strong></span>
+              <label className="flex items-center gap-1.5 cursor-pointer shrink-0">
+                <input
+                  type="checkbox"
+                  checked={applyCredit}
+                  onChange={(e) => setApplyCredit(e.target.checked)}
+                  className="accent-status-success"
+                />
+                <span className="font-semibold">Apply Credit</span>
+              </label>
+            </div>
+          )}
+          {applyCredit && creditBalance > 0 && parseFloat(form.amountPaid) > 0 && (() => {
+            const creditUsed = Math.min(creditBalance, parseFloat(form.amountPaid));
+            const cashNeeded = Math.max(0, parseFloat(form.amountPaid) - creditUsed);
+            return (
+              <div className="p-2 rounded-lg bg-bg-deep/40 border border-slate-700 text-xs text-slate-300 flex flex-col gap-0.5">
+                <span>Credit applied: <strong className="text-status-success">{fmt(creditUsed)}</strong></span>
+                <span>Cash to collect: <strong className="text-white">{fmt(cashNeeded)}</strong></span>
+              </div>
+            );
+          })()}
 
           {/* Installment picker */}
-          {selectedFee?.feeStructure?.installments?.length > 0 && (
-            <div className="flex flex-col gap-1.5">
-              <label className="text-sm font-medium text-slate-300">Installment (optional)</label>
-              <select
-                value={form.installmentId}
-                onChange={(e) => {
-                  const inst = selectedFee.feeStructure.installments.find((i) => i.id === e.target.value);
-                  setForm((f) => ({ ...f, installmentId: e.target.value, amountPaid: inst ? String(inst.amount) : f.amountPaid }));
-                }}
-                className="w-full px-3 py-2 rounded-lg text-sm outline-none glass-input"
-              >
-                <option value="">Select installment (or pay open amount)</option>
-                {selectedFee.feeStructure.installments.map((i) => (
-                  <option key={i.id} value={i.id}>{i.label} — {fmt(i.amount)} (due {new Date(i.dueDate).toLocaleDateString()})</option>
-                ))}
-              </select>
+          {selectedFee?.feeStructure?.installments?.length > 0 && (() => {
+            const totalAmount = parseFloat(selectedFee.feeStructure.totalAmount) || 1;
+            const discountRatio = Math.min(1, parseFloat(selectedFee.netPayable) / totalAmount);
+            const unpaidInsts = selectedFee.feeStructure.installments.filter((i) => {
+              const netInstAmount = parseFloat(i.amount) * discountRatio;
+              const paid = (selectedFee.payments || [])
+                .filter((p) => p.installmentId === i.id)
+                .reduce((s, p) => s + parseFloat(p.amountPaid) + parseFloat(p.creditApplied || 0), 0);
+              return paid < netInstAmount - 0.001;
+            });
+            return (
+              <div className="flex flex-col gap-1.5">
+                <label className="text-sm font-medium text-slate-300">Installment (optional)</label>
+                <select
+                  value={form.installmentId}
+                  onChange={(e) => {
+                    const inst = unpaidInsts.find((i) => i.id === e.target.value);
+                    if (!inst) { setForm((f) => ({ ...f, installmentId: e.target.value })); return; }
+                    const netInstAmount = parseFloat((parseFloat(inst.amount) * discountRatio).toFixed(2));
+                    const alreadyPaid = (selectedFee.payments || [])
+                      .filter((p) => p.installmentId === inst.id)
+                      .reduce((s, p) => s + parseFloat(p.amountPaid) + parseFloat(p.creditApplied || 0), 0);
+                    const remaining = parseFloat(Math.max(0, netInstAmount - alreadyPaid).toFixed(2));
+                    setForm((f) => ({ ...f, installmentId: e.target.value, amountPaid: String(remaining) }));
+                  }}
+                  className="w-full px-3 py-2 rounded-lg text-sm outline-none glass-input"
+                >
+                  <option value="">Select installment (or pay open amount)</option>
+                  {unpaidInsts.map((i) => (
+                    <option key={i.id} value={i.id}>{i.label} — {fmt(i.amount)} (due {new Date(i.dueDate).toLocaleDateString()})</option>
+                  ))}
+                </select>
+                {unpaidInsts.length === 0 && (
+                  <p className="text-xs text-status-success">All installments are fully paid.</p>
+                )}
+              </div>
+            );
+          })()}
+
+          {fullyCoveredByCredit ? (
+            <div className="p-3 rounded-xl bg-status-success/10 border border-status-success/30 text-sm text-status-success text-center font-semibold">
+              Will be settled using available credit balance. No cash payment required.
+            </div>
+          ) : (
+            <div className="grid grid-cols-2 gap-3">
+              <div className="flex flex-col gap-1.5">
+                <label className="text-sm font-medium text-slate-300">Amount Paid (₹) *</label>
+                <input
+                  type="number"
+                  min="0"
+                  step="0.01"
+                  placeholder="0"
+                  value={form.amountPaid}
+                  onChange={(e) => setForm((f) => ({ ...f, amountPaid: e.target.value }))}
+                  className="w-full px-3 py-2 rounded-lg text-sm outline-none glass-input"
+                />
+                {errors.amountPaid && <p className="text-xs text-status-danger">{errors.amountPaid}</p>}
+              </div>
+              <div className="flex flex-col gap-1.5">
+                <label className="text-sm font-medium text-slate-300">Payment Method *</label>
+                <select
+                  value={form.paymentMethod}
+                  onChange={(e) => setForm((f) => ({ ...f, paymentMethod: e.target.value }))}
+                  className="w-full px-3 py-2 rounded-lg text-sm outline-none glass-input"
+                >
+                  {PAYMENT_METHODS.map((m) => <option key={m} value={m}>{m.replace('_', ' ')}</option>)}
+                </select>
+              </div>
             </div>
           )}
 
-          <div className="grid grid-cols-2 gap-3">
-            <div className="flex flex-col gap-1.5">
-              <label className="text-sm font-medium text-slate-300">Amount Paid (₹) *</label>
-              <input
-                type="number"
-                min="0"
-                step="0.01"
-                placeholder="0"
-                value={form.amountPaid}
-                onChange={(e) => setForm((f) => ({ ...f, amountPaid: e.target.value }))}
-                className="w-full px-3 py-2 rounded-lg text-sm outline-none glass-input"
-              />
-              {errors.amountPaid && <p className="text-xs text-status-danger">{errors.amountPaid}</p>}
-            </div>
-            <div className="flex flex-col gap-1.5">
-              <label className="text-sm font-medium text-slate-300">Payment Method *</label>
-              <select
-                value={form.paymentMethod}
-                onChange={(e) => setForm((f) => ({ ...f, paymentMethod: e.target.value }))}
-                className="w-full px-3 py-2 rounded-lg text-sm outline-none glass-input"
-              >
-                {PAYMENT_METHODS.map((m) => <option key={m} value={m}>{m.replace('_', ' ')}</option>)}
-              </select>
-            </div>
-          </div>
-
-          {['BANK_TRANSFER', 'CHEQUE', 'ONLINE', 'UPI'].includes(form.paymentMethod) && (
+          {!fullyCoveredByCredit && ['BANK_TRANSFER', 'CHEQUE', 'ONLINE', 'UPI'].includes(form.paymentMethod) && (
             <div className="flex flex-col gap-1.5">
               <label className="text-sm font-medium text-slate-300">Transaction Reference</label>
               <input

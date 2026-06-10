@@ -9,6 +9,8 @@ import EditStudentPage from './pages/Students/EditStudentPage';
 import InquiryPage from './pages/Inquiry/InquiryPage';
 import AdmissionPage from './pages/Admissions/AdmissionPage';
 import FacultyPage from './pages/Faculty/FacultyPage';
+import DesignationPage from './pages/Faculty/DesignationPage';
+import DepartmentPage from './pages/Faculty/DepartmentPage';
 import AttendancePage from './pages/Attendance/AttendancePage';
 import AttendanceMarkForm from './pages/Attendance/AttendanceMarkForm';
 import SalaryPage from './pages/Salary/SalaryPage';
@@ -125,13 +127,33 @@ function App() {
         />
 
         {/* Protected Faculty Registry Route */}
-        <Route 
-          path="/faculty" 
+        <Route
+          path="/faculty"
           element={
             <ProtectedRoute allowedRoles={['SUPER_ADMIN', 'ADMIN']}>
               <FacultyPage />
             </ProtectedRoute>
-          } 
+          }
+        />
+
+        {/* Faculty Designations */}
+        <Route
+          path="/faculty/designations"
+          element={
+            <ProtectedRoute allowedRoles={['SUPER_ADMIN', 'ADMIN']}>
+              <DesignationPage />
+            </ProtectedRoute>
+          }
+        />
+
+        {/* Faculty Departments */}
+        <Route
+          path="/faculty/departments"
+          element={
+            <ProtectedRoute allowedRoles={['SUPER_ADMIN', 'ADMIN']}>
+              <DepartmentPage />
+            </ProtectedRoute>
+          }
         />
 
         {/* Protected Faculty Attendance Route */}

@@ -75,7 +75,8 @@ const ExamCreatePage = () => {
     const payload = {
       ...form,
       totalMarks: Number(form.totalMarks),
-      passingMarks: Number(form.passingMarks)
+      passingMarks: Number(form.passingMarks),
+      questionIds: selectedQuestions.map((q) => q.id)
     };
     const res = await examService.createExam(payload);
     setLoading(false);

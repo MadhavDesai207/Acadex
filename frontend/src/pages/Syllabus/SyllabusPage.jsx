@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
-import { useSearchParams } from 'react-router-dom';
-import { Plus, CheckCircle, BookOpen, Check, X } from 'lucide-react';
+import { useSearchParams, useNavigate } from 'react-router-dom';
+import { Plus, CheckCircle, BookOpen, Check, X, ArrowLeft } from 'lucide-react';
 import DashboardLayout from '../../layouts/DashboardLayout';
 import Button from '../../components/Button';
 import Modal from '../../components/Modal';
@@ -13,7 +13,9 @@ import apiClient from '../../services/apiClient';
 
 const SyllabusPage = () => {
   const [searchParams] = useSearchParams();
+  const navigate = useNavigate();
   const currentUser = authService.getLocalUser() || {};
+  const fromBatch = searchParams.get('batchId');
   const isAdmin = ['ADMIN', 'SUPER_ADMIN'].includes(currentUser.role);
   const canMark = isAdmin || currentUser.role === 'FACULTY';
 
@@ -91,9 +93,16 @@ const SyllabusPage = () => {
     <DashboardLayout>
       <div className="flex flex-col gap-6">
         <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
-          <div>
-            <h1 className="text-2xl md:text-3xl font-extrabold tracking-tight text-white font-heading">Syllabus Tracking</h1>
-            <p className="text-xs text-slate-400">Define and track syllabus coverage per batch.</p>
+          <div className="flex items-center gap-3">
+            {fromBatch && (
+              <button onClick={() => navigate(`/batches/${fromBatch}`)} className="p-2 rounded-lg text-slate-400 hover:bg-slate-800 hover:text-white transition-colors">
+                <ArrowLeft size={18} />
+              </button>
+            )}
+            <div>
+              <h1 className="text-2xl md:text-3xl font-extrabold tracking-tight text-white font-heading">Syllabus Tracking</h1>
+              <p className="text-xs text-slate-400">Define and track syllabus coverage per batch.</p>
+            </div>
           </div>
           {isAdmin && (
             <Button variant="primary" onClick={() => { setEditingUnit(null); setIsFormOpen(true); }} className="flex items-center gap-2">

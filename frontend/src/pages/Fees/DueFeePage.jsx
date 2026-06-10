@@ -68,7 +68,7 @@ const DueFeePage = () => {
 
   const tableActions = (row) => (
     <button
-      onClick={() => navigate(`/fees/students?studentId=${row.id}`)}
+      onClick={() => navigate(`/fees/students?studentId=${row.id}&fromDueFees=true`)}
       className="p-1.5 rounded bg-brand/10 hover:bg-brand text-brand-light hover:text-white transition-colors text-xs font-semibold px-3"
       title="View Student Fees"
     >

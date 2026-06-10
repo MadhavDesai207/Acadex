@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { ArrowLeft, ClipboardList, Calendar, Award, Users } from 'lucide-react';
+import { ArrowLeft, ClipboardList, Calendar, Award, Users, BookOpen } from 'lucide-react';
 import DashboardLayout from '../../layouts/DashboardLayout';
 import Button from '../../components/Button';
 import ExamTypeBadge from '../../components/ExamTypeBadge';
@@ -116,6 +116,34 @@ const ExamDetailPage = () => {
             </div>
           ))}
         </div>
+
+        {/* Questions section */}
+        {Array.isArray(exam.questions) && exam.questions.length > 0 && (
+          <div className="glass-card flex flex-col gap-4">
+            <div className="flex items-center gap-2">
+              <BookOpen size={18} className="text-brand" />
+              <h2 className="text-base font-bold text-white">Questions ({exam.questions.length})</h2>
+            </div>
+            <div className="flex flex-col gap-2">
+              {exam.questions.map((eq, idx) => {
+                const q = eq.question;
+                return (
+                  <div key={eq.id || q.id} className="flex items-start gap-3 bg-bg-deep/40 rounded-lg px-4 py-3">
+                    <span className="text-xs text-slate-500 mt-0.5 w-5 shrink-0">{idx + 1}.</span>
+                    <div className="flex-1 min-w-0">
+                      <p className="text-sm text-white">{q.questionText}</p>
+                      <div className="flex gap-3 mt-1 text-xs text-slate-500">
+                        {q.subject?.name && <span>{q.subject.name}</span>}
+                        {q.difficulty && <span className="capitalize">{q.difficulty.toLowerCase()}</span>}
+                        {q.marks != null && <span>{q.marks} mark{q.marks !== 1 ? 's' : ''}</span>}
+                      </div>
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          </div>
+        )}
       </div>
     </DashboardLayout>
   );

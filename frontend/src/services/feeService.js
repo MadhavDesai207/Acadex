@@ -22,6 +22,10 @@ const feeService = {
     const res = await apiClient.delete(`/fees/structures/${id}`);
     return res.data;
   },
+  toggleStructureStatus: async (id) => {
+    const res = await apiClient.patch(`/fees/structures/${id}/toggle-status`);
+    return res.data;
+  },
 
   // Installments
   addInstallment: async (structureId, data) => {
