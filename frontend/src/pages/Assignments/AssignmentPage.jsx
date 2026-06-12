@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Plus, Eye, Edit2, Send, CheckCircle, X } from 'lucide-react';
+import { Plus, Eye, Edit2, Send, CheckCircle, AlertCircle, Lock, X } from 'lucide-react';
 import DashboardLayout from '../../layouts/DashboardLayout';
 import Table from '../../components/Table';
 import Button from '../../components/Button';
@@ -73,6 +73,18 @@ const AssignmentPage = () => {
     }
   };
 
+  const handleClose = async (assignment) => {
+    if (!window.confirm(`Close "${assignment.title}"? Students can no longer submit, and grading becomes available.`)) return;
+    try {
+      const res = await assignmentService.closeAssignment(assignment.id);
+      setAlert({ message: res.message || 'Assignment closed.' });
+      loadAssignments();
+    } catch (err) {
+      setAlert({ type: 'error', message: err.response?.data?.message || 'Failed to close assignment.' });
+    }
+    setTimeout(() => setAlert(null), 4000);
+  };
+
   const handleStudentSubmit = async (assignmentId) => {
     if (!window.confirm('Mark this assignment as submitted?')) return;
     const res = await assignmentService.submitAssignment(assignmentId);
@@ -122,6 +134,15 @@ const AssignmentPage = () => {
               </button>
             </>
           )}
+          {row.status === 'PUBLISHED' && (
+            <button
+              onClick={() => handleClose(row)}
+              className="p-1.5 rounded bg-status-warning/10 hover:bg-status-warning text-status-warning hover:text-white transition-colors"
+              title="Close submissions & enable grading"
+            >
+              <Lock size={14} />
+            </button>
+          )}
         </>
       )}
       {isStudent && row.status === 'PUBLISHED' && (
@@ -151,8 +172,14 @@ const AssignmentPage = () => {
         </div>
 
         {alert && (
-          <div className="flex gap-2.5 p-3 rounded-lg bg-status-success/15 border border-status-success/30 text-status-success text-sm">
-            <CheckCircle size={18} className="shrink-0 mt-0.5" />
+          <div className={`flex gap-2.5 p-3 rounded-lg text-sm border ${
+            alert.type === 'error'
+              ? 'bg-status-danger/15 border-status-danger/30 text-status-danger'
+              : 'bg-status-success/15 border-status-success/30 text-status-success'
+          }`}>
+            {alert.type === 'error'
+              ? <AlertCircle size={18} className="shrink-0 mt-0.5" />
+              : <CheckCircle size={18} className="shrink-0 mt-0.5" />}
             <span>{alert.message}</span>
           </div>
         )}

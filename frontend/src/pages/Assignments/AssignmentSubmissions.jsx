@@ -20,6 +20,7 @@ const AssignmentSubmissions = () => {
   const [loading, setLoading] = useState(true);
   const [gradeModal, setGradeModal] = useState(null);
   const [gradeForm, setGradeForm] = useState({ marksAwarded: '', feedback: '' });
+  const [gradeError, setGradeError] = useState('');
   const [alert, setAlert] = useState(null);
 
   useEffect(() => {
@@ -33,15 +34,23 @@ const AssignmentSubmissions = () => {
   }, [id]);
 
   const handleGrade = async () => {
-    if (!gradeForm.marksAwarded) return;
-    const res = await assignmentService.gradeSubmission(id, gradeModal.student.id, gradeForm);
-    if (res.success) {
-      setAlert({ message: 'Submission graded successfully' });
-      setGradeModal(null);
-      setGradeForm({ marksAwarded: '', feedback: '' });
-      const data = await assignmentService.getSubmissions(id);
-      setSubmissions(data || []);
-      setTimeout(() => setAlert(null), 3000);
+    if (!gradeForm.marksAwarded) {
+      setGradeError('Marks are required.');
+      return;
+    }
+    setGradeError('');
+    try {
+      const res = await assignmentService.gradeSubmission(id, gradeModal.student.id, gradeForm);
+      if (res.success) {
+        setAlert({ message: 'Submission graded successfully' });
+        setGradeModal(null);
+        setGradeForm({ marksAwarded: '', feedback: '' });
+        const data = await assignmentService.getSubmissions(id);
+        setSubmissions(data || []);
+        setTimeout(() => setAlert(null), 3000);
+      }
+    } catch (err) {
+      setGradeError(err.response?.data?.message || 'Failed to save grade.');
     }
   };
 
@@ -66,7 +75,7 @@ const AssignmentSubmissions = () => {
 
   const tableActions = canGrade ? (row) => (
     <button
-      onClick={() => { setGradeModal(row); setGradeForm({ marksAwarded: row.marksAwarded || '', feedback: row.feedback || '' }); }}
+      onClick={() => { setGradeModal(row); setGradeForm({ marksAwarded: row.marksAwarded || '', feedback: row.feedback || '' }); setGradeError(''); }}
       className="p-1.5 rounded bg-brand/10 hover:bg-brand text-brand-light hover:text-white transition-colors text-xs"
     >
       Grade
@@ -110,6 +119,9 @@ const AssignmentSubmissions = () => {
               <p className="text-sm text-slate-300">
                 Grading submission for <strong className="text-white">{gradeModal.student?.user?.name}</strong>
               </p>
+              {gradeError && (
+                <p className="text-xs text-status-danger bg-status-danger/10 border border-status-danger/30 p-2 rounded-lg">{gradeError}</p>
+              )}
               <div className="flex flex-col gap-1.5">
                 <label className="text-sm font-medium text-slate-300">Marks Awarded *</label>
                 <Input

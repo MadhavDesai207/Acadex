@@ -121,6 +121,22 @@ const publishAssignment = async (req, res, next) => {
   }
 };
 
+const closeAssignment = async (req, res, next) => {
+  try {
+    const { id } = req.params;
+    const existing = await prisma.assignment.findUnique({ where: { id } });
+    if (!existing) return res.status(404).json({ success: false, message: 'Assignment not found' });
+    if (existing.status !== 'PUBLISHED') {
+      return res.status(400).json({ success: false, message: 'Only PUBLISHED assignments can be closed' });
+    }
+
+    const updated = await prisma.assignment.update({ where: { id }, data: { status: 'CLOSED' } });
+    return res.status(200).json({ success: true, message: 'Assignment closed. Grading is now open.', data: updated });
+  } catch (error) {
+    next(error);
+  }
+};
+
 const getSubmissions = async (req, res, next) => {
   try {
     const { id } = req.params;
@@ -201,4 +217,4 @@ const gradeSubmission = async (req, res, next) => {
   }
 };
 
-module.exports = { getAssignments, createAssignment, updateAssignment, publishAssignment, getSubmissions, submitAssignment, gradeSubmission };
+module.exports = { getAssignments, createAssignment, updateAssignment, publishAssignment, closeAssignment, getSubmissions, submitAssignment, gradeSubmission };

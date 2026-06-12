@@ -21,6 +21,11 @@ const assignmentService = {
     return { success: true, ...response.data };
   },
 
+  closeAssignment: async (id) => {
+    const response = await apiClient.patch(`/assignments/${id}/close`);
+    return { success: true, ...response.data };
+  },
+
   getSubmissions: async (assignmentId) => {
     const response = await apiClient.get(`/assignments/${assignmentId}/submissions`);
     return response.data.data;
