@@ -32,7 +32,7 @@ CREATE TYPE "AssignmentStatus" AS ENUM ('DRAFT', 'PUBLISHED', 'CLOSED');
 CREATE TYPE "FeeFrequency" AS ENUM ('ONE_TIME', 'MONTHLY', 'QUARTERLY', 'ANNUALLY', 'CUSTOM');
 
 -- CreateEnum
-CREATE TYPE "PaymentMethod" AS ENUM ('CASH', 'BANK_TRANSFER', 'CHEQUE', 'ONLINE', 'UPI');
+CREATE TYPE "PaymentMethod" AS ENUM ('CASH', 'BANK_TRANSFER', 'CHEQUE', 'ONLINE', 'UPI', 'CREDIT_ADJUSTMENT');
 
 -- CreateEnum
 CREATE TYPE "PaymentStatus" AS ENUM ('PENDING', 'PAID', 'PARTIALLY_PAID', 'OVERDUE', 'WAIVED');
@@ -69,6 +69,7 @@ CREATE TABLE "students" (
     "batchId" UUID NOT NULL,
     "enrolledAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
     "isActive" BOOLEAN NOT NULL DEFAULT true,
+    "creditBalance" DECIMAL(10,2) NOT NULL DEFAULT 0,
 
     CONSTRAINT "students_pkey" PRIMARY KEY ("id")
 );
@@ -109,15 +110,43 @@ CREATE TABLE "admissions" (
 );
 
 -- CreateTable
+CREATE TABLE "designations" (
+    "id" UUID NOT NULL,
+    "name" TEXT NOT NULL,
+    "description" TEXT,
+    "isActive" BOOLEAN NOT NULL DEFAULT true,
+    "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "updatedAt" TIMESTAMP(3) NOT NULL,
+
+    CONSTRAINT "designations_pkey" PRIMARY KEY ("id")
+);
+
+-- CreateTable
+CREATE TABLE "departments" (
+    "id" UUID NOT NULL,
+    "name" TEXT NOT NULL,
+    "code" TEXT NOT NULL,
+    "description" TEXT,
+    "isActive" BOOLEAN NOT NULL DEFAULT true,
+    "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "updatedAt" TIMESTAMP(3) NOT NULL,
+
+    CONSTRAINT "departments_pkey" PRIMARY KEY ("id")
+);
+
+-- CreateTable
 CREATE TABLE "faculty" (
     "id" UUID NOT NULL,
     "userId" UUID NOT NULL,
     "employeeCode" TEXT NOT NULL,
     "designation" TEXT NOT NULL,
     "department" TEXT,
+    "designationId" UUID,
+    "departmentId" UUID,
     "dateOfJoining" DATE NOT NULL,
     "qualification" TEXT,
     "bankAccount" TEXT,
+    "ifscCode" TEXT,
     "baseSalary" DECIMAL(10,2) NOT NULL,
     "isActive" BOOLEAN NOT NULL DEFAULT true,
 
@@ -233,6 +262,15 @@ CREATE TABLE "question_bank" (
     "updatedAt" TIMESTAMP(3) NOT NULL,
 
     CONSTRAINT "question_bank_pkey" PRIMARY KEY ("id")
+);
+
+-- CreateTable
+CREATE TABLE "exam_questions" (
+    "id" UUID NOT NULL,
+    "examId" UUID NOT NULL,
+    "questionId" UUID NOT NULL,
+
+    CONSTRAINT "exam_questions_pkey" PRIMARY KEY ("id")
 );
 
 -- CreateTable
@@ -384,6 +422,7 @@ CREATE TABLE "fee_payments" (
     "studentFeeId" UUID NOT NULL,
     "installmentId" UUID,
     "amountPaid" DECIMAL(10,2) NOT NULL,
+    "creditApplied" DECIMAL(10,2) NOT NULL DEFAULT 0,
     "paymentMethod" "PaymentMethod" NOT NULL,
     "paymentDate" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
     "status" "PaymentStatus" NOT NULL DEFAULT 'PAID',
@@ -457,6 +496,15 @@ CREATE UNIQUE INDEX "admissions_enrolledStudentId_key" ON "admissions"("enrolled
 CREATE INDEX "admissions_status_courseId_idx" ON "admissions"("status", "courseId");
 
 -- CreateIndex
+CREATE UNIQUE INDEX "designations_name_key" ON "designations"("name");
+
+-- CreateIndex
+CREATE UNIQUE INDEX "departments_name_key" ON "departments"("name");
+
+-- CreateIndex
+CREATE UNIQUE INDEX "departments_code_key" ON "departments"("code");
+
+-- CreateIndex
 CREATE UNIQUE INDEX "faculty_userId_key" ON "faculty"("userId");
 
 -- CreateIndex
@@ -494,6 +542,9 @@ CREATE INDEX "subjects_courseId_idx" ON "subjects"("courseId");
 
 -- CreateIndex
 CREATE INDEX "question_bank_subjectId_idx" ON "question_bank"("subjectId");
+
+-- CreateIndex
+CREATE UNIQUE INDEX "exam_questions_examId_questionId_key" ON "exam_questions"("examId", "questionId");
 
 -- CreateIndex
 CREATE INDEX "timetables_batchId_idx" ON "timetables"("batchId");
@@ -574,6 +625,12 @@ ALTER TABLE "admissions" ADD CONSTRAINT "admissions_enrolledStudentId_fkey" FORE
 ALTER TABLE "faculty" ADD CONSTRAINT "faculty_userId_fkey" FOREIGN KEY ("userId") REFERENCES "users"("id") ON DELETE CASCADE ON UPDATE CASCADE;
 
 -- AddForeignKey
+ALTER TABLE "faculty" ADD CONSTRAINT "faculty_designationId_fkey" FOREIGN KEY ("designationId") REFERENCES "designations"("id") ON DELETE SET NULL ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "faculty" ADD CONSTRAINT "faculty_departmentId_fkey" FOREIGN KEY ("departmentId") REFERENCES "departments"("id") ON DELETE SET NULL ON UPDATE CASCADE;
+
+-- AddForeignKey
 ALTER TABLE "faculty_attendance" ADD CONSTRAINT "faculty_attendance_facultyId_fkey" FOREIGN KEY ("facultyId") REFERENCES "faculty"("id") ON DELETE CASCADE ON UPDATE CASCADE;
 
 -- AddForeignKey
@@ -617,6 +674,12 @@ ALTER TABLE "question_bank" ADD CONSTRAINT "question_bank_subjectId_fkey" FOREIG
 
 -- AddForeignKey
 ALTER TABLE "question_bank" ADD CONSTRAINT "question_bank_createdBy_fkey" FOREIGN KEY ("createdBy") REFERENCES "users"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "exam_questions" ADD CONSTRAINT "exam_questions_examId_fkey" FOREIGN KEY ("examId") REFERENCES "exams"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "exam_questions" ADD CONSTRAINT "exam_questions_questionId_fkey" FOREIGN KEY ("questionId") REFERENCES "question_bank"("id") ON DELETE CASCADE ON UPDATE CASCADE;
 
 -- AddForeignKey
 ALTER TABLE "timetables" ADD CONSTRAINT "timetables_batchId_fkey" FOREIGN KEY ("batchId") REFERENCES "batches"("id") ON DELETE RESTRICT ON UPDATE CASCADE;

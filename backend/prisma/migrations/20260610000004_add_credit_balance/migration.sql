@@ -1,2 +1,0 @@
-ALTER TABLE "students" ADD COLUMN "creditBalance" DECIMAL(10,2) NOT NULL DEFAULT 0;
-ALTER TABLE "fee_payments" ADD COLUMN "creditApplied" DECIMAL(10,2) NOT NULL DEFAULT 0;
