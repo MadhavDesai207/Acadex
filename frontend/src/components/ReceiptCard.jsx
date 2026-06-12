@@ -8,7 +8,7 @@ const ReceiptCard = ({ receipt }) => {
   const { receiptNumber, student, payment, installment, feeStructure, collectedBy, remarks, issuedAt } = receipt;
 
   return (
-    <div className="bg-white text-slate-800 rounded-2xl shadow-2xl p-8 max-w-lg w-full mx-auto print:shadow-none">
+    <div className="bg-white text-slate-800 rounded-2xl shadow-2xl p-8 max-w-lg w-full mx-auto print:shadow-none print:rounded-none print:max-w-full print:p-0 print:mx-0">
       {/* Header */}
       <div className="flex items-center justify-between border-b-2 border-indigo-600 pb-4 mb-6">
         <div>

@@ -290,10 +290,32 @@ const deleteSubject = async (req, res, next) => {
   }
 };
 
+const toggleSubjectStatus = async (req, res, next) => {
+  try {
+    const { id } = req.params;
+    const subject = await prisma.subject.findUnique({ where: { id } });
+    if (!subject) return res.status(404).json({ message: 'Subject not found' });
+
+    const updated = await prisma.subject.update({
+      where: { id },
+      data: { isActive: !subject.isActive }
+    });
+
+    return res.status(200).json({
+      success: true,
+      message: `Subject ${updated.isActive ? 'activated' : 'deactivated'} successfully`,
+      data: updated
+    });
+  } catch (error) {
+    next(error);
+  }
+};
+
 module.exports = {
   createSubject,
   getSubjects,
   getSubjectById,
   updateSubject,
-  deleteSubject
+  deleteSubject,
+  toggleSubjectStatus
 };

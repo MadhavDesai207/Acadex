@@ -23,6 +23,8 @@ import InquiryForm from './InquiryForm';
 import inquiryService from '../../services/inquiryService';
 import studentService from '../../services/studentService';
 
+const UUID_REGEX = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+
 const InquiryPage = () => {
   const navigate = useNavigate();
 
@@ -58,6 +60,11 @@ const InquiryPage = () => {
   const [followUpInquiry, setFollowUpInquiry] = useState(null);
   const [followUpDate, setFollowUpDate] = useState('');
   const [followUpNotes, setFollowUpNotes] = useState('');
+
+  // Convert to Admission Modal State
+  const [isConvertModalOpen, setIsConvertModalOpen] = useState(false);
+  const [convertingInquiry, setConvertingInquiry] = useState(null);
+  const [convertCourseId, setConvertCourseId] = useState('');
 
   // UI Alerts
   const [alert, setAlert] = useState(null);
@@ -128,51 +135,72 @@ const InquiryPage = () => {
   };
 
   // Status Conversion to Admissions
-  const handleConvert = async (id, name) => {
-    const confirm = window.confirm(`Are you sure you want to convert ${name} to an active admission file? WARNING: This action cannot be undone, and the inquiry record will be locked.`);
-    if (confirm) {
-      try {
-        const res = await inquiryService.updateInquiry(id, { status: 'CONVERTED' });
-        if (res.success) {
-          setAlert({ type: 'success', message: `${name} has been converted. You can now process their enrollment details in Admissions.` });
-          loadInquiries();
-          setTimeout(() => setAlert(null), 4000);
-        }
-      } catch (err) {
-        setAlert({
-          type: 'error',
-          message: err.response?.data?.message || 'Failed to convert inquiry. Please check if the lead has a valid course interest selected.'
-        });
-        setTimeout(() => setAlert(null), 6000);
-      }
+  const handleConvert = (row) => {
+    const isUuid = UUID_REGEX.test(row.courseInterest || '');
+    if (isUuid) {
+      // Course already resolved — confirm and convert directly
+      const ok = window.confirm(`Are you sure you want to convert ${row.name} to an active admission file? WARNING: This action cannot be undone, and the inquiry record will be locked.`);
+      if (ok) executeConvert(row.id, row.name, row.courseInterest);
+    } else {
+      // Free-text or null courseInterest — must pick a course
+      setConvertingInquiry(row);
+      setConvertCourseId('');
+      setIsConvertModalOpen(true);
     }
   };
 
-  // Quick Status Dropdown Changes
-  const handleQuickStatusChange = async (id, status, name) => {
-    if (status === 'CONVERTED') {
-      const confirm = window.confirm(`Are you sure you want to convert ${name} to an active admission file? WARNING: This action cannot be undone, and the inquiry record will be locked.`);
-      if (!confirm) {
+  const executeConvert = async (id, name, courseId) => {
+    try {
+      const payload = { status: 'CONVERTED' };
+      if (courseId) payload.courseId = courseId;
+      const res = await inquiryService.updateInquiry(id, payload);
+      if (res.success) {
+        setAlert({ type: 'success', message: `${name} has been converted. You can now process their enrollment details in Admissions.` });
         loadInquiries();
-        return;
+        setTimeout(() => setAlert(null), 4000);
       }
+    } catch (err) {
+      setAlert({
+        type: 'error',
+        message: err.response?.data?.message || 'Failed to convert inquiry. Please check if the lead has a valid course interest selected.'
+      });
+      setTimeout(() => setAlert(null), 6000);
+    }
+  };
+
+  const handleConvertModalSubmit = async (e) => {
+    e.preventDefault();
+    if (!convertCourseId || !convertingInquiry) return;
+    setIsConvertModalOpen(false);
+    const ok = window.confirm(`Are you sure you want to convert ${convertingInquiry.name} to an active admission file? WARNING: This action cannot be undone, and the inquiry record will be locked.`);
+    if (ok) {
+      await executeConvert(convertingInquiry.id, convertingInquiry.name, convertCourseId);
+    }
+    setConvertingInquiry(null);
+    setConvertCourseId('');
+  };
+
+  // Quick Status Dropdown Changes
+  const handleQuickStatusChange = (row, status) => {
+    if (status === 'CONVERTED') {
+      handleConvert(row);
+      return;
     }
 
-    try {
-      const res = await inquiryService.updateInquiry(id, { status });
+    inquiryService.updateInquiry(row.id, { status }).then(res => {
       if (res.success) {
         setAlert({ type: 'success', message: 'Lead status updated successfully.' });
         loadInquiries();
         setTimeout(() => setAlert(null), 3000);
       }
-    } catch (err) {
+    }).catch(err => {
       setAlert({
         type: 'error',
         message: err.response?.data?.message || 'Failed to update lead status.'
       });
       loadInquiries();
       setTimeout(() => setAlert(null), 4000);
-    }
+    });
   };
 
   // Set Filter to Today Shortcut
@@ -232,7 +260,7 @@ const InquiryPage = () => {
         {/* Quick change status dropdown */}
         <select
           value={row.status}
-          onChange={(e) => handleQuickStatusChange(row.id, e.target.value, row.name)}
+          onChange={(e) => handleQuickStatusChange(row, e.target.value)}
           className="bg-bg-surfaceLight border border-slate-700 rounded px-1.5 py-0.5 text-xs text-slate-300 focus:outline-none focus:border-brand cursor-pointer"
         >
           {tabs.filter(t => t !== 'ALL').map(t => (
@@ -258,7 +286,7 @@ const InquiryPage = () => {
         {/* Convert to admission */}
         {row.status !== 'CONVERTED' && (
           <button
-            onClick={() => handleConvert(row.id, row.name)}
+            onClick={() => handleConvert(row)}
             className="p-1.5 rounded bg-brand/10 hover:bg-brand text-brand-light hover:text-white transition-colors"
             title="Convert to Admission"
           >
@@ -436,6 +464,50 @@ const InquiryPage = () => {
               setEditingInquiry(null);
             }}
           />
+        </Modal>
+
+        {/* Course Selection Modal for Converting Old Inquiries */}
+        <Modal
+          isOpen={isConvertModalOpen}
+          onClose={() => {
+            setIsConvertModalOpen(false);
+            setConvertingInquiry(null);
+            setConvertCourseId('');
+          }}
+          title="Select Course to Convert"
+        >
+          {convertingInquiry && (
+            <form onSubmit={handleConvertModalSubmit} className="flex flex-col gap-4">
+              <p className="text-sm text-slate-400">
+                <span className="font-bold text-slate-200">{convertingInquiry.name}</span> has no linked course. Select a course to create the admission record.
+              </p>
+              <Select
+                label="Course"
+                name="convertCourseId"
+                options={courses.filter(c => c.isActive).map(c => ({ value: c.id, label: `${c.name} (${c.code})` }))}
+                value={convertCourseId}
+                onChange={(e) => setConvertCourseId(e.target.value)}
+                placeholder="Select a course"
+                required
+              />
+              <div className="flex items-center justify-end gap-3 pt-3 border-t border-slate-800">
+                <Button
+                  variant="outline"
+                  type="button"
+                  onClick={() => {
+                    setIsConvertModalOpen(false);
+                    setConvertingInquiry(null);
+                    setConvertCourseId('');
+                  }}
+                >
+                  Cancel
+                </Button>
+                <Button variant="primary" type="submit" disabled={!convertCourseId}>
+                  Convert to Admission
+                </Button>
+              </div>
+            </form>
+          )}
         </Modal>
 
         {/* Follow Up Log Notes Modal */}

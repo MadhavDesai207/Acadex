@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { useSearchParams, useNavigate } from 'react-router-dom';
 import { CheckCircle } from 'lucide-react';
 import DashboardLayout from '../../layouts/DashboardLayout';
 import Button from '../../components/Button';
@@ -12,8 +13,11 @@ import apiClient from '../../services/apiClient';
 const STATUSES = ['PRESENT', 'ABSENT', 'HALF_DAY', 'ON_LEAVE'];
 
 const AttendanceMarkForm = () => {
+  const [searchParams] = useSearchParams();
+  const navigate = useNavigate();
+  const fromBatchId = searchParams.get('batchId') || '';
   const [batches, setBatches] = useState([]);
-  const [selectedBatch, setSelectedBatch] = useState('');
+  const [selectedBatch, setSelectedBatch] = useState(fromBatchId);
   const [date, setDate] = useState(new Date().toISOString().split('T')[0]);
   const [students, setStudents] = useState([]);
   const [records, setRecords] = useState({});

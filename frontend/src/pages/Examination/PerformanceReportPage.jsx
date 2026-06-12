@@ -92,6 +92,19 @@ const PerformanceReportPage = () => {
 
   return (
     <DashboardLayout>
+      <style>{`
+        @media print {
+          @page { size: A4 landscape; margin: 12mm 15mm; }
+          *, *::before, *::after { -webkit-print-color-adjust: exact !important; print-color-adjust: exact !important; }
+          body { background: white !important; font-size: 11px; }
+          aside, nav, header, .print\\:hidden { display: none !important; }
+          main, [class*="ml-"], [class*="pl-"] { margin-left: 0 !important; padding-left: 0 !important; }
+          .overflow-x-auto { overflow: visible !important; }
+          table { page-break-inside: auto; width: 100% !important; }
+          tr { page-break-inside: avoid; page-break-after: auto; }
+          thead { display: table-header-group; }
+        }
+      `}</style>
       <div className="flex flex-col gap-6">
         <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
           <div>
@@ -197,7 +210,7 @@ const PerformanceReportPage = () => {
                           <td className="px-3 py-2 text-slate-500 text-xs">{idx + 1}</td>
                           <td className="px-3 py-2 text-white font-medium print:text-black">{r.studentName || '—'}</td>
                           <td className="px-3 py-2 text-slate-400 text-xs font-mono">{r.rollNumber || '—'}</td>
-                          <td className="px-3 py-2 text-slate-300 max-w-[160px] truncate print:text-gray-700">{r.exam?.title || '—'}</td>
+                          <td className="px-3 py-2 text-slate-300 max-w-[160px] truncate print:text-gray-700 print:max-w-none print:whitespace-normal">{r.exam?.title || '—'}</td>
                           <td className="px-3 py-2"><ExamTypeBadge type={r.exam?.examType} /></td>
                           <td className="px-3 py-2 text-slate-400 text-xs whitespace-nowrap">
                             {r.exam?.examDate ? new Date(r.exam.examDate).toLocaleDateString() : '—'}

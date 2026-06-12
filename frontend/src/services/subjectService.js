@@ -24,6 +24,11 @@ const subjectService = {
   deleteSubject: async (id) => {
     const response = await apiClient.delete(`/subjects/${id}`);
     return { success: true, ...response.data };
+  },
+
+  toggleSubjectStatus: async (id) => {
+    const response = await apiClient.patch(`/subjects/${id}/toggle-status`);
+    return { success: true, ...response.data };
   }
 };
 

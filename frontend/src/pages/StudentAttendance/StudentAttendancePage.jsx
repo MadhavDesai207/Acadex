@@ -91,7 +91,7 @@ const StudentAttendancePage = () => {
           </div>
           <div className="flex gap-2">
             {canMark && (
-              <Button variant="primary" onClick={() => navigate('/student-attendance/mark')} className="flex items-center gap-2">
+              <Button variant="primary" onClick={() => navigate(`/student-attendance/mark${selectedBatch ? `?batchId=${selectedBatch}` : ''}`)} className="flex items-center gap-2">
                 <Plus size={16} /> <span>Mark Attendance</span>
               </Button>
             )}
