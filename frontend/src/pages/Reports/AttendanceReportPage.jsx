@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { UserCheck } from 'lucide-react';
-import DashboardLayout from '../../layouts/DashboardLayout';
+import ReportLayout from '../../layouts/ReportLayout';
 import ReportFilterBar from '../../components/ReportFilterBar';
 import ExportButton from '../../components/ExportButton';
 import reportService from '../../services/reportService';
@@ -67,11 +67,7 @@ const AttendanceReportPage = () => {
   ];
 
   return (
-    <DashboardLayout>
-      <div className="mb-6">
-        <h1 className="text-2xl font-extrabold text-white">Attendance Report</h1>
-        <p className="text-sm text-slate-400 mt-1">Per-student attendance percentages for a batch and date range</p>
-      </div>
+    <ReportLayout title="Attendance Report" description="Per-student attendance percentages for a batch and date range">
 
       <ReportFilterBar onGenerate={handleGenerate} onReset={handleReset} loading={loading}>
         <div className="flex flex-col gap-1">
@@ -172,7 +168,7 @@ const AttendanceReportPage = () => {
           <p className="text-slate-400 text-sm">Select a batch and click <strong className="text-white">Generate Report</strong> to view attendance data.</p>
         </div>
       )}
-    </DashboardLayout>
+    </ReportLayout>
   );
 };
 

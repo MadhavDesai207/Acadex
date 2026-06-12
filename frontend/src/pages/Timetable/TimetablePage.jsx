@@ -1,11 +1,11 @@
 import React, { useState, useEffect } from 'react';
 import { useSearchParams, useNavigate } from 'react-router-dom';
 import { Plus, CheckCircle, ArrowLeft } from 'lucide-react';
-import DashboardLayout from '../../layouts/DashboardLayout';
 import WeeklyGrid from '../../components/WeeklyGrid';
 import Button from '../../components/Button';
 import Modal from '../../components/Modal';
 import Select from '../../components/Select';
+import ConfirmDialog from '../../components/ConfirmDialog';
 import TimetableForm from './TimetableForm';
 import timetableService from '../../services/timetableService';
 import authService from '../../services/authService';
@@ -25,6 +25,8 @@ const TimetablePage = () => {
   const [isFormOpen, setIsFormOpen] = useState(false);
   const [editingSlot, setEditingSlot] = useState(null);
   const [alert, setAlert] = useState(null);
+  const [confirmDelete, setConfirmDelete] = useState(null);
+  const [confirmLoading, setConfirmLoading] = useState(false);
 
   useEffect(() => {
     apiClient.get('/batches').then((r) => {
@@ -59,18 +61,28 @@ const TimetablePage = () => {
     }
   };
 
-  const handleDelete = async (id) => {
-    if (!window.confirm('Remove this timetable slot?')) return;
-    const res = await timetableService.deleteSlot(id);
-    if (res.success) {
-      setAlert({ message: 'Slot removed' });
-      loadSlots();
-      setTimeout(() => setAlert(null), 3000);
+  const openConfirmDelete = (id) => {
+    setConfirmDelete(id);
+  };
+
+  const handleConfirmDelete = async () => {
+    if (!confirmDelete) return;
+    setConfirmLoading(true);
+    try {
+      const res = await timetableService.deleteSlot(confirmDelete);
+      if (res.success) {
+        setAlert({ message: 'Slot removed' });
+        loadSlots();
+        setTimeout(() => setAlert(null), 3000);
+      }
+    } finally {
+      setConfirmLoading(false);
+      setConfirmDelete(null);
     }
   };
 
   return (
-    <DashboardLayout>
+    <>
       <div className="flex flex-col gap-6">
         <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
           <div className="flex items-center gap-3">
@@ -115,7 +127,7 @@ const TimetablePage = () => {
             <WeeklyGrid
               slots={slots}
               onEdit={isAdmin ? (slot) => { setEditingSlot(slot); setIsFormOpen(true); } : null}
-              onDelete={isAdmin ? handleDelete : null}
+              onDelete={isAdmin ? openConfirmDelete : null}
               isAdmin={isAdmin}
             />
           </div>
@@ -139,8 +151,19 @@ const TimetablePage = () => {
             onClose={() => { setIsFormOpen(false); setEditingSlot(null); }}
           />
         </Modal>
+
+        <ConfirmDialog
+          isOpen={!!confirmDelete}
+          onClose={() => setConfirmDelete(null)}
+          onConfirm={handleConfirmDelete}
+          loading={confirmLoading}
+          title="Remove Timetable Slot?"
+          description="This timetable slot will be permanently deleted."
+          confirmLabel="Yes, Remove"
+          variant="danger"
+        />
       </div>
-    </DashboardLayout>
+    </>
   );
 };
 

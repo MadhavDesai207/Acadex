@@ -1,13 +1,13 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Plus, Search, Eye, Edit2, ShieldX, UserCheck, ShieldAlert, CheckCircle } from 'lucide-react';
-import DashboardLayout from '../../layouts/DashboardLayout';
 import Table from '../../components/Table';
 import Button from '../../components/Button';
 import Modal from '../../components/Modal';
 import FacultyForm from './FacultyForm';
 import facultyService from '../../services/facultyService';
 import authService from '../../services/authService';
+import ConfirmDialog from '../../components/ConfirmDialog';
 
 const FacultyPage = () => {
   const navigate = useNavigate();
@@ -39,6 +39,8 @@ const FacultyPage = () => {
 
   // Alert State
   const [alert, setAlert] = useState(null);
+  const [confirm, setConfirm] = useState(null);
+  const [confirmLoading, setConfirmLoading] = useState(false);
 
   const loadFaculty = async () => {
     setLoading(true);
@@ -73,16 +75,15 @@ const FacultyPage = () => {
   };
 
   // Toggle active/inactive system login
-  const handleToggleStatus = async (id, currentStatus) => {
-    const confirmation = window.confirm(
-      currentStatus 
-        ? 'Are you sure you want to block login access for this faculty member?' 
-        : 'Are you sure you want to restore login access for this faculty member?'
-    );
+  const handleToggleStatus = (id, currentStatus) => {
+    setConfirm({ id, currentStatus });
+  };
 
-    if (confirmation) {
-      const nextStatus = !currentStatus;
-      const res = await facultyService.toggleFacultyStatus(id, nextStatus);
+  const handleConfirmToggle = async () => {
+    setConfirmLoading(true);
+    try {
+      const nextStatus = !confirm.currentStatus;
+      const res = await facultyService.toggleFacultyStatus(confirm.id, nextStatus);
       if (res.success) {
         setAlert({
           type: 'success',
@@ -91,6 +92,9 @@ const FacultyPage = () => {
         loadFaculty();
         setTimeout(() => setAlert(null), 3000);
       }
+    } finally {
+      setConfirmLoading(false);
+      setConfirm(null);
     }
   };
 
@@ -178,7 +182,7 @@ const FacultyPage = () => {
   if (!isAdmin) return null; // let redirect trigger
 
   return (
-    <DashboardLayout>
+    <>
       <div className="flex flex-col gap-6">
         
         {/* Header Toolbar */}
@@ -337,8 +341,18 @@ const FacultyPage = () => {
           )}
         </Modal>
 
+        <ConfirmDialog
+          isOpen={!!confirm}
+          onClose={() => setConfirm(null)}
+          onConfirm={handleConfirmToggle}
+          loading={confirmLoading}
+          title={confirm?.currentStatus ? 'Block Faculty Access?' : 'Restore Faculty Access?'}
+          description={confirm?.currentStatus ? "This will prevent the faculty member from logging in." : "This will restore the faculty member's login access."}
+          confirmLabel={confirm?.currentStatus ? 'Yes, Block Access' : 'Yes, Restore'}
+          variant={confirm?.currentStatus ? 'danger' : 'default'}
+        />
       </div>
-    </DashboardLayout>
+    </>
   );
 };
 

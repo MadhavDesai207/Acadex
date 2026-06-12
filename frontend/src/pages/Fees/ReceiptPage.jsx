@@ -1,7 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { ArrowLeft, Printer, AlertCircle } from 'lucide-react';
-import DashboardLayout from '../../layouts/DashboardLayout';
 import ReceiptCard from '../../components/ReceiptCard';
 import Button from '../../components/Button';
 import feeService from '../../services/feeService';
@@ -21,7 +20,7 @@ const ReceiptPage = () => {
   }, [id]);
 
   return (
-    <DashboardLayout>
+    <>
       <div className="flex flex-col gap-6">
         <div className="flex items-center gap-4">
           <button
@@ -79,7 +78,7 @@ const ReceiptPage = () => {
           .flex.justify-center.py-4 { padding: 0 !important; }
         }
       `}</style>
-    </DashboardLayout>
+    </>
   );
 };
 

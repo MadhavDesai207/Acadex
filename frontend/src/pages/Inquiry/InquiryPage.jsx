@@ -13,12 +13,12 @@ import {
   FileText,
   AlertCircle
 } from 'lucide-react';
-import DashboardLayout from '../../layouts/DashboardLayout';
 import Table from '../../components/Table';
 import Button from '../../components/Button';
 import Modal from '../../components/Modal';
 import Select from '../../components/Select';
 import Input from '../../components/Input';
+import ConfirmDialog from '../../components/ConfirmDialog';
 import InquiryForm from './InquiryForm';
 import inquiryService from '../../services/inquiryService';
 import studentService from '../../services/studentService';
@@ -68,6 +68,10 @@ const InquiryPage = () => {
 
   // UI Alerts
   const [alert, setAlert] = useState(null);
+  
+  // Confirmation State
+  const [confirmConvert, setConfirmConvert] = useState(null);
+  const [confirmLoading, setConfirmLoading] = useState(false);
 
   // Pagination State
   const [currentPage, setCurrentPage] = useState(1);
@@ -139,8 +143,7 @@ const InquiryPage = () => {
     const isUuid = UUID_REGEX.test(row.courseInterest || '');
     if (isUuid) {
       // Course already resolved — confirm and convert directly
-      const ok = window.confirm(`Are you sure you want to convert ${row.name} to an active admission file? WARNING: This action cannot be undone, and the inquiry record will be locked.`);
-      if (ok) executeConvert(row.id, row.name, row.courseInterest);
+      setConfirmConvert({ id: row.id, name: row.name, courseId: row.courseInterest });
     } else {
       // Free-text or null courseInterest — must pick a course
       setConvertingInquiry(row);
@@ -172,12 +175,17 @@ const InquiryPage = () => {
     e.preventDefault();
     if (!convertCourseId || !convertingInquiry) return;
     setIsConvertModalOpen(false);
-    const ok = window.confirm(`Are you sure you want to convert ${convertingInquiry.name} to an active admission file? WARNING: This action cannot be undone, and the inquiry record will be locked.`);
-    if (ok) {
-      await executeConvert(convertingInquiry.id, convertingInquiry.name, convertCourseId);
-    }
+    setConfirmConvert({ id: convertingInquiry.id, name: convertingInquiry.name, courseId: convertCourseId });
     setConvertingInquiry(null);
     setConvertCourseId('');
+  };
+
+  const handleConfirmConvert = async () => {
+    if (!confirmConvert) return;
+    setConfirmLoading(true);
+    await executeConvert(confirmConvert.id, confirmConvert.name, confirmConvert.courseId);
+    setConfirmLoading(false);
+    setConfirmConvert(null);
   };
 
   // Quick Status Dropdown Changes
@@ -314,7 +322,7 @@ const InquiryPage = () => {
   const paginatedData = inquiries.slice((currentPage - 1) * limit, currentPage * limit);
 
   return (
-    <DashboardLayout>
+    <>
       <div className="flex flex-col gap-6">
         
         {/* Header Toolbar */}
@@ -411,7 +419,7 @@ const InquiryPage = () => {
             <Button
               variant="outline"
               onClick={handleDueTodayClick}
-              className="w-full flex items-center justify-center gap-1.5"
+              className="flex-1 flex items-center justify-center gap-1.5"
             >
               <Calendar size={16} className="text-brand-light" />
               <span>Due Today</span>
@@ -569,8 +577,19 @@ const InquiryPage = () => {
           )}
         </Modal>
 
+        <ConfirmDialog
+          isOpen={!!confirmConvert}
+          onClose={() => setConfirmConvert(null)}
+          onConfirm={handleConfirmConvert}
+          loading={confirmLoading}
+          title="Convert to Admission?"
+          description={`Are you sure you want to convert ${confirmConvert?.name} to an active admission file? WARNING: This action cannot be undone, and the inquiry record will be locked.`}
+          confirmLabel="Yes, Convert"
+          variant="warning"
+        />
+
       </div>
-    </DashboardLayout>
+    </>
   );
 };
 

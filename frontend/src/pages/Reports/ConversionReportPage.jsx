@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { TrendingUp, ArrowRight } from 'lucide-react';
-import DashboardLayout from '../../layouts/DashboardLayout';
+import ReportLayout from '../../layouts/ReportLayout';
 import ReportFilterBar from '../../components/ReportFilterBar';
 import ExportButton from '../../components/ExportButton';
 import reportService from '../../services/reportService';
@@ -66,11 +66,7 @@ const ConversionReportPage = () => {
   const maxFunnelCount = report ? Math.max(...FUNNEL_STEPS.map(s => report.funnel?.[s.key] || 0), 1) : 1;
 
   return (
-    <DashboardLayout>
-      <div className="mb-6">
-        <h1 className="text-2xl font-extrabold text-white">Conversion Report</h1>
-        <p className="text-sm text-slate-400 mt-1">CRM funnel analysis from inquiry to enrollment</p>
-      </div>
+    <ReportLayout title="Conversion Report" description="CRM funnel analysis from inquiry to enrollment">
 
       <ReportFilterBar onGenerate={handleGenerate} onReset={handleReset} loading={loading}>
         <div className="flex flex-col gap-1">
@@ -232,7 +228,7 @@ const ConversionReportPage = () => {
           <p className="text-slate-400 text-sm">Apply filters and click <strong className="text-white">Generate Report</strong> to view the CRM funnel.</p>
         </div>
       )}
-    </DashboardLayout>
+    </ReportLayout>
   );
 };
 

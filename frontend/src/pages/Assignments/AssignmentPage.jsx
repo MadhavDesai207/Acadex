@@ -1,11 +1,11 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Plus, Eye, Edit2, Send, CheckCircle, AlertCircle, Lock, X } from 'lucide-react';
-import DashboardLayout from '../../layouts/DashboardLayout';
 import Table from '../../components/Table';
 import Button from '../../components/Button';
 import Modal from '../../components/Modal';
 import Select from '../../components/Select';
+import ConfirmDialog from '../../components/ConfirmDialog';
 import AssignmentStatusBadge from '../../components/AssignmentStatusBadge';
 import AssignmentForm from './AssignmentForm';
 import assignmentService from '../../services/assignmentService';
@@ -27,6 +27,12 @@ const AssignmentPage = () => {
   const [isFormOpen, setIsFormOpen] = useState(false);
   const [editingAssignment, setEditingAssignment] = useState(null);
   const [alert, setAlert] = useState(null);
+
+  // Confirmation states
+  const [confirmPublish, setConfirmPublish] = useState(null);
+  const [confirmCloseAction, setConfirmCloseAction] = useState(null);
+  const [confirmSubmit, setConfirmSubmit] = useState(null);
+  const [confirmLoading, setConfirmLoading] = useState(false);
 
   useEffect(() => {
     apiClient.get('/batches').then((r) => {
@@ -63,35 +69,54 @@ const AssignmentPage = () => {
     }
   };
 
-  const handlePublish = async (assignment) => {
-    if (!window.confirm(`Publish "${assignment.title}" to all batch students?`)) return;
-    const res = await assignmentService.publishAssignment(assignment.id);
-    if (res.success) {
-      setAlert({ message: res.message });
-      loadAssignments();
-      setTimeout(() => setAlert(null), 3000);
+  const openConfirmPublish = (assignment) => setConfirmPublish(assignment);
+  const handleConfirmPublish = async () => {
+    if (!confirmPublish) return;
+    setConfirmLoading(true);
+    try {
+      const res = await assignmentService.publishAssignment(confirmPublish.id);
+      if (res.success) {
+        setAlert({ message: res.message });
+        loadAssignments();
+        setTimeout(() => setAlert(null), 3000);
+      }
+    } finally {
+      setConfirmLoading(false);
+      setConfirmPublish(null);
     }
   };
 
-  const handleClose = async (assignment) => {
-    if (!window.confirm(`Close "${assignment.title}"? Students can no longer submit, and grading becomes available.`)) return;
+  const openConfirmClose = (assignment) => setConfirmCloseAction(assignment);
+  const handleConfirmClose = async () => {
+    if (!confirmCloseAction) return;
+    setConfirmLoading(true);
     try {
-      const res = await assignmentService.closeAssignment(assignment.id);
+      const res = await assignmentService.closeAssignment(confirmCloseAction.id);
       setAlert({ message: res.message || 'Assignment closed.' });
       loadAssignments();
     } catch (err) {
       setAlert({ type: 'error', message: err.response?.data?.message || 'Failed to close assignment.' });
+    } finally {
+      setConfirmLoading(false);
+      setConfirmCloseAction(null);
+      setTimeout(() => setAlert(null), 4000);
     }
-    setTimeout(() => setAlert(null), 4000);
   };
 
-  const handleStudentSubmit = async (assignmentId) => {
-    if (!window.confirm('Mark this assignment as submitted?')) return;
-    const res = await assignmentService.submitAssignment(assignmentId);
-    if (res.success) {
-      setAlert({ message: 'Assignment submitted' });
-      loadAssignments();
-      setTimeout(() => setAlert(null), 3000);
+  const openConfirmSubmit = (assignmentId) => setConfirmSubmit(assignmentId);
+  const handleConfirmSubmit = async () => {
+    if (!confirmSubmit) return;
+    setConfirmLoading(true);
+    try {
+      const res = await assignmentService.submitAssignment(confirmSubmit);
+      if (res.success) {
+        setAlert({ message: 'Assignment submitted' });
+        loadAssignments();
+        setTimeout(() => setAlert(null), 3000);
+      }
+    } finally {
+      setConfirmLoading(false);
+      setConfirmSubmit(null);
     }
   };
 
@@ -126,7 +151,7 @@ const AssignmentPage = () => {
                 <Edit2 size={14} />
               </button>
               <button
-                onClick={() => handlePublish(row)}
+                onClick={() => openConfirmPublish(row)}
                 className="p-1.5 rounded bg-status-success/10 hover:bg-status-success text-status-success hover:text-white transition-colors"
                 title="Publish"
               >
@@ -136,7 +161,7 @@ const AssignmentPage = () => {
           )}
           {row.status === 'PUBLISHED' && (
             <button
-              onClick={() => handleClose(row)}
+              onClick={() => openConfirmClose(row)}
               className="p-1.5 rounded bg-status-warning/10 hover:bg-status-warning text-status-warning hover:text-white transition-colors"
               title="Close submissions & enable grading"
             >
@@ -147,7 +172,7 @@ const AssignmentPage = () => {
       )}
       {isStudent && row.status === 'PUBLISHED' && (
         <button
-          onClick={() => handleStudentSubmit(row.id)}
+          onClick={() => openConfirmSubmit(row.id)}
           className="px-3 py-1 rounded bg-brand text-white text-xs font-bold hover:bg-brand/80 transition-colors"
         >
           Submit
@@ -157,7 +182,7 @@ const AssignmentPage = () => {
   );
 
   return (
-    <DashboardLayout>
+    <>
       <div className="flex flex-col gap-6">
         <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
           <div>
@@ -224,8 +249,39 @@ const AssignmentPage = () => {
             onClose={() => { setIsFormOpen(false); setEditingAssignment(null); }}
           />
         </Modal>
+
+        <ConfirmDialog
+          isOpen={!!confirmPublish}
+          onClose={() => setConfirmPublish(null)}
+          onConfirm={handleConfirmPublish}
+          loading={confirmLoading}
+          title="Publish Assignment?"
+          description={`Publish "${confirmPublish?.title}" to all batch students?`}
+          confirmLabel="Yes, Publish"
+        />
+
+        <ConfirmDialog
+          isOpen={!!confirmCloseAction}
+          onClose={() => setConfirmCloseAction(null)}
+          onConfirm={handleConfirmClose}
+          loading={confirmLoading}
+          title="Close Assignment?"
+          description={`Close "${confirmCloseAction?.title}"? Students can no longer submit, and grading becomes available.`}
+          confirmLabel="Yes, Close"
+          variant="warning"
+        />
+
+        <ConfirmDialog
+          isOpen={!!confirmSubmit}
+          onClose={() => setConfirmSubmit(null)}
+          onConfirm={handleConfirmSubmit}
+          loading={confirmLoading}
+          title="Submit Assignment?"
+          description="Mark this assignment as submitted?"
+          confirmLabel="Yes, Submit"
+        />
       </div>
-    </DashboardLayout>
+    </>
   );
 };
 

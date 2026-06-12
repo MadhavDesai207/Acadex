@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { DollarSign, TrendingUp } from 'lucide-react';
-import DashboardLayout from '../../layouts/DashboardLayout';
+import ReportLayout from '../../layouts/ReportLayout';
 import ReportFilterBar from '../../components/ReportFilterBar';
 import ExportButton from '../../components/ExportButton';
 import Input from '../../components/Input';
@@ -61,11 +61,7 @@ const RevenueReportPage = () => {
   ];
 
   return (
-    <DashboardLayout>
-      <div className="mb-6">
-        <h1 className="text-2xl font-extrabold text-white">Revenue Report</h1>
-        <p className="text-sm text-slate-400 mt-1">Fee collection summary with breakdown by course and payment method</p>
-      </div>
+    <ReportLayout title="Revenue Report" description="Fee collection summary with breakdown by course and payment method">
 
       <ReportFilterBar onGenerate={handleGenerate} onReset={handleReset} loading={loading}>
         <div className="flex flex-col gap-1">
@@ -210,7 +206,7 @@ const RevenueReportPage = () => {
           <p className="text-slate-400 text-sm">Set filters and click <strong className="text-white">Generate Report</strong> to view revenue data.</p>
         </div>
       )}
-    </DashboardLayout>
+    </ReportLayout>
   );
 };
 

@@ -1,7 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { ArrowLeft, ClipboardList, Calendar, Award, Users, BookOpen } from 'lucide-react';
-import DashboardLayout from '../../layouts/DashboardLayout';
 import Button from '../../components/Button';
 import ExamTypeBadge from '../../components/ExamTypeBadge';
 import examService from '../../services/examService';
@@ -35,27 +34,27 @@ const ExamDetailPage = () => {
 
   if (loading) {
     return (
-      <DashboardLayout>
+      <>
         <div className="flex flex-col gap-4">
           {[1, 2, 3].map((i) => <div key={i} className="h-20 rounded-xl bg-bg-surface animate-pulse" />)}
         </div>
-      </DashboardLayout>
+      </>
     );
   }
 
   if (!exam) {
     return (
-      <DashboardLayout>
+      <>
         <div className="flex flex-col items-center justify-center py-20 gap-4">
           <p className="text-slate-400 text-lg">Exam not found.</p>
           <Button variant="outline" onClick={() => navigate('/exams')}>Back to Exams</Button>
         </div>
-      </DashboardLayout>
+      </>
     );
   }
 
   return (
-    <DashboardLayout>
+    <>
       <div className="flex flex-col gap-6">
         {/* Header */}
         <div className="flex items-center gap-4">
@@ -145,7 +144,7 @@ const ExamDetailPage = () => {
           </div>
         )}
       </div>
-    </DashboardLayout>
+    </>
   );
 };
 

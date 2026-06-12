@@ -1,360 +1,309 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { ArrowLeft, UserPlus, ShieldAlert, CheckCircle } from 'lucide-react';
-import DashboardLayout from '../../layouts/DashboardLayout';
+import {
+  User, GraduationCap, Phone, Mail,
+  UserPlus, ChevronRight, ChevronLeft,
+  Check, ShieldAlert, CheckCircle2
+} from 'lucide-react';
 import Input from '../../components/Input';
 import Select from '../../components/Select';
 import Button from '../../components/Button';
+import PageHeader from '../../components/PageHeader';
 import studentService from '../../services/studentService';
 import authService from '../../services/authService';
+import { useEffect } from 'react';
 
+/* ─── Step Indicator ─────────────────────────── */
+const steps = [
+  { id: 1, label: 'Personal',  icon: User },
+  { id: 2, label: 'Academic',  icon: GraduationCap },
+  { id: 3, label: 'Guardian',  icon: Phone },
+  { id: 4, label: 'Account',   icon: Mail },
+];
+
+const StepIndicator = ({ current }) => (
+  <div className="flex items-center gap-0 w-full max-w-2xl mx-auto mb-8">
+    {steps.map((step, idx) => {
+      const Icon = step.icon;
+      const done    = current > step.id;
+      const active  = current === step.id;
+      const pending = current < step.id;
+
+      return (
+        <React.Fragment key={step.id}>
+          <div className="flex flex-col items-center gap-1.5 flex-1">
+            <div className={`
+              w-9 h-9 rounded-full flex items-center justify-center border-2 transition-all duration-300 text-sm font-bold
+              ${done   ? 'bg-brand border-brand text-white'        : ''}
+              ${active ? 'bg-brand/20 border-brand-light text-brand-light scale-110' : ''}
+              ${pending ? 'bg-transparent border-slate-700 text-slate-600' : ''}
+            `}>
+              {done ? <Check size={16} strokeWidth={3} /> : <Icon size={15} />}
+            </div>
+            <span className={`text-[10px] font-bold uppercase tracking-wide transition-colors ${
+              active ? 'text-brand-light' : done ? 'text-slate-400' : 'text-slate-600'
+            }`}>
+              {step.label}
+            </span>
+          </div>
+          {idx < steps.length - 1 && (
+            <div className={`flex-1 h-px mb-6 transition-all duration-500 ${done ? 'bg-brand' : 'bg-slate-800'}`} />
+          )}
+        </React.Fragment>
+      );
+    })}
+  </div>
+);
+
+/* ─── Step Section wrapper ───────────────────── */
+const StepSection = ({ title, subtitle, children }) => (
+  <div className="glass-panel flex flex-col gap-5 animate-fadeIn">
+    <div className="border-b border-slate-800/80 pb-3">
+      <h3 className="text-base font-bold text-white">{title}</h3>
+      {subtitle && <p className="text-xs text-slate-500 mt-0.5">{subtitle}</p>}
+    </div>
+    {children}
+  </div>
+);
+
+/* ─── Inline field error ─────────────────────── */
+const FieldError = ({ error }) =>
+  error ? <p className="text-xs text-status-danger font-medium -mt-1">{error}</p> : null;
+
+/* ─── Main Page ──────────────────────────────── */
 const AddStudentPage = () => {
   const navigate = useNavigate();
   const currentUser = authService.getLocalUser() || { role: 'FACULTY' };
 
-  // RBAC Guard: Faculty cannot register students
   useEffect(() => {
-    if (currentUser.role === 'FACULTY') {
-      navigate('/students');
-    }
+    if (currentUser.role === 'FACULTY') navigate('/students');
   }, [currentUser, navigate]);
 
-  // Form Fields State
-  const [formData, setFormData] = useState({
-    name: '',
-    dateOfBirth: '',
-    gender: '',
-    address: '',
-    phone: '',
-    courseId: '',
-    batchId: '',
-    parentName: '',
-    parentPhone: '',
-    email: '',
-  });
-
-  // Options State
+  const [step, setStep]   = useState(1);
   const [courses, setCourses] = useState([]);
   const [batches, setBatches] = useState([]);
 
-  // UI State
-  const [errors, setErrors] = useState({});
-  const [loading, setLoading] = useState(false);
-  const [submitError, setSubmitError] = useState(null);
+  const [formData, setFormData] = useState({
+    name: '', dateOfBirth: '', gender: '', address: '', phone: '',
+    courseId: '', batchId: '',
+    parentName: '', parentPhone: '',
+    email: '',
+  });
+
+  const [errors,        setErrors]        = useState({});
+  const [loading,       setLoading]       = useState(false);
+  const [submitError,   setSubmitError]   = useState(null);
   const [submitSuccess, setSubmitSuccess] = useState(false);
 
-  // 1. Fetch courses on mount
   useEffect(() => {
-    const fetchCourses = async () => {
-      const data = await studentService.getCourses();
-      setCourses(data.map(c => ({ value: c.id, label: c.name })));
-    };
-    fetchCourses();
+    studentService.getCourses().then(data =>
+      setCourses(data.map(c => ({ value: c.id, label: c.name })))
+    );
   }, []);
 
-  // 2. Cascade Course ID selection to Batch options
   useEffect(() => {
-    const fetchBatches = async () => {
-      if (formData.courseId) {
-        const data = await studentService.getBatches(formData.courseId);
-        setBatches(data.map(b => ({ value: b.id, label: b.name })));
-      } else {
-        setBatches([]);
-      }
-      setFormData(prev => ({ ...prev, batchId: '' })); // reset selected batch
-    };
-    fetchBatches();
+    if (formData.courseId) {
+      studentService.getBatches(formData.courseId).then(data =>
+        setBatches(data.map(b => ({ value: b.id, label: b.name })))
+      );
+    } else {
+      setBatches([]);
+    }
+    setFormData(prev => ({ ...prev, batchId: '' }));
   }, [formData.courseId]);
 
   const handleChange = (e) => {
     const { name, value } = e.target;
     setFormData(prev => ({ ...prev, [name]: value }));
-    // Clear validation error when editing
-    if (errors[name]) {
-      setErrors(prev => {
-        const next = { ...prev };
-        delete next[name];
-        return next;
-      });
-    }
+    if (errors[name]) setErrors(prev => { const n = { ...prev }; delete n[name]; return n; });
   };
 
-  // Form Validation Checks
-  const validateForm = () => {
-    const newErrors = {};
-
-    // Personal Validation
-    if (!formData.name.trim()) newErrors.name = 'Full Name is required';
-    if (!formData.dateOfBirth) newErrors.dateOfBirth = 'Date of Birth is required';
-    if (!formData.gender) newErrors.gender = 'Gender selection is required';
-    if (!formData.phone.trim()) newErrors.phone = 'Phone number is required';
-
-    // Academic Validation
-    if (!formData.courseId) newErrors.courseId = 'Course selection is required';
-    if (!formData.batchId) newErrors.batchId = 'Batch selection is required';
-
-    // Parent Validation
-    if (!formData.parentName.trim()) newErrors.parentName = 'Parent/Guardian name is required';
-    if (!formData.parentPhone.trim()) newErrors.parentPhone = 'Parent/Guardian phone is required';
-
-    // Account Validation
-    if (!formData.email.trim()) {
-      newErrors.email = 'Email address is required';
-    } else if (!/\S+@\S+\.\S+/.test(formData.email)) {
-      newErrors.email = 'Please enter a valid email address';
+  /* Per-step validation */
+  const validateStep = (s) => {
+    const e = {};
+    if (s === 1) {
+      if (!formData.name.trim()) e.name = 'Full name is required';
+      if (!formData.dateOfBirth) e.dateOfBirth = 'Date of birth is required';
+      if (!formData.gender) e.gender = 'Gender is required';
+      if (!formData.phone.trim()) e.phone = 'Phone number is required';
     }
-
-    setErrors(newErrors);
-    return Object.keys(newErrors).length === 0;
+    if (s === 2) {
+      if (!formData.courseId) e.courseId = 'Course is required';
+      if (!formData.batchId) e.batchId = 'Batch is required';
+    }
+    if (s === 3) {
+      if (!formData.parentName.trim()) e.parentName = 'Guardian name is required';
+      if (!formData.parentPhone.trim()) e.parentPhone = 'Guardian phone is required';
+    }
+    if (s === 4) {
+      if (!formData.email.trim()) e.email = 'Email is required';
+      else if (!/\S+@\S+\.\S+/.test(formData.email)) e.email = 'Valid email required';
+    }
+    setErrors(e);
+    return Object.keys(e).length === 0;
   };
 
-  const handleSubmit = async (e) => {
-    e.preventDefault();
+  const handleNext = () => {
+    if (validateStep(step)) setStep(s => s + 1);
+  };
+
+  const handleBack = () => {
+    setErrors({});
+    setStep(s => s - 1);
+  };
+
+  const handleSubmit = async () => {
+    if (!validateStep(4)) return;
     setSubmitError(null);
-    setSubmitSuccess(false);
-
-    if (!validateForm()) return;
-
     setLoading(true);
     try {
       const res = await studentService.createStudent(formData);
       if (res.success) {
         setSubmitSuccess(true);
-        setTimeout(() => {
-          navigate('/students');
-        }, 2000);
+        setTimeout(() => navigate('/students'), 2200);
       }
     } catch (err) {
-      setSubmitError(
-        err.response?.data?.message || 
-        'An error occurred while creating the student. Please check inputs.'
-      );
+      setSubmitError(err.response?.data?.message || 'Failed to register student. Please check all fields.');
     } finally {
       setLoading(false);
     }
   };
 
   return (
-    <DashboardLayout>
-      <div className="flex flex-col gap-6 max-w-4xl mx-auto">
-        
-        {/* Navigation Toolbar */}
-        <div className="flex items-center gap-3">
-          <button
-            onClick={() => navigate('/students')}
-            className="p-2 rounded-lg text-slate-400 hover:bg-slate-800 hover:text-white transition-colors"
-          >
-            <ArrowLeft size={18} />
-          </button>
-          <div>
-            <h1 className="text-2xl md:text-3xl font-extrabold tracking-tight text-white font-heading">
-              New Student Registration
-            </h1>
-            <p className="text-xs md:text-sm text-slate-400">
-              Complete the registration form to create a student profile and setup user credentials.
-            </p>
-          </div>
-        </div>
+    <>
+      <div className="flex flex-col gap-6 max-w-2xl mx-auto">
 
-        {/* Feedback Alert Banners */}
+        <PageHeader
+          breadcrumb={[{ label: 'Students', href: '/students' }, { label: 'New Registration' }]}
+          title="New Student Registration"
+          subtitle="Complete each step to create the student profile and portal credentials."
+        />
+
+        {/* Stepper */}
+        <StepIndicator current={step} />
+
+        {/* Error Banner */}
         {submitError && (
-          <div className="flex gap-2.5 p-3 rounded-lg bg-status-danger/15 border border-status-danger/30 text-status-danger text-sm">
-            <ShieldAlert size={18} className="shrink-0 mt-0.5" />
+          <div className="flex gap-2.5 p-3.5 rounded-xl bg-status-danger/10 border border-status-danger/25 text-status-danger text-sm animate-fadeIn">
+            <ShieldAlert size={16} className="shrink-0 mt-0.5" />
             <span>{submitError}</span>
           </div>
         )}
 
+        {/* Success Banner */}
         {submitSuccess && (
-          <div className="flex gap-2.5 p-3 rounded-lg bg-status-success/15 border border-status-success/30 text-status-success text-sm">
-            <CheckCircle size={18} className="shrink-0 mt-0.5" />
-            <span>Student profile registered successfully! Redirecting to student registry...</span>
+          <div className="flex gap-2.5 p-3.5 rounded-xl bg-status-success/10 border border-status-success/25 text-status-success text-sm animate-fadeIn">
+            <CheckCircle2 size={16} className="shrink-0 mt-0.5" />
+            <span>Student enrolled successfully! Redirecting to registry...</span>
           </div>
         )}
 
-        {/* Form Container */}
-        <form onSubmit={handleSubmit} className="flex flex-col gap-6">
-          
-          {/* Section 1: Personal Details */}
-          <div className="glass-panel rounded-2xl p-6 border border-slate-700/50 flex flex-col gap-4">
-            <h3 className="text-base font-bold text-white border-b border-slate-800 pb-2.5">
-              1. Personal Details
-            </h3>
-            
+        {/* ── Step 1: Personal ── */}
+        {step === 1 && (
+          <StepSection title="Personal Details" subtitle="Basic identity and contact information">
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <Input
-                label="Full Name"
-                name="name"
-                placeholder="John Doe"
-                value={formData.name}
-                onChange={handleChange}
-                error={errors.name}
-                required
-              />
-
-              <Input
-                label="Date of Birth"
-                name="dateOfBirth"
-                type="date"
-                value={formData.dateOfBirth}
-                onChange={handleChange}
-                error={errors.dateOfBirth}
-                required
-              />
-
-              <Select
-                label="Gender"
-                name="gender"
-                options={[
-                  { value: 'MALE', label: 'Male' },
-                  { value: 'FEMALE', label: 'Female' },
-                  { value: 'OTHER', label: 'Other' }
-                ]}
-                value={formData.gender}
-                onChange={handleChange}
-                error={errors.gender}
-                placeholder="Select Gender"
-                required
-              />
-
-              <Input
-                label="Contact Phone"
-                name="phone"
-                placeholder="555-0100"
-                value={formData.phone}
-                onChange={handleChange}
-                error={errors.phone}
-                required
-              />
+              <Input label="Full Name" name="name" placeholder="e.g. Priya Sharma"
+                value={formData.name} onChange={handleChange} error={errors.name} required />
+              <Input label="Date of Birth" name="dateOfBirth" type="date"
+                value={formData.dateOfBirth} onChange={handleChange} error={errors.dateOfBirth} required />
+              <Select label="Gender" name="gender"
+                options={[{ value: 'MALE', label: 'Male' }, { value: 'FEMALE', label: 'Female' }, { value: 'OTHER', label: 'Other' }]}
+                value={formData.gender} onChange={handleChange} error={errors.gender}
+                placeholder="Select Gender" required />
+              <Input label="Phone Number" name="phone" placeholder="e.g. 9876543210"
+                value={formData.phone} onChange={handleChange} error={errors.phone} required />
             </div>
-
-            <div className="flex flex-col gap-1.5 w-full">
-              <label htmlFor="address" className="text-sm font-medium text-slate-300">
-                Residential Address
-              </label>
+            <div className="flex flex-col gap-1.5">
+              <label className="text-sm font-medium text-slate-300">Residential Address</label>
               <textarea
-                id="address"
-                name="address"
-                rows={3}
-                placeholder="123 Academic Way, Suite 100"
-                value={formData.address}
-                onChange={handleChange}
-                className="w-full px-3 py-2 rounded-lg text-sm outline-none glass-input resize-none"
+                name="address" rows={3} placeholder="123 Main Street, City, State - PIN"
+                value={formData.address} onChange={handleChange}
+                className="w-full px-3 py-2 rounded-lg text-sm glass-input resize-none"
               />
             </div>
-          </div>
+          </StepSection>
+        )}
 
-          {/* Section 2: Academic Program */}
-          <div className="glass-panel rounded-2xl p-6 border border-slate-700/50 flex flex-col gap-4">
-            <h3 className="text-base font-bold text-white border-b border-slate-800 pb-2.5">
-              2. Academic Course & Batch
-            </h3>
-
+        {/* ── Step 2: Academic ── */}
+        {step === 2 && (
+          <StepSection title="Academic Program" subtitle="Assign the student to a course and batch">
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <Select
-                label="Course Interest"
-                name="courseId"
-                options={courses}
-                value={formData.courseId}
-                onChange={handleChange}
-                error={errors.courseId}
-                placeholder="Choose Course"
-                required
-              />
-
-              <Select
-                label="Assigned Batch"
-                name="batchId"
-                options={batches}
-                value={formData.batchId}
-                onChange={handleChange}
-                error={errors.batchId}
-                placeholder={formData.courseId ? "Choose Batch" : "Select a Course First"}
-                disabled={!formData.courseId}
-                required
-              />
+              <Select label="Course" name="courseId" options={courses}
+                value={formData.courseId} onChange={handleChange} error={errors.courseId}
+                placeholder="Select Course" required />
+              <Select label="Batch" name="batchId" options={batches}
+                value={formData.batchId} onChange={handleChange} error={errors.batchId}
+                placeholder={formData.courseId ? 'Select Batch' : 'Select a course first'}
+                disabled={!formData.courseId} required />
             </div>
-          </div>
+            {formData.courseId && !formData.batchId && (
+              <p className="text-xs text-slate-500">Select the batch the student will join for this course.</p>
+            )}
+          </StepSection>
+        )}
 
-          {/* Section 3: Parent / Guardian Info */}
-          <div className="glass-panel rounded-2xl p-6 border border-slate-700/50 flex flex-col gap-4">
-            <h3 className="text-base font-bold text-white border-b border-slate-800 pb-2.5">
-              3. Parent / Guardian Details
-            </h3>
-
+        {/* ── Step 3: Guardian ── */}
+        {step === 3 && (
+          <StepSection title="Parent / Guardian" subtitle="Emergency contact and guardian information">
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <Input
-                label="Guardian Full Name"
-                name="parentName"
-                placeholder="Robert Doe"
-                value={formData.parentName}
-                onChange={handleChange}
-                error={errors.parentName}
-                required
-              />
-
-              <Input
-                label="Guardian Phone"
-                name="parentPhone"
-                placeholder="555-0102"
-                value={formData.parentPhone}
-                onChange={handleChange}
-                error={errors.parentPhone}
-                required
-              />
+              <Input label="Guardian Full Name" name="parentName" placeholder="e.g. Rajesh Sharma"
+                value={formData.parentName} onChange={handleChange} error={errors.parentName} required />
+              <Input label="Guardian Phone" name="parentPhone" placeholder="e.g. 9876543211"
+                value={formData.parentPhone} onChange={handleChange} error={errors.parentPhone} required />
             </div>
-          </div>
+          </StepSection>
+        )}
 
-          {/* Section 4: System User Account */}
-          <div className="glass-panel rounded-2xl p-6 border border-slate-700/50 flex flex-col gap-4">
-            <div className="flex flex-col">
-              <h3 className="text-base font-bold text-white border-b border-slate-800 pb-2.5">
-                4. System Portal Account
-              </h3>
-              <p className="text-[11px] text-slate-500 mt-1.5">
-                Registration auto-generates a temporary user portal password formatted as: <code className="text-brand-light font-mono font-bold">STUD@&lt;RollNumber&gt;</code>.
-              </p>
-            </div>
+        {/* ── Step 4: Account ── */}
+        {step === 4 && (
+          <StepSection title="Portal Account" subtitle="The student will use this email to log in. A temporary password will be auto-generated.">
+            <Input
+              label="Student Email Address" name="email" type="email"
+              placeholder="student@example.com"
+              value={formData.email} onChange={handleChange} error={errors.email}
+              icon={Mail}
+              helperText={`Temporary password: STUD@<RollNumber> — student must change on first login.`}
+              required
+            />
+          </StepSection>
+        )}
 
-            <div className="max-w-md">
-              <Input
-                label="Student Account Email"
-                name="email"
-                type="email"
-                placeholder="student.name@eduerp.com"
-                value={formData.email}
-                onChange={handleChange}
-                error={errors.email}
-                required
-              />
-            </div>
-          </div>
-
-          {/* Submit Actions */}
-          <div className="flex items-center justify-end gap-3 pt-2">
-            <Button
-              variant="outline"
-              type="button"
-              onClick={() => navigate('/students')}
-              disabled={loading}
-            >
+        {/* Navigation Buttons */}
+        <div className="flex items-center justify-between pt-1">
+          {step > 1 ? (
+            <Button variant="outline" onClick={handleBack} disabled={loading}>
+              <ChevronLeft size={16} /> Previous
+            </Button>
+          ) : (
+            <Button variant="outline" onClick={() => navigate('/students')} disabled={loading}>
               Cancel
             </Button>
+          )}
+
+          {step < 4 ? (
+            <Button variant="primary" onClick={handleNext}>
+              Next <ChevronRight size={16} />
+            </Button>
+          ) : (
             <Button
               variant="primary"
-              type="submit"
               loading={loading}
               disabled={submitSuccess}
-              className="flex items-center gap-2"
+              onClick={handleSubmit}
             >
-              <UserPlus size={16} />
-              <span>Complete Enrollment</span>
+              <UserPlus size={15} />
+              Complete Enrollment
             </Button>
-          </div>
+          )}
+        </div>
 
-        </form>
+        {/* Step summary text */}
+        <p className="text-center text-xs text-slate-600">
+          Step {step} of {steps.length} — {steps[step - 1].label}
+        </p>
 
       </div>
-    </DashboardLayout>
+    </>
   );
 };
 

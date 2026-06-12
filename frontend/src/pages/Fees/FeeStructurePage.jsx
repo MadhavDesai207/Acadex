@@ -1,11 +1,11 @@
 import React, { useState, useEffect } from 'react';
 import { Plus, Search, Edit2, Eye, CheckCircle, AlertCircle, ToggleLeft, ToggleRight } from 'lucide-react';
-import DashboardLayout from '../../layouts/DashboardLayout';
 import Table from '../../components/Table';
 import Button from '../../components/Button';
 import Modal from '../../components/Modal';
 import Input from '../../components/Input';
 import FeeStructureForm from './FeeStructureForm';
+import ConfirmDialog from '../../components/ConfirmDialog';
 import feeService from '../../services/feeService';
 import apiClient from '../../services/apiClient';
 
@@ -33,6 +33,11 @@ const FeeStructurePage = () => {
   const [instErrors, setInstErrors] = useState({});
   const [instLoading, setInstLoading] = useState(false);
   const [editingInst, setEditingInst] = useState(null);
+
+  // Confirmation dialog states
+  const [confirmToggle, setConfirmToggle] = useState(null);
+  const [confirmDeleteInst, setConfirmDeleteInst] = useState(null);
+  const [confirmLoading, setConfirmLoading] = useState(false);
 
   const showAlert = (type, message) => {
     setAlert({ type, message });
@@ -89,14 +94,19 @@ const FeeStructurePage = () => {
     }
   };
 
-  const handleToggle = async (structure) => {
-    if (!window.confirm(`${structure.isActive ? 'Deactivate' : 'Activate'} fee structure "${structure.name}"?`)) return;
+  const openConfirmToggle = (structure) => setConfirmToggle(structure);
+  const handleConfirmToggle = async () => {
+    if (!confirmToggle) return;
+    setConfirmLoading(true);
     try {
-      const res = await feeService.toggleStructureStatus(structure.id);
-      showAlert('success', res.message || `Fee structure ${structure.isActive ? 'deactivated' : 'activated'}.`);
+      const res = await feeService.toggleStructureStatus(confirmToggle.id);
+      showAlert('success', res.message || `Fee structure ${confirmToggle.isActive ? 'deactivated' : 'activated'}.`);
       loadStructures();
     } catch (err) {
       showAlert('error', err.response?.data?.message || 'Failed to update status.');
+    } finally {
+      setConfirmLoading(false);
+      setConfirmToggle(null);
     }
   };
 
@@ -169,14 +179,19 @@ const FeeStructurePage = () => {
     }
   };
 
-  const handleDeleteInstallment = async (inst) => {
-    if (!window.confirm(`Delete installment "${inst.label}"?`)) return;
+  const openConfirmDeleteInst = (inst) => setConfirmDeleteInst(inst);
+  const handleConfirmDeleteInst = async () => {
+    if (!confirmDeleteInst) return;
+    setConfirmLoading(true);
     try {
-      await feeService.deleteInstallment(inst.id);
+      await feeService.deleteInstallment(confirmDeleteInst.id);
       await refreshDetail(detailStructure.id);
       loadStructures();
     } catch (err) {
       showAlert('error', err.response?.data?.message || 'Failed to delete installment.');
+    } finally {
+      setConfirmLoading(false);
+      setConfirmDeleteInst(null);
     }
   };
 
@@ -214,7 +229,7 @@ const FeeStructurePage = () => {
         <Edit2 size={14} />
       </button>
       <button
-        onClick={() => handleToggle(row)}
+        onClick={() => openConfirmToggle(row)}
         className={`p-1.5 rounded transition-colors ${row.isActive ? 'bg-status-danger/10 hover:bg-status-danger text-status-danger hover:text-white' : 'bg-status-success/10 hover:bg-status-success text-status-success hover:text-white'}`}
         title={row.isActive ? 'Deactivate' : 'Activate'}
       >
@@ -304,7 +319,7 @@ const FeeStructurePage = () => {
             </button>
             <button
               type="button"
-              onClick={() => handleDeleteInstallment(inst)}
+              onClick={() => openConfirmDeleteInst(inst)}
               className="p-1 rounded bg-status-danger/10 hover:bg-status-danger text-status-danger hover:text-white transition-colors"
               title="Delete"
             >
@@ -317,7 +332,7 @@ const FeeStructurePage = () => {
   };
 
   return (
-    <DashboardLayout>
+    <>
       <div className="flex flex-col gap-6">
         <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
           <div>
@@ -480,8 +495,30 @@ const FeeStructurePage = () => {
             </div>
           )}
         </Modal>
+
+        <ConfirmDialog
+          isOpen={!!confirmToggle}
+          onClose={() => setConfirmToggle(null)}
+          onConfirm={handleConfirmToggle}
+          loading={confirmLoading}
+          title={confirmToggle?.isActive ? 'Deactivate Fee Structure?' : 'Activate Fee Structure?'}
+          description={confirmToggle ? `${confirmToggle.isActive ? 'Deactivate' : 'Activate'} fee structure "${confirmToggle.name}"?` : ''}
+          confirmLabel={confirmToggle?.isActive ? 'Yes, Deactivate' : 'Yes, Activate'}
+          variant={confirmToggle?.isActive ? 'danger' : 'default'}
+        />
+
+        <ConfirmDialog
+          isOpen={!!confirmDeleteInst}
+          onClose={() => setConfirmDeleteInst(null)}
+          onConfirm={handleConfirmDeleteInst}
+          loading={confirmLoading}
+          title="Delete Installment?"
+          description={`Delete installment "${confirmDeleteInst?.label}"?`}
+          confirmLabel="Yes, Delete"
+          variant="danger"
+        />
       </div>
-    </DashboardLayout>
+    </>
   );
 };
 

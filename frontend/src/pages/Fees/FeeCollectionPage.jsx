@@ -1,7 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { Search, Receipt, CheckCircle, AlertCircle } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
-import DashboardLayout from '../../layouts/DashboardLayout';
 import Table from '../../components/Table';
 import Button from '../../components/Button';
 import Modal from '../../components/Modal';
@@ -102,15 +101,34 @@ const CollectForm = ({ onClose, onSuccess }) => {
   return (
     <div className="flex flex-col gap-4">
       {/* Step indicator */}
-      <div className="flex items-center gap-2 text-xs text-slate-400 mb-1">
-        {['Find Student', 'Select Fee', 'Record Payment'].map((label, i) => (
-          <React.Fragment key={label}>
-            <span className={`font-semibold ${step === i + 1 ? 'text-brand-light' : step > i + 1 ? 'text-status-success' : ''}`}>
-              {i + 1}. {label}
-            </span>
-            {i < 2 && <span className="text-slate-600">›</span>}
-          </React.Fragment>
-        ))}
+      <div className="flex items-center justify-between relative mb-6 mt-2">
+        <div className="absolute left-0 top-3 w-full h-0.5 bg-slate-800" />
+        <div 
+          className="absolute left-0 top-3 h-0.5 bg-brand transition-all duration-300"
+          style={{ width: `${((step - 1) / 2) * 100}%` }}
+        />
+        {['Find Student', 'Select Fee', 'Record Payment'].map((label, i) => {
+          const isActive = step === i + 1;
+          const isPast = step > i + 1;
+          return (
+            <div key={label} className="relative z-10 flex flex-col items-center gap-1.5 bg-bg-surface px-2">
+              <div className={`w-6 h-6 rounded-full flex items-center justify-center text-[10px] font-bold transition-all duration-300 ${
+                isActive ? 'bg-brand text-white shadow-[0_0_10px_rgba(79,70,229,0.5)] scale-110' :
+                isPast ? 'bg-status-success text-white' :
+                'bg-slate-800 text-slate-400'
+              }`}>
+                {isPast ? <CheckCircle size={12} /> : i + 1}
+              </div>
+              <span className={`text-[10px] uppercase tracking-wider font-bold transition-colors ${
+                isActive ? 'text-brand-light' :
+                isPast ? 'text-slate-300' :
+                'text-slate-500'
+              }`}>
+                {label}
+              </span>
+            </div>
+          );
+        })}
       </div>
 
       {/* Step 1: Search student */}
@@ -406,7 +424,7 @@ const FeeCollectionPage = () => {
   const totalPages = Math.ceil(payments.length / limit) || 1;
 
   return (
-    <DashboardLayout>
+    <>
       <div className="flex flex-col gap-6">
         <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
           <div>
@@ -480,7 +498,7 @@ const FeeCollectionPage = () => {
           />
         </Modal>
       </div>
-    </DashboardLayout>
+    </>
   );
 };
 

@@ -1,7 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { Search, UserCheck, Receipt, Plus, CheckCircle, AlertCircle } from 'lucide-react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
-import DashboardLayout from '../../layouts/DashboardLayout';
 import Modal from '../../components/Modal';
 import Button from '../../components/Button';
 import FeePaymentBadge from '../../components/FeePaymentBadge';
@@ -198,7 +197,7 @@ const StudentFeePage = () => {
     payments.reduce((s, p) => s + parseFloat(p.amountPaid) + parseFloat(p.creditApplied || 0), 0);
 
   return (
-    <DashboardLayout>
+    <>
       <div className="flex flex-col gap-6">
         <div>
           <h1 className="text-2xl md:text-3xl font-extrabold tracking-tight text-white font-heading">Student Fees</h1>
@@ -407,7 +406,7 @@ const StudentFeePage = () => {
           </Modal>
         )}
       </div>
-    </DashboardLayout>
+    </>
   );
 };
 

@@ -1,10 +1,10 @@
 import React, { useState, useEffect } from 'react';
 import { Plus, CheckCircle } from 'lucide-react';
-import DashboardLayout from '../../layouts/DashboardLayout';
 import Button from '../../components/Button';
 import Modal from '../../components/Modal';
 import Select from '../../components/Select';
 import MaterialCard from '../../components/MaterialCard';
+import ConfirmDialog from '../../components/ConfirmDialog';
 import MaterialForm from './MaterialForm';
 import materialService from '../../services/materialService';
 import authService from '../../services/authService';
@@ -24,6 +24,8 @@ const MaterialsPage = () => {
   const [isFormOpen, setIsFormOpen] = useState(false);
   const [editingMaterial, setEditingMaterial] = useState(null);
   const [alert, setAlert] = useState(null);
+  const [confirmDelete, setConfirmDelete] = useState(null);
+  const [confirmLoading, setConfirmLoading] = useState(false);
 
   useEffect(() => {
     Promise.all([
@@ -65,18 +67,28 @@ const MaterialsPage = () => {
     }
   };
 
-  const handleDelete = async (id) => {
-    if (!window.confirm('Remove this study material?')) return;
-    const res = await materialService.deleteMaterial(id);
-    if (res.success) {
-      setAlert({ message: 'Material removed' });
-      loadMaterials();
-      setTimeout(() => setAlert(null), 3000);
+  const openConfirmDelete = (id) => {
+    setConfirmDelete(id);
+  };
+
+  const handleConfirmDelete = async () => {
+    if (!confirmDelete) return;
+    setConfirmLoading(true);
+    try {
+      const res = await materialService.deleteMaterial(confirmDelete);
+      if (res.success) {
+        setAlert({ message: 'Material removed' });
+        loadMaterials();
+        setTimeout(() => setAlert(null), 3000);
+      }
+    } finally {
+      setConfirmLoading(false);
+      setConfirmDelete(null);
     }
   };
 
   return (
-    <DashboardLayout>
+    <>
       <div className="flex flex-col gap-6">
         <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
           <div>
@@ -127,7 +139,7 @@ const MaterialsPage = () => {
                 key={m.id}
                 material={m}
                 onEdit={canManage ? setEditingMaterial : null}
-                onDelete={isAdmin ? handleDelete : null}
+                onDelete={isAdmin ? openConfirmDelete : null}
                 isAdmin={isAdmin}
               />
             ))}
@@ -145,8 +157,19 @@ const MaterialsPage = () => {
             onClose={() => { setIsFormOpen(false); setEditingMaterial(null); }}
           />
         </Modal>
+
+        <ConfirmDialog
+          isOpen={!!confirmDelete}
+          onClose={() => setConfirmDelete(null)}
+          onConfirm={handleConfirmDelete}
+          loading={confirmLoading}
+          title="Remove Material?"
+          description="This study material will be permanently removed."
+          confirmLabel="Yes, Remove"
+          variant="danger"
+        />
       </div>
-    </DashboardLayout>
+    </>
   );
 };
 

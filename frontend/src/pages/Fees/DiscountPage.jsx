@@ -1,6 +1,5 @@
 import React, { useState, useEffect } from 'react';
 import { Plus, Edit2, CheckCircle, AlertCircle, Tag, Award } from 'lucide-react';
-import DashboardLayout from '../../layouts/DashboardLayout';
 import Table from '../../components/Table';
 import Button from '../../components/Button';
 import Modal from '../../components/Modal';
@@ -230,7 +229,7 @@ const DiscountPage = () => {
     : `New ${editingItem?._type === 'discount' ? 'Discount' : 'Scholarship'}`;
 
   return (
-    <DashboardLayout>
+    <>
       <div className="flex flex-col gap-6">
         <div>
           <h1 className="text-2xl md:text-3xl font-extrabold tracking-tight text-white font-heading">Discounts & Scholarships</h1>
@@ -302,7 +301,7 @@ const DiscountPage = () => {
           />
         </Modal>
       </div>
-    </DashboardLayout>
+    </>
   );
 };
 

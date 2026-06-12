@@ -1,7 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Plus, Search, Eye, Award, CheckCircle, ShieldAlert, Heart } from 'lucide-react';
-import DashboardLayout from '../../layouts/DashboardLayout';
 import Table from '../../components/Table';
 import Button from '../../components/Button';
 import Modal from '../../components/Modal';
@@ -133,7 +132,7 @@ const AdmissionPage = () => {
   const paginatedData = admissions.slice((currentPage - 1) * limit, currentPage * limit);
 
   return (
-    <DashboardLayout>
+    <>
       <div className="flex flex-col gap-6">
         
         {/* Header Toolbar */}
@@ -254,7 +253,7 @@ const AdmissionPage = () => {
         </Modal>
 
       </div>
-    </DashboardLayout>
+    </>
   );
 };
 

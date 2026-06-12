@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { FlaskConical, ChevronDown, ChevronUp } from 'lucide-react';
-import DashboardLayout from '../../layouts/DashboardLayout';
+import ReportLayout from '../../layouts/ReportLayout';
 import ReportFilterBar from '../../components/ReportFilterBar';
 import ExportButton from '../../components/ExportButton';
 import reportService from '../../services/reportService';
@@ -72,11 +72,7 @@ const ExaminationReportPage = () => {
   ];
 
   return (
-    <DashboardLayout>
-      <div className="mb-6">
-        <h1 className="text-2xl font-extrabold text-white">Examination Report</h1>
-        <p className="text-sm text-slate-400 mt-1">Exam-wise pass/fail analysis with top and bottom performers</p>
-      </div>
+    <ReportLayout title="Examination Report" description="Exam-wise pass/fail analysis with top and bottom performers">
 
       <ReportFilterBar onGenerate={handleGenerate} onReset={handleReset} loading={loading}>
         <div className="flex flex-col gap-1">
@@ -221,7 +217,7 @@ const ExaminationReportPage = () => {
           <p className="text-slate-400 text-sm">Apply filters and click <strong className="text-white">Generate Report</strong> to view examination results.</p>
         </div>
       )}
-    </DashboardLayout>
+    </ReportLayout>
   );
 };
 

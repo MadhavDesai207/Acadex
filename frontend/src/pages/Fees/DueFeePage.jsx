@@ -1,7 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { Search, AlertCircle } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
-import DashboardLayout from '../../layouts/DashboardLayout';
 import Table from '../../components/Table';
 import feeService from '../../services/feeService';
 
@@ -82,7 +81,7 @@ const DueFeePage = () => {
   const totalAmountDue = dueList.reduce((s, r) => s + r.totalAmountDue, 0);
 
   return (
-    <DashboardLayout>
+    <>
       <div className="flex flex-col gap-6">
         <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
           <div>
@@ -156,7 +155,7 @@ const DueFeePage = () => {
           pagination={{ currentPage, totalPages, limit, onPageChange: setCurrentPage, onLimitChange: () => {} }}
         />
       </div>
-    </DashboardLayout>
+    </>
   );
 };
 

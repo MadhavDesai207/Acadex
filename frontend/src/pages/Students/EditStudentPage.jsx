@@ -1,7 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { ArrowLeft, Save, ShieldAlert, CheckCircle } from 'lucide-react';
-import DashboardLayout from '../../layouts/DashboardLayout';
 import Input from '../../components/Input';
 import Select from '../../components/Select';
 import Button from '../../components/Button';
@@ -160,16 +159,16 @@ const EditStudentPage = () => {
 
   if (loading && !formData.name) {
     return (
-      <DashboardLayout>
+      <>
         <div className="flex items-center justify-center min-h-[400px]">
           <div className="animate-spin rounded-full h-8 w-8 border-t-2 border-brand" />
         </div>
-      </DashboardLayout>
+      </>
     );
   }
 
   return (
-    <DashboardLayout>
+    <>
       <div className="flex flex-col gap-6 max-w-4xl mx-auto">
         
         {/* Navigation Toolbar */}
@@ -397,7 +396,7 @@ const EditStudentPage = () => {
         </form>
 
       </div>
-    </DashboardLayout>
+    </>
   );
 };
 

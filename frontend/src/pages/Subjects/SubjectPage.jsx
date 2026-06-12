@@ -1,10 +1,10 @@
 import React, { useState, useEffect } from 'react';
 import { Plus, Search, Edit2, ToggleLeft, ToggleRight, CheckCircle } from 'lucide-react';
-import DashboardLayout from '../../layouts/DashboardLayout';
 import Table from '../../components/Table';
 import Button from '../../components/Button';
 import Modal from '../../components/Modal';
 import Select from '../../components/Select';
+import ConfirmDialog from '../../components/ConfirmDialog';
 import SubjectForm from './SubjectForm';
 import subjectService from '../../services/subjectService';
 import authService from '../../services/authService';
@@ -22,6 +22,8 @@ const SubjectPage = () => {
   const [isFormOpen, setIsFormOpen] = useState(false);
   const [editingSubject, setEditingSubject] = useState(null);
   const [alert, setAlert] = useState(null);
+  const [confirmToggle, setConfirmToggle] = useState(null);
+  const [confirmLoading, setConfirmLoading] = useState(false);
   const [currentPage, setCurrentPage] = useState(1);
   const limit = 10;
 
@@ -62,13 +64,23 @@ const SubjectPage = () => {
     }
   };
 
-  const handleToggle = async (subject) => {
-    if (!window.confirm(`${subject.isActive ? 'Deactivate' : 'Activate'} subject "${subject.name}"?`)) return;
-    const res = await subjectService.toggleSubjectStatus(subject.id);
-    if (res.success) {
-      setAlert({ message: res.message || `Subject ${subject.isActive ? 'deactivated' : 'activated'}` });
-      loadSubjects();
-      setTimeout(() => setAlert(null), 3000);
+  const openConfirmToggle = (subject) => {
+    setConfirmToggle(subject);
+  };
+
+  const handleConfirmToggle = async () => {
+    if (!confirmToggle) return;
+    setConfirmLoading(true);
+    try {
+      const res = await subjectService.toggleSubjectStatus(confirmToggle.id);
+      if (res.success) {
+        setAlert({ message: res.message || `Subject ${confirmToggle.isActive ? 'deactivated' : 'activated'}` });
+        loadSubjects();
+        setTimeout(() => setAlert(null), 3000);
+      }
+    } finally {
+      setConfirmLoading(false);
+      setConfirmToggle(null);
     }
   };
 
@@ -108,7 +120,7 @@ const SubjectPage = () => {
             <Edit2 size={14} />
           </button>
           <button
-            onClick={() => handleToggle(row)}
+            onClick={() => openConfirmToggle(row)}
             className={`p-1.5 rounded transition-colors ${
               row.isActive
                 ? 'bg-status-danger/10 hover:bg-status-danger text-status-danger hover:text-white'
@@ -126,7 +138,7 @@ const SubjectPage = () => {
   const paginatedData = subjects.slice((currentPage - 1) * limit, currentPage * limit);
 
   return (
-    <DashboardLayout>
+    <>
       <div className="flex flex-col gap-6">
         <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
           <div>
@@ -207,8 +219,19 @@ const SubjectPage = () => {
             onClose={() => { setIsFormOpen(false); setEditingSubject(null); }}
           />
         </Modal>
+
+        <ConfirmDialog
+          isOpen={!!confirmToggle}
+          onClose={() => setConfirmToggle(null)}
+          onConfirm={handleConfirmToggle}
+          loading={confirmLoading}
+          title={confirmToggle?.isActive ? 'Deactivate Subject?' : 'Activate Subject?'}
+          description={confirmToggle ? `${confirmToggle.isActive ? 'Deactivate' : 'Activate'} subject "${confirmToggle.name}"?` : ''}
+          confirmLabel={confirmToggle?.isActive ? 'Yes, Deactivate' : 'Yes, Activate'}
+          variant={confirmToggle?.isActive ? 'danger' : 'default'}
+        />
       </div>
-    </DashboardLayout>
+    </>
   );
 };
 

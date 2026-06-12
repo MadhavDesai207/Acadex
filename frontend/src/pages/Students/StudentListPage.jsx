@@ -1,289 +1,352 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Search, UserPlus, Eye, Edit2, ShieldX, UserCheck, ShieldAlert } from 'lucide-react';
-import DashboardLayout from '../../layouts/DashboardLayout';
+import { Search, UserPlus, Eye, Edit2, ShieldX, UserCheck, Users, Download, X } from 'lucide-react';
 import Table from '../../components/Table';
 import Select from '../../components/Select';
 import Button from '../../components/Button';
+import Badge, { statusVariant } from '../../components/Badge';
+import ConfirmDialog from '../../components/ConfirmDialog';
+import PageHeader from '../../components/PageHeader';
 import studentService from '../../services/studentService';
 import authService from '../../services/authService';
 
+/* ─── Debounce hook ──────────────────────────── */
+const useDebounce = (value, delay = 300) => {
+  const [debounced, setDebounced] = useState(value);
+  useEffect(() => {
+    const t = setTimeout(() => setDebounced(value), delay);
+    return () => clearTimeout(t);
+  }, [value, delay]);
+  return debounced;
+};
+
+/* ─── Alert Banner ───────────────────────────── */
+const AlertBanner = ({ alert, onDismiss }) => {
+  if (!alert) return null;
+  const isSuccess = alert.type === 'success';
+  return (
+    <div className={`flex items-center gap-3 px-4 py-3 rounded-xl border text-sm font-medium animate-fadeIn
+      ${isSuccess
+        ? 'bg-status-success/10 border-status-success/25 text-status-success'
+        : 'bg-status-danger/10 border-status-danger/25 text-status-danger'}`}
+    >
+      <span className="flex-1">{alert.message}</span>
+      <button onClick={onDismiss} className="opacity-70 hover:opacity-100 transition-opacity">
+        <X size={14} />
+      </button>
+    </div>
+  );
+};
+
+/* ─── Page ───────────────────────────────────── */
 const StudentListPage = () => {
   const navigate = useNavigate();
   const currentUser = authService.getLocalUser() || { role: 'FACULTY' };
   const isReadOnly = currentUser.role === 'FACULTY';
 
-  // Filters State
-  const [search, setSearch] = useState('');
+  // Filters
+  const [searchRaw, setSearchRaw]           = useState('');
   const [selectedCourse, setSelectedCourse] = useState('');
-  const [selectedBatch, setSelectedBatch] = useState('');
+  const [selectedBatch, setSelectedBatch]   = useState('');
   const [selectedStatus, setSelectedStatus] = useState('');
+  const search = useDebounce(searchRaw, 350);
 
-  // Dropdown Options
+  // Options
   const [courses, setCourses] = useState([]);
-  const [batches, setBatches] = useState([]);
+  const [batches, setBatches]  = useState([]);
 
-  // Table Data
+  // Data
   const [students, setStudents] = useState([]);
-  const [loading, setLoading] = useState(false);
+  const [loading, setLoading]   = useState(false);
 
-  // Pagination State
+  // Pagination
   const [currentPage, setCurrentPage] = useState(1);
-  const [limit, setLimit] = useState(10);
+  const [limit, setLimit]             = useState(10);
 
-  // Alert State
-  const [alert, setAlert] = useState(null);
+  // UI state
+  const [alert, setAlert]               = useState(null);
+  const [confirm, setConfirm]           = useState(null); // { id, currentStatus }
+  const [confirmLoading, setConfirmLoading] = useState(false);
 
-  // 1. Fetch courses on mount
+  const showAlert = (type, message) => {
+    setAlert({ type, message });
+    setTimeout(() => setAlert(null), 4000);
+  };
+
+  // Fetch courses
   useEffect(() => {
-    const fetchCourses = async () => {
-      const data = await studentService.getCourses();
-      setCourses(data.map(c => ({ value: c.id, label: c.name })));
-    };
-    fetchCourses();
+    studentService.getCourses().then(data =>
+      setCourses(data.map(c => ({ value: c.id, label: c.name })))
+    );
   }, []);
 
-  // 2. Fetch batches whenever selected course changes (Cascading Filter)
+  // Cascade batches
   useEffect(() => {
-    const fetchBatches = async () => {
-      const data = await studentService.getBatches(selectedCourse || null);
+    studentService.getBatches(selectedCourse || null).then(data => {
       setBatches(data.map(b => ({ value: b.id, label: b.name })));
-      setSelectedBatch(''); // Reset batch select
-    };
-    fetchBatches();
+      setSelectedBatch('');
+    });
   }, [selectedCourse]);
 
-  // 3. Fetch students whenever filters change
-  const loadStudents = async () => {
+  // Fetch students
+  const loadStudents = useCallback(async () => {
     setLoading(true);
-    const data = await studentService.getStudents({
-      search,
-      courseId: selectedCourse,
-      batchId: selectedBatch,
-      status: selectedStatus
-    });
-    setStudents(data);
-    setLoading(false);
-  };
+    try {
+      const data = await studentService.getStudents({
+        search, courseId: selectedCourse, batchId: selectedBatch, status: selectedStatus
+      });
+      setStudents(data);
+    } finally {
+      setLoading(false);
+    }
+  }, [search, selectedCourse, selectedBatch, selectedStatus]);
 
   useEffect(() => {
     loadStudents();
-    setCurrentPage(1); // Reset to page 1 on filter
-  }, [search, selectedCourse, selectedBatch, selectedStatus]);
+    setCurrentPage(1);
+  }, [loadStudents]);
 
-  // Handle Soft Delete / Status Toggle
-  const handleToggleStatus = async (id, currentStatus) => {
-    const confirmation = window.confirm(
-      currentStatus 
-        ? 'Are you sure you want to deactivate this student profile?' 
-        : 'Are you sure you want to activate this student profile?'
-    );
-    
-    if (confirmation) {
-      const nextStatus = !currentStatus;
-      const res = await studentService.toggleStudentStatus(id, nextStatus);
+  // Confirm toggle
+  const openConfirm = (id, currentStatus) => setConfirm({ id, currentStatus });
+
+  const handleToggleStatus = async () => {
+    if (!confirm) return;
+    setConfirmLoading(true);
+    try {
+      const nextStatus = !confirm.currentStatus;
+      const res = await studentService.toggleStudentStatus(confirm.id, nextStatus);
       if (res.success) {
-        setAlert({
-          type: 'success',
-          message: `Student successfully ${nextStatus ? 'activated' : 'deactivated'}.`
-        });
-        loadStudents(); // reload
-        setTimeout(() => setAlert(null), 3000);
+        showAlert('success', `Student successfully ${nextStatus ? 'activated' : 'deactivated'}.`);
+        loadStudents();
       }
+    } catch {
+      showAlert('danger', 'Failed to update student status. Please try again.');
+    } finally {
+      setConfirmLoading(false);
+      setConfirm(null);
     }
   };
 
-  // Define Table Headers
+  // Active filter count
+  const activeFilters = [selectedCourse, selectedBatch, selectedStatus, searchRaw].filter(Boolean).length;
+
+  const clearFilters = () => {
+    setSearchRaw('');
+    setSelectedCourse('');
+    setSelectedBatch('');
+    setSelectedStatus('');
+  };
+
+  // Table headers
   const tableHeaders = [
-    { key: 'rollNumber', label: 'Roll Number', sortable: true },
-    { 
-      key: 'name', 
-      label: 'Full Name', 
+    { key: 'rollNumber', label: 'Roll No.', sortable: true, width: '110px' },
+    {
+      key: 'name',
+      label: 'Student',
       sortable: true,
-      render: (row) => row.user?.name || 'N/A'
+      render: row => (
+        <div>
+          <p className="font-semibold text-white">{row.user?.name || 'N/A'}</p>
+          <p className="text-xs text-slate-500 mt-0.5">{row.user?.email}</p>
+        </div>
+      ),
     },
-    { 
-      key: 'course', 
-      label: 'Course',
-      render: (row) => row.course?.name || 'N/A'
-    },
-    { 
-      key: 'batch', 
-      label: 'Batch',
-      render: (row) => row.batch?.name || 'N/A' 
-    },
-    { 
-      key: 'enrolledAt', 
-      label: 'Enrolled Date',
-      render: (row) => new Date(row.enrolledAt).toLocaleDateString()
-    },
-    { 
-      key: 'isActive', 
-      label: 'Status',
-      render: (row) => (
-        <span className={`inline-flex px-2 py-0.5 text-xs font-bold rounded-full ${
-          row.isActive 
-            ? 'bg-status-success/15 text-status-success' 
-            : 'bg-status-danger/15 text-status-danger'
-        }`}>
-          {row.isActive ? 'Active' : 'Inactive'}
+    { key: 'course', label: 'Course', render: row => row.course?.name || '—' },
+    { key: 'batch',  label: 'Batch',  render: row => row.batch?.name  || '—' },
+    {
+      key: 'enrolledAt',
+      label: 'Enrolled',
+      render: row => (
+        <span className="text-slate-400 text-xs">
+          {new Date(row.enrolledAt).toLocaleDateString()}
         </span>
-      )
-    }
+      ),
+    },
+    {
+      key: 'isActive',
+      label: 'Status',
+      width: '90px',
+      render: row => (
+        <Badge variant={row.isActive ? 'success' : 'danger'} dot>
+          {row.isActive ? 'Active' : 'Inactive'}
+        </Badge>
+      ),
+    },
   ];
 
-  // Action Buttons Cell Render
-  const tableActions = (row) => {
-    return (
-      <div className="flex gap-2">
-        <button
-          onClick={() => navigate(`/students/${row.id}`)}
-          className="p-1.5 rounded bg-bg-surfaceLight hover:bg-slate-600 text-slate-300 hover:text-white transition-colors"
-          title="View Details"
-        >
-          <Eye size={15} />
-        </button>
-        
-        {!isReadOnly && (
-          <>
-            <button
-              onClick={() => navigate(`/students/edit/${row.id}`)}
-              className="p-1.5 rounded bg-brand/10 hover:bg-brand text-brand-light hover:text-white transition-colors"
-              title="Edit Profile"
-            >
-              <Edit2 size={15} />
-            </button>
-            <button
-              onClick={() => handleToggleStatus(row.id, row.isActive)}
-              className={`p-1.5 rounded transition-colors ${
-                row.isActive 
-                  ? 'bg-status-danger/10 hover:bg-status-danger text-status-danger hover:text-white' 
-                  : 'bg-status-success/10 hover:bg-status-success text-status-success hover:text-white'
-              }`}
-              title={row.isActive ? 'Deactivate Student' : 'Activate Student'}
-            >
-              {row.isActive ? <ShieldX size={15} /> : <UserCheck size={15} />}
-            </button>
-          </>
-        )}
-      </div>
-    );
-  };
+  // Row actions
+  const tableActions = row => (
+    <>
+      <Button
+        variant="icon"
+        size="sm"
+        title="View Profile"
+        onClick={() => navigate(`/students/${row.id}`)}
+        className="text-slate-400 hover:text-white hover:bg-slate-700"
+      >
+        <Eye size={15} />
+      </Button>
+      {!isReadOnly && (
+        <>
+          <Button
+            variant="icon"
+            size="sm"
+            title="Edit Profile"
+            onClick={() => navigate(`/students/edit/${row.id}`)}
+            className="text-brand-light hover:bg-brand/15"
+          >
+            <Edit2 size={15} />
+          </Button>
+          <Button
+            variant="icon"
+            size="sm"
+            title={row.isActive ? 'Deactivate Student' : 'Activate Student'}
+            onClick={() => openConfirm(row.id, row.isActive)}
+            className={row.isActive
+              ? 'text-status-danger hover:bg-status-danger/15'
+              : 'text-status-success hover:bg-status-success/15'}
+          >
+            {row.isActive ? <ShieldX size={15} /> : <UserCheck size={15} />}
+          </Button>
+        </>
+      )}
+    </>
+  );
 
-  // Pagination Math
-  const totalPages = Math.ceil(students.length / limit) || 1;
+  // Pagination
+  const totalPages  = Math.ceil(students.length / limit) || 1;
   const paginatedData = students.slice((currentPage - 1) * limit, currentPage * limit);
 
   return (
-    <DashboardLayout>
+    <>
       <div className="flex flex-col gap-6">
-        
-        {/* Header Toolbar */}
-        <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
-          <div>
-            <h1 className="text-2xl md:text-3xl font-extrabold tracking-tight text-white font-heading">
-              Learner Registry
-            </h1>
-            <p className="text-xs md:text-sm text-slate-400">
-              Manage student enrollment details, academic records, and batch status assignments.
-            </p>
+
+        {/* Page Header */}
+        <PageHeader
+          title="Learner Registry"
+          subtitle="Manage student enrollment details, academic records, and batch assignments."
+          actions={
+            !isReadOnly && (
+              <Button
+                variant="primary"
+                onClick={() => navigate('/students/add')}
+              >
+                <UserPlus size={15} />
+                Add Student
+              </Button>
+            )
+          }
+        />
+
+        {/* Alert */}
+        <AlertBanner alert={alert} onDismiss={() => setAlert(null)} />
+
+        {/* Filter Bar */}
+        <div className="glass-card flex flex-col gap-4">
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 items-end">
+            {/* Search */}
+            <div className="flex flex-col gap-1.5">
+              <label className="text-sm font-medium text-slate-300">Search</label>
+              <div className="relative flex items-center">
+                <Search size={14} className="absolute left-3 text-slate-500 pointer-events-none" />
+                <input
+                  type="text"
+                  placeholder="Name, roll number, email..."
+                  value={searchRaw}
+                  onChange={e => setSearchRaw(e.target.value)}
+                  className="w-full pl-8 pr-3 py-2 rounded-lg text-sm glass-input"
+                />
+                {searchRaw && (
+                  <button
+                    onClick={() => setSearchRaw('')}
+                    className="absolute right-3 text-slate-500 hover:text-slate-300"
+                  >
+                    <X size={13} />
+                  </button>
+                )}
+              </div>
+            </div>
+
+            <Select
+              label="Course"
+              name="courseFilter"
+              options={courses}
+              value={selectedCourse}
+              onChange={e => setSelectedCourse(e.target.value)}
+              placeholder="All Courses"
+            />
+            <Select
+              label="Batch"
+              name="batchFilter"
+              options={batches}
+              value={selectedBatch}
+              onChange={e => setSelectedBatch(e.target.value)}
+              placeholder="All Batches"
+              disabled={!selectedCourse}
+            />
+            <Select
+              label="Status"
+              name="statusFilter"
+              options={[
+                { value: 'active',   label: 'Active' },
+                { value: 'inactive', label: 'Inactive' },
+              ]}
+              value={selectedStatus}
+              onChange={e => setSelectedStatus(e.target.value)}
+              placeholder="All Statuses"
+            />
           </div>
 
-          {!isReadOnly && (
-            <Button
-              variant="primary"
-              onClick={() => navigate('/students/add')}
-              className="flex items-center gap-2"
-            >
-              <UserPlus size={16} />
-              <span>Add Student</span>
-            </Button>
+          {/* Active filter count + clear */}
+          {activeFilters > 0 && (
+            <div className="flex items-center gap-2">
+              <Badge variant="brand">{activeFilters} filter{activeFilters > 1 ? 's' : ''} active</Badge>
+              <button
+                onClick={clearFilters}
+                className="text-xs text-slate-500 hover:text-slate-300 transition-colors flex items-center gap-1"
+              >
+                <X size={11} /> Clear all
+              </button>
+            </div>
           )}
         </div>
 
-        {/* Alert Dialog */}
-        {alert && (
-          <div className="flex gap-2.5 p-3 rounded-lg bg-status-success/15 border border-status-success/30 text-status-success text-sm animate-fadeIn">
-            <ShieldAlert size={18} className="shrink-0 mt-0.5" />
-            <span>{alert.message}</span>
-          </div>
-        )}
-
-        {/* Filter Toolbar Cards */}
-        <div className="glass-card grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 items-end">
-          {/* Search bar */}
-          <div className="flex flex-col gap-1.5">
-            <label className="text-sm font-medium text-slate-300">Search</label>
-            <div className="relative flex items-center">
-              <div className="absolute left-3 text-slate-500 pointer-events-none">
-                <Search size={16} />
-              </div>
-              <input
-                type="text"
-                placeholder="Search by Name, Roll, Email..."
-                value={search}
-                onChange={(e) => setSearch(e.target.value)}
-                className="w-full pl-9 pr-3 py-2 rounded-lg text-sm outline-none glass-input"
-              />
-            </div>
-          </div>
-
-          {/* Course filter */}
-          <Select
-            label="Filter Course"
-            name="courseFilter"
-            options={courses}
-            value={selectedCourse}
-            onChange={(e) => setSelectedCourse(e.target.value)}
-            placeholder="All Courses"
-          />
-
-          {/* Batch filter */}
-          <Select
-            label="Filter Batch"
-            name="batchFilter"
-            options={batches}
-            value={selectedBatch}
-            onChange={(e) => setSelectedBatch(e.target.value)}
-            placeholder="All Batches"
-            disabled={!selectedCourse}
-          />
-
-          {/* Status filter */}
-          <Select
-            label="Status"
-            name="statusFilter"
-            options={[
-              { value: 'active', label: 'Active' },
-              { value: 'inactive', label: 'Inactive' }
-            ]}
-            value={selectedStatus}
-            onChange={(e) => setSelectedStatus(e.target.value)}
-            placeholder="All Statuses"
-          />
-        </div>
-
-        {/* Data Grid Table */}
+        {/* Table */}
         <Table
           headers={tableHeaders}
           data={paginatedData}
           loading={loading}
           actions={tableActions}
-          emptyMessage="No students found matching the filter constraints."
+          emptyMessage="No students match your search criteria"
+          emptyIcon={Users}
+          emptyAction={!isReadOnly ? { label: 'Add First Student', onClick: () => navigate('/students/add') } : undefined}
           pagination={{
             currentPage,
             totalPages,
+            total: students.length,
             limit,
-            onPageChange: (page) => setCurrentPage(page),
-            onLimitChange: (size) => {
-              setLimit(size);
-              setCurrentPage(1);
-            }
+            onPageChange: p => setCurrentPage(p),
+            onLimitChange: s => { setLimit(s); setCurrentPage(1); },
           }}
         />
-
       </div>
-    </DashboardLayout>
+
+      {/* Confirm Dialog */}
+      <ConfirmDialog
+        isOpen={!!confirm}
+        onClose={() => setConfirm(null)}
+        onConfirm={handleToggleStatus}
+        loading={confirmLoading}
+        title={confirm?.currentStatus ? 'Deactivate Student?' : 'Activate Student?'}
+        description={
+          confirm?.currentStatus
+            ? 'This will revoke the student\'s portal login access. They can be reactivated at any time.'
+            : 'This will restore the student\'s portal login access.'
+        }
+        confirmLabel={confirm?.currentStatus ? 'Yes, Deactivate' : 'Yes, Activate'}
+        variant={confirm?.currentStatus ? 'danger' : 'default'}
+      />
+    </>
   );
 };
 

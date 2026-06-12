@@ -1,12 +1,12 @@
 import React, { useState, useEffect } from 'react';
 import { Plus, Search, Edit2, ToggleLeft, ToggleRight, CheckCircle } from 'lucide-react';
-import DashboardLayout from '../../layouts/DashboardLayout';
 import Table from '../../components/Table';
 import Button from '../../components/Button';
 import Modal from '../../components/Modal';
 import CourseForm from './CourseForm';
 import courseService from '../../services/courseService';
 import authService from '../../services/authService';
+import ConfirmDialog from '../../components/ConfirmDialog';
 
 const CoursePage = () => {
   const currentUser = authService.getLocalUser() || {};
@@ -20,6 +20,8 @@ const CoursePage = () => {
   const [alert, setAlert] = useState(null);
   const [currentPage, setCurrentPage] = useState(1);
   const limit = 10;
+  const [confirm, setConfirm] = useState(null);
+  const [confirmLoading, setConfirmLoading] = useState(false);
 
   const loadCourses = async () => {
     setLoading(true);
@@ -55,18 +57,22 @@ const CoursePage = () => {
     }
   };
 
-  const handleToggle = async (course) => {
-    if (
-      !window.confirm(
-        `${course.isActive ? 'Deactivate' : 'Activate'} course "${course.name}"?`
-      )
-    )
-      return;
-    const res = await courseService.toggleCourseStatus(course.id);
-    if (res.success) {
-      setAlert({ message: res.message });
-      loadCourses();
-      setTimeout(() => setAlert(null), 3000);
+  const handleToggle = (course) => {
+    setConfirm(course);
+  };
+
+  const handleConfirmToggle = async () => {
+    setConfirmLoading(true);
+    try {
+      const res = await courseService.toggleCourseStatus(confirm.id);
+      if (res.success) {
+        setAlert({ message: res.message });
+        loadCourses();
+        setTimeout(() => setAlert(null), 3000);
+      }
+    } finally {
+      setConfirmLoading(false);
+      setConfirm(null);
     }
   };
 
@@ -133,7 +139,7 @@ const CoursePage = () => {
   const paginatedData = courses.slice((currentPage - 1) * limit, currentPage * limit);
 
   return (
-    <DashboardLayout>
+    <>
       <div className="flex flex-col gap-6">
         {/* Header */}
         <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
@@ -219,8 +225,19 @@ const CoursePage = () => {
             }}
           />
         </Modal>
+
+        <ConfirmDialog
+          isOpen={!!confirm}
+          onClose={() => setConfirm(null)}
+          onConfirm={handleConfirmToggle}
+          loading={confirmLoading}
+          title={confirm?.isActive ? 'Deactivate Course?' : 'Activate Course?'}
+          description={confirm ? `${confirm.isActive ? 'Deactivate' : 'Activate'} course "${confirm.name}"?` : ''}
+          confirmLabel={confirm?.isActive ? 'Yes, Deactivate' : 'Yes, Activate'}
+          variant={confirm?.isActive ? 'danger' : 'default'}
+        />
       </div>
-    </DashboardLayout>
+    </>
   );
 };
 

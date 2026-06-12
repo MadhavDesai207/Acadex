@@ -1,7 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { ArrowLeft, Save, CheckCircle, AlertCircle } from 'lucide-react';
-import DashboardLayout from '../../layouts/DashboardLayout';
 import Button from '../../components/Button';
 import ResultStatusBadge from '../../components/ResultStatusBadge';
 import examService from '../../services/examService';
@@ -115,16 +114,16 @@ const ResultEntryPage = () => {
 
   if (loading) {
     return (
-      <DashboardLayout>
+      <>
         <div className="flex flex-col gap-3">
           {[1, 2, 3].map((i) => <div key={i} className="h-12 rounded-lg bg-bg-surface animate-pulse" />)}
         </div>
-      </DashboardLayout>
+      </>
     );
   }
 
   return (
-    <DashboardLayout>
+    <>
       <div className="flex flex-col gap-6">
         <div className="flex items-center gap-4">
           <button
@@ -224,7 +223,7 @@ const ResultEntryPage = () => {
           </div>
         )}
       </div>
-    </DashboardLayout>
+    </>
   );
 };
 

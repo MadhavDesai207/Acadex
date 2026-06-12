@@ -1,11 +1,10 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Plus, Eye, ClipboardList, Trash2, CheckCircle, AlertCircle } from 'lucide-react';
-import DashboardLayout from '../../layouts/DashboardLayout';
 import Table from '../../components/Table';
 import Button from '../../components/Button';
-import Select from '../../components/Select';
 import Input from '../../components/Input';
+import ConfirmDialog from '../../components/ConfirmDialog';
 import ExamTypeBadge from '../../components/ExamTypeBadge';
 import examService from '../../services/examService';
 import authService from '../../services/authService';
@@ -28,6 +27,8 @@ const ExamListPage = () => {
   const [toDate, setToDate] = useState('');
   const [loading, setLoading] = useState(false);
   const [alert, setAlert] = useState(null);
+  const [confirmDelete, setConfirmDelete] = useState(null);
+  const [confirmLoading, setConfirmLoading] = useState(false);
 
   useEffect(() => {
     apiClient.get('/courses').then((r) => {
@@ -69,12 +70,22 @@ const ExamListPage = () => {
     setTimeout(() => setAlert(null), 3000);
   };
 
-  const handleDelete = async (row) => {
-    if (!window.confirm(`Delete exam "${row.title}"? This cannot be undone.`)) return;
-    const res = await examService.deleteExam(row.id);
-    if (res.success) {
-      showAlert('Exam deleted.');
-      loadExams();
+  const openConfirmDelete = (row) => {
+    setConfirmDelete(row);
+  };
+
+  const handleConfirmDelete = async () => {
+    if (!confirmDelete) return;
+    setConfirmLoading(true);
+    try {
+      const res = await examService.deleteExam(confirmDelete.id);
+      if (res.success) {
+        showAlert('Exam deleted.');
+        loadExams();
+      }
+    } finally {
+      setConfirmLoading(false);
+      setConfirmDelete(null);
     }
   };
 
@@ -117,7 +128,7 @@ const ExamListPage = () => {
       </button>
       {isAdmin && (
         <button
-          onClick={() => handleDelete(row)}
+          onClick={() => openConfirmDelete(row)}
           className="p-1.5 rounded bg-status-danger/10 hover:bg-status-danger text-status-danger hover:text-white transition-colors"
           title="Delete"
         >
@@ -128,7 +139,7 @@ const ExamListPage = () => {
   );
 
   return (
-    <DashboardLayout>
+    <>
       <div className="flex flex-col gap-6">
         <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
           <div>
@@ -190,8 +201,19 @@ const ExamListPage = () => {
           actions={tableActions}
           emptyMessage="No exams found. Create your first exam."
         />
+
+        <ConfirmDialog
+          isOpen={!!confirmDelete}
+          onClose={() => setConfirmDelete(null)}
+          onConfirm={handleConfirmDelete}
+          loading={confirmLoading}
+          title="Delete Exam?"
+          description={`Delete exam "${confirmDelete?.title}"? This action cannot be undone.`}
+          confirmLabel="Yes, Delete"
+          variant="danger"
+        />
       </div>
-    </DashboardLayout>
+    </>
   );
 };
 

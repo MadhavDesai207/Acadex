@@ -1,6 +1,5 @@
 import React, { useState, useEffect } from 'react';
 import { Printer, Filter } from 'lucide-react';
-import DashboardLayout from '../../layouts/DashboardLayout';
 import Button from '../../components/Button';
 import Select from '../../components/Select';
 import ResultStatusBadge from '../../components/ResultStatusBadge';
@@ -91,7 +90,7 @@ const PerformanceReportPage = () => {
     : 0;
 
   return (
-    <DashboardLayout>
+    <>
       <style>{`
         @media print {
           @page { size: A4 landscape; margin: 12mm 15mm; }
@@ -229,7 +228,7 @@ const PerformanceReportPage = () => {
           </div>
         )}
       </div>
-    </DashboardLayout>
+    </>
   );
 };
 

@@ -1,7 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { ArrowLeft, Users, BookOpen, Calendar } from 'lucide-react';
-import DashboardLayout from '../../layouts/DashboardLayout';
 import Table from '../../components/Table';
 import Button from '../../components/Button';
 import batchService from '../../services/batchService';
@@ -36,22 +35,22 @@ const BatchDetail = () => {
 
   if (loading) {
     return (
-      <DashboardLayout>
+      <>
         <div className="flex items-center justify-center h-64 text-slate-400">Loading batch details...</div>
-      </DashboardLayout>
+      </>
     );
   }
 
   if (!batch) {
     return (
-      <DashboardLayout>
+      <>
         <div className="flex items-center justify-center h-64 text-status-danger">Batch not found.</div>
-      </DashboardLayout>
+      </>
     );
   }
 
   return (
-    <DashboardLayout>
+    <>
       <div className="flex flex-col gap-6">
         <div className="flex items-center gap-3">
           <button
@@ -124,7 +123,7 @@ const BatchDetail = () => {
           </Button>
         </div>
       </div>
-    </DashboardLayout>
+    </>
   );
 };
 

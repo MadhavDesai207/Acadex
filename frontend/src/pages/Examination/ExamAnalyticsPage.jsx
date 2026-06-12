@@ -1,5 +1,4 @@
 import React, { useState, useEffect } from 'react';
-import DashboardLayout from '../../layouts/DashboardLayout';
 import Select from '../../components/Select';
 import Input from '../../components/Input';
 import PassFailChart from '../../components/PassFailChart';
@@ -121,7 +120,7 @@ const ExamAnalyticsPage = () => {
     .map(([label, { total, count }]) => ({ label, avg: Math.round(total / count) }));
 
   return (
-    <DashboardLayout>
+    <>
       <div className="flex flex-col gap-6">
         <div>
           <h1 className="text-2xl md:text-3xl font-extrabold tracking-tight text-white font-heading">Exam Analytics</h1>
@@ -249,7 +248,7 @@ const ExamAnalyticsPage = () => {
           </>
         )}
       </div>
-    </DashboardLayout>
+    </>
   );
 };
 

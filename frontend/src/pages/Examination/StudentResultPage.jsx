@@ -1,5 +1,4 @@
 import React, { useState, useEffect } from 'react';
-import DashboardLayout from '../../layouts/DashboardLayout';
 import Table from '../../components/Table';
 import ResultStatusBadge from '../../components/ResultStatusBadge';
 import ResultSummaryCard from '../../components/ResultSummaryCard';
@@ -46,7 +45,7 @@ const StudentResultPage = () => {
   ];
 
   return (
-    <DashboardLayout>
+    <>
       <div className="flex flex-col gap-6">
         <div>
           <h1 className="text-2xl md:text-3xl font-extrabold tracking-tight text-white font-heading">My Results</h1>
@@ -70,7 +69,7 @@ const StudentResultPage = () => {
           emptyMessage="No exam results found."
         />
       </div>
-    </DashboardLayout>
+    </>
   );
 };
 

@@ -1,7 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Plus, Search, Eye, Edit2, ToggleLeft, ToggleRight, CheckCircle } from 'lucide-react';
-import DashboardLayout from '../../layouts/DashboardLayout';
 import Table from '../../components/Table';
 import Button from '../../components/Button';
 import Modal from '../../components/Modal';
@@ -10,6 +9,7 @@ import BatchForm from './BatchForm';
 import batchService from '../../services/batchService';
 import authService from '../../services/authService';
 import apiClient from '../../services/apiClient';
+import ConfirmDialog from '../../components/ConfirmDialog';
 
 const BatchPage = () => {
   const navigate = useNavigate();
@@ -27,6 +27,8 @@ const BatchPage = () => {
   const [alert, setAlert] = useState(null);
   const [currentPage, setCurrentPage] = useState(1);
   const limit = 10;
+  const [confirm, setConfirm] = useState(null);
+  const [confirmLoading, setConfirmLoading] = useState(false);
 
   const loadBatches = async () => {
     setLoading(true);
@@ -70,13 +72,22 @@ const BatchPage = () => {
     }
   };
 
-  const handleToggle = async (batch) => {
-    if (!window.confirm(`${batch.isActive ? 'Deactivate' : 'Activate'} batch "${batch.name}"?`)) return;
-    const res = await batchService.toggleBatchStatus(batch.id);
-    if (res.success) {
-      setAlert({ type: 'success', message: res.message });
-      loadBatches();
-      setTimeout(() => setAlert(null), 3000);
+  const openToggleConfirm = (batch) => {
+    setConfirm(batch);
+  };
+
+  const handleToggleConfirm = async () => {
+    setConfirmLoading(true);
+    try {
+      const res = await batchService.toggleBatchStatus(confirm.id);
+      if (res.success) {
+        setAlert({ type: 'success', message: res.message });
+        loadBatches();
+        setTimeout(() => setAlert(null), 3000);
+      }
+    } finally {
+      setConfirmLoading(false);
+      setConfirm(null);
     }
   };
 
@@ -115,7 +126,7 @@ const BatchPage = () => {
             <Edit2 size={14} />
           </button>
           <button
-            onClick={() => handleToggle(row)}
+            onClick={() => openToggleConfirm(row)}
             className={`p-1.5 rounded transition-colors ${row.isActive ? 'bg-status-danger/10 hover:bg-status-danger text-status-danger hover:text-white' : 'bg-status-success/10 hover:bg-status-success text-status-success hover:text-white'}`}
             title={row.isActive ? 'Deactivate' : 'Activate'}
           >
@@ -130,7 +141,7 @@ const BatchPage = () => {
   const paginatedData = batches.slice((currentPage - 1) * limit, currentPage * limit);
 
   return (
-    <DashboardLayout>
+    <>
       <div className="flex flex-col gap-6">
         <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
           <div>
@@ -208,8 +219,19 @@ const BatchPage = () => {
             onClose={() => { setIsFormOpen(false); setEditingBatch(null); }}
           />
         </Modal>
+
+        <ConfirmDialog
+          isOpen={!!confirm}
+          onClose={() => setConfirm(null)}
+          onConfirm={handleToggleConfirm}
+          loading={confirmLoading}
+          title={confirm?.isActive ? 'Deactivate Batch?' : 'Activate Batch?'}
+          description={confirm ? `${confirm.isActive ? 'Deactivate' : 'Activate'} batch "${confirm.name}"?` : ''}
+          confirmLabel={confirm?.isActive ? 'Yes, Deactivate' : 'Yes, Activate'}
+          variant={confirm?.isActive ? 'danger' : 'default'}
+        />
       </div>
-    </DashboardLayout>
+    </>
   );
 };
 

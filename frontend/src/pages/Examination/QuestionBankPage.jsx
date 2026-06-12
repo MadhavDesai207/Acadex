@@ -1,11 +1,10 @@
 import React, { useState, useEffect } from 'react';
 import { Plus, Edit2, Trash2, CheckCircle, AlertCircle } from 'lucide-react';
-import DashboardLayout from '../../layouts/DashboardLayout';
 import Table from '../../components/Table';
 import Button from '../../components/Button';
 import Modal from '../../components/Modal';
-import Select from '../../components/Select';
 import Input from '../../components/Input';
+import ConfirmDialog from '../../components/ConfirmDialog';
 import DifficultyBadge from '../../components/DifficultyBadge';
 import QuestionForm from './QuestionForm';
 import questionService from '../../services/questionService';
@@ -23,6 +22,8 @@ const QuestionBankPage = () => {
   const [isFormOpen, setIsFormOpen] = useState(false);
   const [editing, setEditing] = useState(null);
   const [alert, setAlert] = useState(null);
+  const [confirmDelete, setConfirmDelete] = useState(null);
+  const [confirmLoading, setConfirmLoading] = useState(false);
 
   useEffect(() => {
     apiClient.get('/subjects').then((r) => {
@@ -65,12 +66,22 @@ const QuestionBankPage = () => {
     }
   };
 
-  const handleDelete = async (row) => {
-    if (!window.confirm(`Delete this question? This action cannot be undone.`)) return;
-    const res = await questionService.deleteQuestion(row.id);
-    if (res.success) {
-      showAlert('Question deleted.');
-      loadQuestions();
+  const openConfirmDelete = (row) => {
+    setConfirmDelete(row);
+  };
+
+  const handleConfirmDelete = async () => {
+    if (!confirmDelete) return;
+    setConfirmLoading(true);
+    try {
+      const res = await questionService.deleteQuestion(confirmDelete.id);
+      if (res.success) {
+        showAlert('Question deleted.');
+        loadQuestions();
+      }
+    } finally {
+      setConfirmLoading(false);
+      setConfirmDelete(null);
     }
   };
 
@@ -99,7 +110,7 @@ const QuestionBankPage = () => {
         <Edit2 size={14} />
       </button>
       <button
-        onClick={() => handleDelete(row)}
+        onClick={() => openConfirmDelete(row)}
         className="p-1.5 rounded bg-status-danger/10 hover:bg-status-danger text-status-danger hover:text-white transition-colors"
         title="Delete"
       >
@@ -109,7 +120,7 @@ const QuestionBankPage = () => {
   );
 
   return (
-    <DashboardLayout>
+    <>
       <div className="flex flex-col gap-6">
         <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
           <div>
@@ -179,8 +190,19 @@ const QuestionBankPage = () => {
             onClose={() => { setIsFormOpen(false); setEditing(null); }}
           />
         </Modal>
+
+        <ConfirmDialog
+          isOpen={!!confirmDelete}
+          onClose={() => setConfirmDelete(null)}
+          onConfirm={handleConfirmDelete}
+          loading={confirmLoading}
+          title="Delete Question?"
+          description="This question will be permanently removed from the question bank."
+          confirmLabel="Yes, Delete"
+          variant="danger"
+        />
       </div>
-    </DashboardLayout>
+    </>
   );
 };
 

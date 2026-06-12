@@ -1,7 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { ArrowLeft, CheckCircle } from 'lucide-react';
-import DashboardLayout from '../../layouts/DashboardLayout';
 import Table from '../../components/Table';
 import Button from '../../components/Button';
 import Modal from '../../components/Modal';
@@ -83,7 +82,7 @@ const AssignmentSubmissions = () => {
   ) : null;
 
   return (
-    <DashboardLayout>
+    <>
       <div className="flex flex-col gap-6">
         <div className="flex items-center gap-3">
           <button
@@ -150,7 +149,7 @@ const AssignmentSubmissions = () => {
           )}
         </Modal>
       </div>
-    </DashboardLayout>
+    </>
   );
 };
 

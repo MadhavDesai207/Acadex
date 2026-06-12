@@ -1,351 +1,464 @@
 import { useState, useRef, useEffect } from 'react';
-import { useNavigate, useLocation } from 'react-router-dom';
-import { Bell, Menu, User, Settings, ShieldAlert, LogOut, ChevronDown, KeyRound, CheckCircle2, Mail } from 'lucide-react';
+import { useNavigate, useLocation, Link } from 'react-router-dom';
+import {
+  Bell, Menu, Settings, ShieldAlert, LogOut, ChevronDown,
+  KeyRound, CheckCircle2, Mail, Search, X, User,
+  GraduationCap, Users, ClipboardList, DollarSign,
+  BookOpen, AlertCircle
+} from 'lucide-react';
 import authService from '../services/authService';
 import Modal from './Modal';
 import Input from './Input';
 import Button from './Button';
 
-const Navbar = ({ onToggleSidebar }) => {
-  const navigate = useNavigate();
-  const location = useLocation();
-  const [showNotifications, setShowNotifications] = useState(false);
-  const [showProfileMenu, setShowProfileMenu] = useState(false);
-  const user = authService.getLocalUser() || { name: 'User', email: 'user@eduerp.com', role: 'STUDENT' };
+/* ─── Brand Name ──────────────────────────────── */
+const BrandMark = () => (
+  <Link to="/dashboard" className="flex items-center gap-2 group">
+    <div className="w-7 h-7 rounded-lg bg-gradient-to-br from-brand to-brand-dark flex items-center justify-center shadow-lg shadow-brand/20 shrink-0">
+      <GraduationCap size={15} className="text-white" />
+    </div>
+    <span className="text-lg font-extrabold font-heading bg-gradient-to-r from-brand-light to-white bg-clip-text text-transparent hidden sm:inline-block">
+      Acadex
+    </span>
+  </Link>
+);
 
-  // Quick Settings States
-  const [showQuickSettings, setShowQuickSettings] = useState(false);
-  const [currentPassword, setCurrentPassword] = useState('');
-  const [newPassword, setNewPassword] = useState('');
-  const [confirmPassword, setConfirmPassword] = useState('');
-  const [qsError, setQsError] = useState('');
-  const [qsSuccess, setQsSuccess] = useState('');
-  const [qsLoading, setQsLoading] = useState(false);
+/* ─── Global Search ───────────────────────────── */
+const GlobalSearch = () => {
+  const [open, setOpen] = useState(false);
+  const [query, setQuery] = useState('');
+  const inputRef = useRef(null);
 
-  const openQuickSettings = () => {
-    setShowQuickSettings(true);
-    setShowProfileMenu(false);
-    setCurrentPassword('');
-    setNewPassword('');
-    setConfirmPassword('');
-    setQsError('');
-    setQsSuccess('');
-    setQsLoading(false);
-  };
-
-  const closeQuickSettings = () => {
-    setShowQuickSettings(false);
-    setCurrentPassword('');
-    setNewPassword('');
-    setConfirmPassword('');
-    setQsError('');
-    setQsSuccess('');
-    setQsLoading(false);
-  };
-
-  const handlePasswordChange = async (e) => {
-    e.preventDefault();
-    setQsError('');
-    setQsSuccess('');
-
-    if (!currentPassword || !newPassword || !confirmPassword) {
-      setQsError('All password fields are required.');
-      return;
-    }
-
-    if (newPassword.length < 8) {
-      setQsError('New password must be at least 8 characters long.');
-      return;
-    }
-
-    if (newPassword === currentPassword) {
-      setQsError('New password must be different from your current password.');
-      return;
-    }
-
-    if (newPassword !== confirmPassword) {
-      setQsError('New passwords do not match.');
-      return;
-    }
-
-    setQsLoading(true);
-    try {
-      await authService.changePassword(currentPassword, newPassword);
-      setQsSuccess('Password updated successfully!');
-      setCurrentPassword('');
-      setNewPassword('');
-      setConfirmPassword('');
-    } catch (err) {
-      setQsError(
-        err.response?.data?.message || 
-        'Failed to update password. Please verify your current password.'
-      );
-    } finally {
-      setQsLoading(false);
-    }
-  };
-
-  const notifRef = useRef(null);
-  const profileRef = useRef(null);
-
-  // Close menus when clicking outside
+  // Open with Ctrl+K / ⌘K
   useEffect(() => {
-    const handleClickOutside = (event) => {
-      if (notifRef.current && !notifRef.current.contains(event.target)) {
-        setShowNotifications(false);
+    const handler = (e) => {
+      if ((e.ctrlKey || e.metaKey) && e.key === 'k') {
+        e.preventDefault();
+        setOpen(true);
       }
-      if (profileRef.current && !profileRef.current.contains(event.target)) {
-        setShowProfileMenu(false);
-      }
+      if (e.key === 'Escape') setOpen(false);
     };
-    document.addEventListener('mousedown', handleClickOutside);
-    return () => document.removeEventListener('mousedown', handleClickOutside);
+    window.addEventListener('keydown', handler);
+    return () => window.removeEventListener('keydown', handler);
   }, []);
+
+  useEffect(() => {
+    if (open) setTimeout(() => inputRef.current?.focus(), 50);
+  }, [open]);
+
+  const quickLinks = [
+    { label: 'Students', href: '/students', icon: Users },
+    { label: 'Inquiries', href: '/inquiries', icon: ClipboardList },
+    { label: 'Fee Collection', href: '/fees/collect', icon: DollarSign },
+    { label: 'Exams', href: '/exams', icon: BookOpen },
+    { label: 'Due Fees', href: '/fees/due', icon: AlertCircle },
+  ];
+
+  return (
+    <>
+      {/* Trigger button */}
+      <button
+        onClick={() => setOpen(true)}
+        className="hidden md:flex items-center gap-2 px-3 py-1.5 rounded-lg border border-slate-700/60 bg-slate-800/40 text-slate-500 hover:text-slate-300 hover:border-slate-600 transition-all text-sm group"
+      >
+        <Search size={14} />
+        <span className="text-xs">Search...</span>
+        <kbd className="ml-6 text-[10px] text-slate-600 bg-slate-900 border border-slate-700 rounded px-1 py-0.5">⌘K</kbd>
+      </button>
+
+      {/* Mobile search icon */}
+      <button
+        onClick={() => setOpen(true)}
+        className="md:hidden p-2 rounded-lg text-slate-400 hover:bg-slate-800 hover:text-white transition-colors"
+      >
+        <Search size={18} />
+      </button>
+
+      {/* Command palette overlay */}
+      {open && (
+        <div className="fixed inset-0 z-50 flex items-start justify-center pt-[15vh] px-4">
+          <div
+            className="absolute inset-0 bg-slate-950/70 backdrop-blur-sm"
+            onClick={() => setOpen(false)}
+          />
+          <div className="relative w-full max-w-lg glass-panel rounded-2xl border border-slate-700/60 shadow-2xl animate-scaleIn z-10 overflow-hidden p-0">
+            {/* Search input */}
+            <div className="flex items-center gap-3 px-4 py-3 border-b border-slate-800">
+              <Search size={16} className="text-slate-400 shrink-0" />
+              <input
+                ref={inputRef}
+                value={query}
+                onChange={e => setQuery(e.target.value)}
+                placeholder="Search students, fees, exams..."
+                className="flex-1 bg-transparent text-sm text-slate-200 placeholder-slate-500 outline-none"
+              />
+              {query && (
+                <button onClick={() => setQuery('')} className="text-slate-500 hover:text-slate-300">
+                  <X size={14} />
+                </button>
+              )}
+              <kbd className="text-[10px] text-slate-600 bg-slate-900/80 border border-slate-700 rounded px-1.5 py-0.5">ESC</kbd>
+            </div>
+
+            {/* Quick links */}
+            <div className="p-2">
+              <p className="px-2 py-1 text-[10px] font-bold uppercase tracking-widest text-slate-600 mb-1">
+                Quick Navigation
+              </p>
+              {quickLinks.map(link => {
+                const Icon = link.icon;
+                return (
+                  <Link
+                    key={link.href}
+                    to={link.href}
+                    onClick={() => setOpen(false)}
+                    className="flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm text-slate-300 hover:bg-slate-800/60 hover:text-white transition-colors"
+                  >
+                    <Icon size={15} className="text-slate-500" />
+                    {link.label}
+                  </Link>
+                );
+              })}
+            </div>
+          </div>
+        </div>
+      )}
+    </>
+  );
+};
+
+/* ─── Notification Panel ──────────────────────── */
+const NotificationBell = () => {
+  const [open, setOpen] = useState(false);
+  const ref = useRef(null);
+
+  const notifications = [
+    { id: 1, text: 'New admission application submitted', time: '10 mins ago', unread: true, type: 'admission' },
+    { id: 2, text: 'Exam marks due for Grade 12 Chemistry', time: '2 hours ago', unread: true, type: 'exam' },
+    { id: 3, text: 'Salary voucher generated for May 2026', time: '1 day ago', unread: false, type: 'salary' },
+  ];
+  const unread = notifications.filter(n => n.unread).length;
+
+  useEffect(() => {
+    const handler = (e) => {
+      if (ref.current && !ref.current.contains(e.target)) setOpen(false);
+    };
+    document.addEventListener('mousedown', handler);
+    return () => document.removeEventListener('mousedown', handler);
+  }, []);
+
+  return (
+    <div className="relative" ref={ref}>
+      <button
+        onClick={() => setOpen(!open)}
+        className="relative p-2 rounded-lg text-slate-400 hover:bg-slate-800 hover:text-white transition-colors focus:outline-none"
+        aria-label="Notifications"
+      >
+        <Bell size={18} />
+        {unread > 0 && (
+          <span className="absolute top-1.5 right-1.5 flex h-2 w-2">
+            <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-status-danger opacity-75" />
+            <span className="relative inline-flex rounded-full h-2 w-2 bg-status-danger" />
+          </span>
+        )}
+      </button>
+
+      {open && (
+        <div className="absolute right-0 mt-2 w-80 glass-panel rounded-xl border border-slate-700/60 shadow-2xl py-0 overflow-hidden animate-slideDown z-50">
+          {/* Header */}
+          <div className="px-4 py-3 border-b border-slate-800 flex items-center justify-between">
+            <span className="text-sm font-bold text-white">Notifications</span>
+            {unread > 0 && (
+              <span className="text-xs px-2 py-0.5 rounded-full bg-brand/20 text-brand-light font-semibold border border-brand/30">
+                {unread} new
+              </span>
+            )}
+          </div>
+
+          {/* Today group */}
+          <div className="px-4 pt-3 pb-1">
+            <p className="text-[10px] font-bold uppercase tracking-widest text-slate-600 mb-2">Today</p>
+          </div>
+
+          <div className="max-h-72 overflow-y-auto">
+            {notifications.map(n => (
+              <div
+                key={n.id}
+                className={`mx-2 mb-1 px-3 py-2.5 rounded-lg cursor-pointer transition-colors hover:bg-slate-800/50 ${n.unread ? 'bg-brand/5' : ''}`}
+              >
+                {n.unread && <span className="w-1.5 h-1.5 rounded-full bg-brand-light inline-block mr-2 mb-0.5" />}
+                <p className={`text-xs leading-relaxed ${n.unread ? 'text-slate-200 font-medium' : 'text-slate-400'}`}>
+                  {n.text}
+                </p>
+                <p className="text-[10px] text-slate-600 mt-0.5">{n.time}</p>
+              </div>
+            ))}
+          </div>
+
+          <div className="px-4 py-2.5 border-t border-slate-800 text-center">
+            <button className="text-xs text-brand-light hover:underline font-medium">
+              View all notifications
+            </button>
+          </div>
+        </div>
+      )}
+    </div>
+  );
+};
+
+/* ─── Profile Menu ────────────────────────────── */
+const ProfileMenu = ({ user, onOpenSettings }) => {
+  const navigate = useNavigate();
+  const [open, setOpen] = useState(false);
+  const ref = useRef(null);
+
+  useEffect(() => {
+    const handler = (e) => {
+      if (ref.current && !ref.current.contains(e.target)) setOpen(false);
+    };
+    document.addEventListener('mousedown', handler);
+    return () => document.removeEventListener('mousedown', handler);
+  }, []);
+
+  const initials = user.name
+    ? user.name.split(' ').map(n => n[0]).join('').toUpperCase().substring(0, 2)
+    : 'U';
 
   const handleLogout = async () => {
     await authService.logout();
     navigate('/login');
   };
 
-  // Dynamically resolve page title based on active path
-  const getPageTitle = () => {
-    const path = location.pathname;
-    if (path.startsWith('/dashboard')) return 'Overview Dashboard';
-    if (path.startsWith('/inquiries')) return 'Inquiry Pipeline';
-    if (path.startsWith('/admissions')) return 'Admissions Registry';
-    if (path.startsWith('/students')) return 'Students Registry';
-    if (path.startsWith('/faculty')) return 'Faculty Registry';
-    if (path.startsWith('/attendance')) return 'Attendance Logs';
-    if (path.startsWith('/salary')) return 'Payroll Ledger';
-    if (path.startsWith('/exams')) return 'Examinations Ledger';
-    return 'EduERP Panel';
-  };
-
-  // Mock Notifications
-  const notifications = [
-    { id: 1, text: 'New admission application submitted', time: '10 mins ago', unread: true },
-    { id: 2, text: 'Exam marks due for Grade 12 Chemistry', time: '2 hours ago', unread: true },
-    { id: 3, text: 'Salary voucher generated for May 2026', time: '1 day ago', unread: false },
-  ];
-
-  const unreadCount = notifications.filter(n => n.unread).length;
-
   return (
-    <nav className="fixed top-0 z-50 w-full bg-bg-surface/80 border-b border-slate-700/50 backdrop-blur-md">
-      <div className="px-4 py-3 md:px-6 flex items-center justify-between">
-        
-        {/* Left Section: Brand & Sidebar toggle */}
-        <div className="flex items-center gap-3">
-          <button
-            onClick={onToggleSidebar}
-            className="p-2 rounded-lg text-slate-400 hover:bg-slate-800 hover:text-white md:hidden focus:outline-none"
-          >
-            <Menu size={20} />
-          </button>
-          
-          <div className="flex items-center gap-2">
-            <span className="text-xl font-bold font-heading bg-gradient-to-r from-brand-light to-white bg-clip-text text-transparent hidden md:inline-block">
-              EduERP
+    <div className="relative" ref={ref}>
+      <button
+        onClick={() => setOpen(!open)}
+        className="flex items-center gap-2 p-1.5 rounded-lg hover:bg-slate-800/60 transition-colors"
+      >
+        <div className="w-8 h-8 rounded-full bg-gradient-to-br from-brand to-brand-dark border border-brand/40 flex items-center justify-center text-white font-bold text-xs">
+          {initials}
+        </div>
+        <ChevronDown size={13} className={`text-slate-400 hidden sm:block transition-transform duration-200 ${open ? 'rotate-180' : ''}`} />
+      </button>
+
+      {open && (
+        <div className="absolute right-0 mt-2 w-56 glass-panel rounded-xl border border-slate-700/60 shadow-2xl py-0 overflow-hidden animate-slideDown z-50">
+          {/* User info */}
+          <div className="px-4 py-3 border-b border-slate-800">
+            <p className="text-sm font-bold text-white truncate">{user.name}</p>
+            <p className="text-xs text-slate-400 truncate mt-0.5">{user.email}</p>
+            <span className="inline-block mt-1.5 text-[10px] font-bold px-2 py-0.5 rounded-full bg-brand/20 text-brand-light border border-brand/30 uppercase">
+              {user.role?.replace('_', ' ')}
             </span>
           </div>
-          
-          <div className="h-5 w-px bg-slate-700 hidden md:block mx-2" />
-          <h2 className="text-sm font-semibold text-slate-300 md:text-base">
-            {getPageTitle()}
-          </h2>
-        </div>
 
-        {/* Right Section: Notifications & User profile */}
-        <div className="flex items-center gap-4">
-          
-          {/* Notifications Dropdown */}
-          <div className="relative" ref={notifRef}>
+          {/* Actions */}
+          <div className="p-1">
             <button
-              onClick={() => setShowNotifications(!showNotifications)}
-              className="relative p-2 rounded-lg text-slate-400 hover:bg-slate-800 hover:text-white transition-colors focus:outline-none"
+              onClick={() => { setOpen(false); navigate('/dashboard'); }}
+              className="flex items-center gap-2.5 w-full px-3 py-2 rounded-lg text-sm text-slate-300 hover:bg-slate-800/60 hover:text-white transition-colors text-left"
             >
-              <Bell size={20} />
-              {unreadCount > 0 && (
-                <span className="absolute top-1 right-1 flex h-2 w-2">
-                  <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-status-danger opacity-75"></span>
-                  <span className="relative inline-flex rounded-full h-2 w-2 bg-status-danger"></span>
-                </span>
-              )}
+              <User size={14} className="text-slate-500" />
+              My Profile
             </button>
-
-            {showNotifications && (
-              <div className="absolute right-0 mt-2 w-80 glass-panel rounded-xl border border-slate-700/60 shadow-xl py-2 text-sm z-50">
-                <div className="px-4 py-2 border-b border-slate-700/50 flex justify-between items-center">
-                  <span className="font-bold text-white">Notifications</span>
-                  <span className="text-xs px-2 py-0.5 rounded bg-brand/20 text-brand-light font-medium">
-                    {unreadCount} New
-                  </span>
-                </div>
-                <div className="max-h-64 overflow-y-auto">
-                  {notifications.map((notif) => (
-                    <div 
-                      key={notif.id} 
-                      className={`px-4 py-3 border-b border-slate-800/50 hover:bg-slate-800/40 cursor-pointer transition-colors ${
-                        notif.unread ? 'bg-brand/5' : ''
-                      }`}
-                    >
-                      <p className={`text-xs ${notif.unread ? 'text-slate-100 font-medium' : 'text-slate-400'}`}>
-                        {notif.text}
-                      </p>
-                      <span className="text-[10px] text-slate-500 mt-1 block">{notif.time}</span>
-                    </div>
-                  ))}
-                </div>
-                <div className="px-4 py-1.5 text-center border-t border-slate-800">
-                  <a href="#notifications" className="text-xs text-brand-light hover:underline font-medium">
-                    View all notifications
-                  </a>
-                </div>
-              </div>
-            )}
+            <button
+              onClick={() => { setOpen(false); onOpenSettings(); }}
+              className="flex items-center gap-2.5 w-full px-3 py-2 rounded-lg text-sm text-slate-300 hover:bg-slate-800/60 hover:text-white transition-colors text-left"
+            >
+              <Settings size={14} className="text-slate-500" />
+              Quick Settings
+            </button>
           </div>
 
-          {/* User Profile Menu */}
-          <div className="relative" ref={profileRef}>
+          <div className="p-1 border-t border-slate-800">
             <button
-              onClick={() => setShowProfileMenu(!showProfileMenu)}
-              className="flex items-center gap-2 p-1.5 rounded-lg hover:bg-slate-800 transition-colors focus:outline-none"
+              onClick={handleLogout}
+              className="flex items-center gap-2.5 w-full px-3 py-2 rounded-lg text-sm text-slate-400 hover:bg-status-danger/10 hover:text-status-danger transition-colors text-left font-medium"
             >
-              <div className="w-8 h-8 rounded-full bg-brand/30 border border-brand/50 flex items-center justify-center text-brand-light font-bold text-sm">
-                {user.name.split(' ').map(n => n[0]).join('').toUpperCase().substring(0, 2)}
-              </div>
-              <ChevronDown size={14} className="text-slate-400 hidden sm:block" />
+              <LogOut size={14} />
+              Sign Out
             </button>
-
-            {showProfileMenu && (
-              <div className="absolute right-0 mt-2 w-56 glass-panel rounded-xl border border-slate-700/60 shadow-xl py-2 text-sm z-50">
-                <div className="px-4 py-2 border-b border-slate-700/50">
-                  <p className="font-bold text-white truncate">{user.name}</p>
-                  <p className="text-xs text-slate-400 truncate mt-0.5">{user.email}</p>
-                </div>
-                
-                <div className="py-1">
-                  <button 
-                    onClick={() => navigate('/dashboard')} // Placeholder Settings redirect
-                    className="flex items-center gap-2.5 w-full px-4 py-2 text-slate-300 hover:bg-slate-800 hover:text-white text-left transition-colors"
-                  >
-                    <User size={16} />
-                    <span>My Profile</span>
-                  </button>
-                  <button 
-                    onClick={openQuickSettings}
-                    className="flex items-center gap-2.5 w-full px-4 py-2 text-slate-300 hover:bg-slate-800 hover:text-white text-left transition-colors"
-                  >
-                    <Settings size={16} />
-                    <span>Quick Settings</span>
-                  </button>
-                </div>
-                
-                <div className="border-t border-slate-800 py-1">
-                  <button
-                    onClick={handleLogout}
-                    className="flex items-center gap-2.5 w-full px-4 py-2 text-status-danger hover:bg-status-danger/10 text-left transition-colors font-medium"
-                  >
-                    <LogOut size={16} />
-                    <span>Sign Out</span>
-                  </button>
-                </div>
-              </div>
-            )}
           </div>
-          
+        </div>
+      )}
+    </div>
+  );
+};
+
+/* ─── Quick Settings Modal ────────────────────── */
+const QuickSettingsModal = ({ isOpen, onClose, user }) => {
+  const [currentPassword, setCurrentPassword] = useState('');
+  const [newPassword, setNewPassword]         = useState('');
+  const [confirmPassword, setConfirmPassword] = useState('');
+  const [error, setError]   = useState('');
+  const [success, setSuccess] = useState('');
+  const [loading, setLoading] = useState(false);
+
+  const reset = () => {
+    setCurrentPassword(''); setNewPassword(''); setConfirmPassword('');
+    setError(''); setSuccess(''); setLoading(false);
+  };
+
+  const handleClose = () => { reset(); onClose(); };
+
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+    setError(''); setSuccess('');
+
+    if (!currentPassword || !newPassword || !confirmPassword) {
+      setError('All fields are required.'); return;
+    }
+    if (newPassword.length < 8) {
+      setError('New password must be at least 8 characters.'); return;
+    }
+    if (newPassword === currentPassword) {
+      setError('New password must differ from the current one.'); return;
+    }
+    if (newPassword !== confirmPassword) {
+      setError('Passwords do not match.'); return;
+    }
+
+    setLoading(true);
+    try {
+      await authService.changePassword(currentPassword, newPassword);
+      setSuccess('Password updated successfully!');
+      setCurrentPassword(''); setNewPassword(''); setConfirmPassword('');
+    } catch (err) {
+      setError(err.response?.data?.message || 'Failed to update password. Check your current password.');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const initials = user.name
+    ? user.name.split(' ').map(n => n[0]).join('').toUpperCase().substring(0, 2)
+    : 'U';
+
+  return (
+    <Modal
+      isOpen={isOpen}
+      onClose={handleClose}
+      title="Account Settings"
+      description="Manage your profile and security"
+      size="md"
+      loading={loading}
+    >
+      <div className="flex flex-col gap-5 mt-1">
+        {/* Profile Card */}
+        <div className="flex items-center gap-3 p-3.5 rounded-xl bg-bg-deep/50 border border-slate-800/60">
+          <div className="w-11 h-11 rounded-full bg-gradient-to-br from-brand to-brand-dark flex items-center justify-center text-white font-bold border border-brand/40 shrink-0">
+            {initials}
+          </div>
+          <div className="min-w-0">
+            <p className="text-sm font-bold text-white truncate">{user.name}</p>
+            <div className="flex items-center gap-2 mt-0.5">
+              <Mail size={11} className="text-slate-500 shrink-0" />
+              <p className="text-xs text-slate-400 truncate">{user.email}</p>
+            </div>
+          </div>
+          <span className="ml-auto shrink-0 text-[10px] font-bold px-2 py-0.5 rounded-full bg-brand/20 text-brand-light border border-brand/30 uppercase">
+            {user.role?.replace('_', ' ')}
+          </span>
         </div>
 
+        {/* Password Section */}
+        <div>
+          <h4 className="text-sm font-bold text-white mb-3 flex items-center gap-2">
+            <KeyRound size={14} className="text-slate-400" />
+            Change Password
+          </h4>
+          <form onSubmit={handleSubmit} className="flex flex-col gap-3.5">
+            <Input
+              label="Current Password"
+              name="currentPassword"
+              type="password"
+              placeholder="••••••••"
+              value={currentPassword}
+              onChange={e => setCurrentPassword(e.target.value)}
+            />
+            <Input
+              label="New Password"
+              name="newPassword"
+              type="password"
+              placeholder="••••••••"
+              value={newPassword}
+              onChange={e => setNewPassword(e.target.value)}
+              helperText="Minimum 8 characters"
+            />
+            <Input
+              label="Confirm New Password"
+              name="confirmPassword"
+              type="password"
+              placeholder="••••••••"
+              value={confirmPassword}
+              onChange={e => setConfirmPassword(e.target.value)}
+            />
+
+            {error && (
+              <div className="flex gap-2 p-3 rounded-lg bg-status-danger/10 border border-status-danger/20 text-status-danger text-xs">
+                <ShieldAlert size={13} className="shrink-0 mt-0.5" />
+                <span>{error}</span>
+              </div>
+            )}
+            {success && (
+              <div className="flex gap-2 p-3 rounded-lg bg-status-success/10 border border-status-success/20 text-status-success text-xs">
+                <CheckCircle2 size={13} className="shrink-0 mt-0.5" />
+                <span>{success}</span>
+              </div>
+            )}
+
+            <Button type="submit" loading={loading} className="w-full">
+              Update Password
+            </Button>
+          </form>
+        </div>
       </div>
+    </Modal>
+  );
+};
+
+/* ─── Navbar ──────────────────────────────────── */
+const Navbar = ({ onToggleSidebar }) => {
+  const user = authService.getLocalUser() || { name: 'User', email: 'user@acadex.com', role: 'STUDENT' };
+  const [showSettings, setShowSettings] = useState(false);
+
+  return (
+    <>
+      <nav className="fixed top-0 z-50 w-full h-14 bg-bg-surface/85 border-b border-slate-700/40 backdrop-blur-md">
+        <div className="h-full px-4 md:px-5 flex items-center justify-between gap-4">
+
+          {/* Left: Hamburger + Brand */}
+          <div className="flex items-center gap-3">
+            <button
+              onClick={onToggleSidebar}
+              className="p-2 rounded-lg text-slate-400 hover:bg-slate-800 hover:text-white md:hidden transition-colors"
+              aria-label="Toggle sidebar"
+            >
+              <Menu size={19} />
+            </button>
+            <BrandMark />
+          </div>
+
+          {/* Center: Search */}
+          <div className="flex-1 flex justify-center max-w-sm">
+            <GlobalSearch />
+          </div>
+
+          {/* Right: Actions */}
+          <div className="flex items-center gap-1.5">
+            <NotificationBell />
+            <ProfileMenu user={user} onOpenSettings={() => setShowSettings(true)} />
+          </div>
+        </div>
+      </nav>
 
       {/* Quick Settings Modal */}
-      <Modal isOpen={showQuickSettings} onClose={closeQuickSettings} title="Quick Settings">
-        <div className="flex flex-col gap-6">
-          {/* Profile Details Card */}
-          <div className="p-4 rounded-xl bg-slate-800/40 border border-slate-700/40 flex flex-col gap-4">
-            <div className="flex items-center gap-3">
-              <div className="w-12 h-12 rounded-full bg-brand/20 border border-brand/40 flex items-center justify-center text-brand-light font-bold text-lg">
-                {user.name.split(' ').map(n => n[0]).join('').toUpperCase().substring(0, 2)}
-              </div>
-              <div>
-                <h4 className="text-sm font-bold text-white flex items-center gap-1.5">
-                  {user.name}
-                </h4>
-                <span className="text-[10px] px-2 py-0.5 rounded-full bg-brand/20 text-brand-light font-bold border border-brand/10 uppercase mt-1 inline-block">
-                  {user.role}
-                </span>
-              </div>
-            </div>
-            
-            <div className="h-px bg-slate-700/40" />
-
-            <div className="grid grid-cols-1 gap-2 text-xs text-slate-300">
-              <div className="flex items-center gap-2">
-                <Mail size={14} className="text-slate-500" />
-                <span className="truncate">{user.email}</span>
-              </div>
-            </div>
-          </div>
-
-          {/* Change Password Form */}
-          <div>
-            <h4 className="text-sm font-bold text-white mb-3">Update Password</h4>
-            <form onSubmit={handlePasswordChange} className="flex flex-col gap-4">
-              <Input
-                label="Current Password"
-                name="currentPassword"
-                type="password"
-                placeholder="••••••••"
-                value={currentPassword}
-                onChange={(e) => setCurrentPassword(e.target.value)}
-                icon={KeyRound}
-                required
-              />
-
-              <Input
-                label="New Password"
-                name="newPassword"
-                type="password"
-                placeholder="••••••••"
-                value={newPassword}
-                onChange={(e) => setNewPassword(e.target.value)}
-                icon={KeyRound}
-                required
-              />
-
-              <Input
-                label="Confirm New Password"
-                name="confirmPassword"
-                type="password"
-                placeholder="••••••••"
-                value={confirmPassword}
-                onChange={(e) => setConfirmPassword(e.target.value)}
-                icon={KeyRound}
-                required
-              />
-
-              {qsError && (
-                <div className="flex gap-2 p-2.5 rounded bg-status-danger/10 border border-status-danger/20 text-status-danger text-xs">
-                  <ShieldAlert size={14} className="shrink-0 mt-0.5" />
-                  <span>{qsError}</span>
-                </div>
-              )}
-
-              {qsSuccess && (
-                <div className="flex gap-2 p-2.5 rounded bg-status-success/10 border border-status-success/20 text-status-success text-xs">
-                  <CheckCircle2 size={14} className="shrink-0 mt-0.5" />
-                  <span>{qsSuccess}</span>
-                </div>
-              )}
-
-              <Button type="submit" loading={qsLoading} className="w-full mt-2">
-                Save Password
-              </Button>
-            </form>
-          </div>
-        </div>
-      </Modal>
-    </nav>
+      <QuickSettingsModal
+        isOpen={showSettings}
+        onClose={() => setShowSettings(false)}
+        user={user}
+      />
+    </>
   );
 };
 

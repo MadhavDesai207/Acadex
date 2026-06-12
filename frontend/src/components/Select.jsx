@@ -1,5 +1,8 @@
 import React from 'react';
 
+/**
+ * Select — Unified select dropdown matching Input styling exactly
+ */
 const Select = ({
   label,
   name,
@@ -7,13 +10,17 @@ const Select = ({
   value,
   onChange,
   error,
+  helperText,
   required = false,
   className = '',
   placeholder = 'Select an option',
+  disabled = false,
   children,
   ...props
 }) => {
   const hasChildren = React.Children.count(children) > 0;
+
+  const chevronSvg = `url("data:image/svg+xml;charset=utf-8,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 20 20' fill='none'%3E%3Cpath d='M7 8l3 3 3-3' stroke='%2394a3b8' stroke-width='1.5' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E")`;
 
   return (
     <div className={`w-full flex flex-col gap-1.5 ${className}`}>
@@ -22,30 +29,49 @@ const Select = ({
           {label} {required && <span className="text-status-danger">*</span>}
         </label>
       )}
+
       <select
         id={name}
         name={name}
         value={value}
         onChange={onChange}
         required={required}
-        className={`w-full px-3 py-2 rounded-lg text-sm outline-none glass-input appearance-none bg-[url('data:image/svg+xml;charset=utf-8,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20viewBox%3D%220%200%2020%2020%22%20fill%3D%22none%22%3E%3Cpath%20d%3D%22M7%209l3%203%203-3%22%20stroke%3D%22%2394a3b8%22%20stroke-width%3D%221.5%22%20stroke-linecap%3D%22round%22%20stroke-linejoin%3D%22round%22%2F%3E%3C%2Fsvg%3E')] bg-[position:right_10px_center] bg-[size:20px] pr-10 ${
-          error ? 'border-status-danger/70 focus:border-status-danger/80 focus:ring-status-danger/20' : ''
-        }`}
+        disabled={disabled}
+        className={`
+          w-full px-3 py-2 rounded-lg text-sm glass-input appearance-none pr-9
+          bg-no-repeat bg-[position:right_10px_center] bg-[size:20px]
+          disabled:opacity-50 disabled:cursor-not-allowed
+          ${error ? 'border-status-danger/70 focus:border-status-danger' : ''}
+        `}
+        style={{ backgroundImage: chevronSvg }}
         {...props}
       >
         {hasChildren ? children : (
           <>
-            {placeholder && <option value="">{placeholder}</option>}
+            {placeholder && (
+              <option value="" className="bg-bg-surface text-slate-400">
+                {placeholder}
+              </option>
+            )}
             {options.map((opt) => (
-              <option key={opt.value} value={opt.value} className="bg-bg-surface text-slate-200">
+              <option
+                key={opt.value}
+                value={opt.value}
+                className="bg-bg-surface text-slate-200"
+                disabled={opt.disabled}
+              >
                 {opt.label}
               </option>
             ))}
           </>
         )}
       </select>
+
       {error && (
-        <p className="text-xs text-status-danger mt-1 font-medium">{error}</p>
+        <p className="text-xs text-status-danger font-medium mt-0.5">{error}</p>
+      )}
+      {!error && helperText && (
+        <p className="text-xs text-slate-500 mt-0.5">{helperText}</p>
       )}
     </div>
   );

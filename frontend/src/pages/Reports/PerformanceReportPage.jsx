@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { Star, ChevronDown, ChevronUp } from 'lucide-react';
-import DashboardLayout from '../../layouts/DashboardLayout';
+import ReportLayout from '../../layouts/ReportLayout';
 import ReportFilterBar from '../../components/ReportFilterBar';
 import reportService from '../../services/reportService';
 import apiClient from '../../services/apiClient';
@@ -67,16 +67,7 @@ const PerformanceReportPage = () => {
   }, []);
 
   return (
-    <DashboardLayout>
-      <div className="mb-6">
-        <h1 className="text-2xl font-extrabold text-white">Performance Report</h1>
-        <p className="text-sm text-slate-400 mt-1">
-          {role === 'STUDENT'
-            ? 'Your academic performance summary'
-            : 'Per-student performance: attendance, exam results, and assignment completion'
-          }
-        </p>
-      </div>
+    <ReportLayout title="Performance Report" description={role === 'STUDENT' ? 'Your academic performance summary' : 'Per-student performance: attendance, exam results, and assignment completion'}>
 
       {role !== 'STUDENT' && (
         <ReportFilterBar onGenerate={handleGenerate} onReset={handleReset} loading={loading}>
@@ -206,7 +197,7 @@ const PerformanceReportPage = () => {
           <p className="text-slate-400 text-sm">Select filters and click <strong className="text-white">Generate Report</strong> to view student performance.</p>
         </div>
       )}
-    </DashboardLayout>
+    </ReportLayout>
   );
 };
 

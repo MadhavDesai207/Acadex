@@ -1,6 +1,5 @@
 import React, { useState, useEffect } from 'react';
 import { Users, Shield, Key, Power, Search, CheckCircle, AlertTriangle, UserCheck, ShieldAlert } from 'lucide-react';
-import DashboardLayout from '../../layouts/DashboardLayout';
 import Table from '../../components/Table';
 import Select from '../../components/Select';
 import Button from '../../components/Button';
@@ -245,7 +244,7 @@ const UserAdminPage = () => {
   };
 
   return (
-    <DashboardLayout>
+    <>
       <div className="flex flex-col gap-6">
         
         {/* Header toolbar */}
@@ -428,7 +427,7 @@ const UserAdminPage = () => {
         </Modal>
 
       </div>
-    </DashboardLayout>
+    </>
   );
 };
 

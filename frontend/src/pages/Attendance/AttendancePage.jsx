@@ -1,7 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Calendar, CheckCircle, Clock, AlertTriangle, Users, BookOpen } from 'lucide-react';
-import DashboardLayout from '../../layouts/DashboardLayout';
 import Table from '../../components/Table';
 import Select from '../../components/Select';
 import Button from '../../components/Button';
@@ -229,7 +228,7 @@ const AttendancePage = () => {
   };
 
   return (
-    <DashboardLayout>
+    <>
       <div className="flex flex-col gap-6">
         
         {/* Header Toolbar */}
@@ -358,7 +357,7 @@ const AttendancePage = () => {
         </Modal>
 
       </div>
-    </DashboardLayout>
+    </>
   );
 };
 

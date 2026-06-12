@@ -1,7 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useSearchParams, useNavigate } from 'react-router-dom';
 import { CheckCircle } from 'lucide-react';
-import DashboardLayout from '../../layouts/DashboardLayout';
 import Button from '../../components/Button';
 import Select from '../../components/Select';
 import Input from '../../components/Input';
@@ -74,7 +73,7 @@ const AttendanceMarkForm = () => {
   };
 
   return (
-    <DashboardLayout>
+    <>
       <div className="flex flex-col gap-6">
         <div>
           <h1 className="text-2xl md:text-3xl font-extrabold tracking-tight text-white font-heading">Mark Student Attendance</h1>
@@ -171,7 +170,7 @@ const AttendanceMarkForm = () => {
           <div className="text-center text-slate-500 text-sm py-10">No students enrolled in this batch.</div>
         )}
       </div>
-    </DashboardLayout>
+    </>
   );
 };
 

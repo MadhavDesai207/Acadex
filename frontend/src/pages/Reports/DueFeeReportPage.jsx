@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { AlertCircle, ChevronDown, ChevronUp } from 'lucide-react';
-import DashboardLayout from '../../layouts/DashboardLayout';
+import ReportLayout from '../../layouts/ReportLayout';
 import ReportFilterBar from '../../components/ReportFilterBar';
 import ExportButton from '../../components/ExportButton';
 import reportService from '../../services/reportService';
@@ -70,11 +70,7 @@ const DueFeeReportPage = () => {
   const daysColor = (days) => days > 60 ? 'text-rose-400' : days > 30 ? 'text-amber-400' : 'text-orange-300';
 
   return (
-    <DashboardLayout>
-      <div className="mb-6">
-        <h1 className="text-2xl font-extrabold text-white">Due Fee Report</h1>
-        <p className="text-sm text-slate-400 mt-1">Students with overdue fee installments and outstanding amounts</p>
-      </div>
+    <ReportLayout title="Due Fee Report" description="Students with overdue fee installments and outstanding amounts">
 
       <ReportFilterBar onGenerate={handleGenerate} onReset={handleReset} loading={loading}>
         <div className="flex flex-col gap-1">
@@ -202,7 +198,7 @@ const DueFeeReportPage = () => {
           <p className="text-slate-400 text-sm">Apply filters and click <strong className="text-white">Generate Report</strong> to view due fee records.</p>
         </div>
       )}
-    </DashboardLayout>
+    </ReportLayout>
   );
 };
 

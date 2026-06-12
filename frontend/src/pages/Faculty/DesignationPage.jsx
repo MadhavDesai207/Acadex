@@ -1,12 +1,12 @@
 import React, { useState, useEffect } from 'react';
 import { Plus, Search, Edit2, ToggleLeft, ToggleRight, CheckCircle } from 'lucide-react';
-import DashboardLayout from '../../layouts/DashboardLayout';
 import Table from '../../components/Table';
 import Button from '../../components/Button';
 import Modal from '../../components/Modal';
 import DesignationForm from './DesignationForm';
 import designationService from '../../services/designationService';
 import authService from '../../services/authService';
+import ConfirmDialog from '../../components/ConfirmDialog';
 
 const DesignationPage = () => {
   const currentUser = authService.getLocalUser() || {};
@@ -20,6 +20,8 @@ const DesignationPage = () => {
   const [alert, setAlert] = useState(null);
   const [currentPage, setCurrentPage] = useState(1);
   const limit = 10;
+  const [confirm, setConfirm] = useState(null);
+  const [confirmLoading, setConfirmLoading] = useState(false);
 
   const loadDesignations = async () => {
     setLoading(true);
@@ -51,13 +53,22 @@ const DesignationPage = () => {
     }
   };
 
-  const handleToggle = async (designation) => {
-    if (!window.confirm(`${designation.isActive ? 'Deactivate' : 'Activate'} designation "${designation.name}"?`)) return;
-    const res = await designationService.toggleDesignationStatus(designation.id);
-    if (res.success) {
-      setAlert({ message: res.message });
-      loadDesignations();
-      setTimeout(() => setAlert(null), 3000);
+  const handleToggle = (designation) => {
+    setConfirm(designation);
+  };
+
+  const handleConfirmToggle = async () => {
+    setConfirmLoading(true);
+    try {
+      const res = await designationService.toggleDesignationStatus(confirm.id);
+      if (res.success) {
+        setAlert({ message: res.message });
+        loadDesignations();
+        setTimeout(() => setAlert(null), 3000);
+      }
+    } finally {
+      setConfirmLoading(false);
+      setConfirm(null);
     }
   };
 
@@ -106,7 +117,7 @@ const DesignationPage = () => {
   const paginatedData = designations.slice((currentPage - 1) * limit, currentPage * limit);
 
   return (
-    <DashboardLayout>
+    <>
       <div className="flex flex-col gap-6">
         <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
           <div>
@@ -178,8 +189,19 @@ const DesignationPage = () => {
             onClose={() => { setIsFormOpen(false); setEditingDesignation(null); }}
           />
         </Modal>
+
+        <ConfirmDialog
+          isOpen={!!confirm}
+          onClose={() => setConfirm(null)}
+          onConfirm={handleConfirmToggle}
+          loading={confirmLoading}
+          title={confirm?.isActive ? 'Deactivate Designation?' : 'Activate Designation?'}
+          description={confirm ? `${confirm.isActive ? 'Deactivate' : 'Activate'} designation "${confirm.name}"?` : ''}
+          confirmLabel={confirm?.isActive ? 'Yes, Deactivate' : 'Yes, Activate'}
+          variant={confirm?.isActive ? 'danger' : 'default'}
+        />
       </div>
-    </DashboardLayout>
+    </>
   );
 };
 

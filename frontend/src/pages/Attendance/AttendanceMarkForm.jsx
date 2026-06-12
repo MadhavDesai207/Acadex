@@ -1,7 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { ArrowLeft, Check, Search, Calendar, AlertCircle } from 'lucide-react';
-import DashboardLayout from '../../layouts/DashboardLayout';
 import Button from '../../components/Button';
 import Input from '../../components/Input';
 import Select from '../../components/Select';
@@ -119,7 +118,7 @@ const AttendanceMarkForm = () => {
   });
 
   return (
-    <DashboardLayout>
+    <>
       <div className="flex flex-col gap-6 max-w-5xl mx-auto">
         
         {/* Navigation Toolbar */}
@@ -322,7 +321,7 @@ const AttendanceMarkForm = () => {
         </form>
 
       </div>
-    </DashboardLayout>
+    </>
   );
 };
 

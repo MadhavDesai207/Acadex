@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { BookOpen, CheckCircle, Circle } from 'lucide-react';
-import DashboardLayout from '../../layouts/DashboardLayout';
+import ReportLayout from '../../layouts/ReportLayout';
 import ReportFilterBar from '../../components/ReportFilterBar';
 import ExportButton from '../../components/ExportButton';
 import reportService from '../../services/reportService';
@@ -73,11 +73,7 @@ const AcademicReportPage = () => {
   };
 
   return (
-    <DashboardLayout>
-      <div className="mb-6">
-        <h1 className="text-2xl font-extrabold text-white">Academic Report</h1>
-        <p className="text-sm text-slate-400 mt-1">Syllabus coverage percentage per subject and batch</p>
-      </div>
+    <ReportLayout title="Academic Report" description="Syllabus coverage percentage per subject and batch">
 
       <ReportFilterBar onGenerate={handleGenerate} onReset={handleReset} loading={loading}>
         <div className="flex flex-col gap-1">
@@ -189,7 +185,7 @@ const AcademicReportPage = () => {
           <p className="text-slate-400 text-sm">Select a course and click <strong className="text-white">Generate Report</strong> to view syllabus coverage.</p>
         </div>
       )}
-    </DashboardLayout>
+    </ReportLayout>
   );
 };
 

@@ -1,5 +1,4 @@
 import React, { useState, useEffect } from 'react';
-import DashboardLayout from '../../layouts/DashboardLayout';
 import Table from '../../components/Table';
 import Select from '../../components/Select';
 import studentAttendanceService from '../../services/studentAttendanceService';
@@ -46,7 +45,7 @@ const AttendanceSummary = () => {
   ];
 
   return (
-    <DashboardLayout>
+    <>
       <div className="flex flex-col gap-6">
         <div>
           <h1 className="text-2xl md:text-3xl font-extrabold tracking-tight text-white font-heading">Attendance Summary</h1>
@@ -68,7 +67,7 @@ const AttendanceSummary = () => {
           emptyMessage={selectedBatch ? 'No attendance records found for this batch.' : 'Select a batch to view summary.'}
         />
       </div>
-    </DashboardLayout>
+    </>
   );
 };
 

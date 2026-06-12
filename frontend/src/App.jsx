@@ -48,17 +48,22 @@ import ExaminationReportPage from './pages/Reports/ExaminationReportPage';
 import PerformanceReportPage from './pages/Reports/PerformanceReportPage';
 import ConversionReportPage from './pages/Reports/ConversionReportPage';
 import DueFeeReportPage from './pages/Reports/DueFeeReportPage';
+import TopProgressBar from './components/TopProgressBar';
+import ProtectedLayout from './layouts/ProtectedLayout';
 
 function App() {
   return (
     <Router>
+      <TopProgressBar />
       <Routes>
         {/* Public Route */}
         <Route path="/login" element={<LoginPage />} />
 
-        {/* Protected Dashboard Route */}
-        <Route 
-          path="/dashboard" 
+        {/* Global Protected Layout Wrapper */}
+        <Route element={<ProtectedLayout />}>
+          {/* Protected Dashboard Route */}
+          <Route 
+            path="/dashboard" 
           element={
             <ProtectedRoute allowedRoles={['SUPER_ADMIN', 'ADMIN', 'FACULTY', 'STUDENT', 'RECEPTIONIST']}>
               <DashboardPage />
@@ -495,6 +500,8 @@ function App() {
             </ProtectedRoute>
           }
         />
+
+        </Route>
 
         {/* Redirect Fallback */}
         <Route path="*" element={<Navigate to="/dashboard" replace />} />
