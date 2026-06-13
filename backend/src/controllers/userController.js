@@ -144,12 +144,36 @@ const changeUserRole = async (req, res, next) => {
       return res.status(400).json({ message: 'You cannot change your own role.' });
     }
 
+    if (uppercaseRole === 'FACULTY') {
+      return res.status(400).json({ message: 'Use the faculty creation endpoint to assign the FACULTY role.' });
+    }
+    if (uppercaseRole === 'STUDENT') {
+      return res.status(400).json({ message: 'Use the enrollment endpoint to assign the STUDENT role.' });
+    }
+
     const user = await prisma.user.findUnique({
       where: { id }
     });
 
     if (!user) {
       return res.status(404).json({ message: 'User not found.' });
+    }
+
+    if (user.role === uppercaseRole) {
+      return res.status(400).json({ message: `User already has the ${uppercaseRole} role.` });
+    }
+
+    if (user.role === 'FACULTY') {
+      const facultyProfile = await prisma.faculty.findUnique({ where: { userId: id } });
+      if (facultyProfile) {
+        return res.status(400).json({ message: 'User has a faculty profile. Deactivate or remove the faculty profile before changing the role.' });
+      }
+    }
+    if (user.role === 'STUDENT') {
+      const studentProfile = await prisma.student.findUnique({ where: { userId: id } });
+      if (studentProfile) {
+        return res.status(400).json({ message: 'User has a student profile. Enrolled students cannot have their role changed.' });
+      }
     }
 
     const updatedUser = await prisma.user.update({
