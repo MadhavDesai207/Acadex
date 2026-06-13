@@ -1,7 +1,5 @@
-const { PrismaClient } = require('@prisma/client');
+const prisma = require('../src/db');
 const bcrypt = require('bcryptjs');
-
-const prisma = new PrismaClient();
 
 async function main() {
   console.log('Starting rich database seeding...');
@@ -27,6 +25,8 @@ async function main() {
   await prisma.facultyAttendance.deleteMany();
   await prisma.salaryRecord.deleteMany();
   await prisma.faculty.deleteMany();
+  await prisma.designation.deleteMany();
+  await prisma.department.deleteMany();
   await prisma.admission.deleteMany();
   await prisma.inquiry.deleteMany();
   await prisma.student.deleteMany();
@@ -94,7 +94,21 @@ async function main() {
     data: { name: 'Bio-Science', code: 'BS', durationMonths: 24, fees: 40000.00, isActive: true },
   });
 
-  // 3. Create Faculty Users & Records
+  // 3. Create Designations & Departments
+  const designationProf = await prisma.designation.create({
+    data: { name: 'Professor', description: 'Senior teaching staff' },
+  });
+  const designationAssocProf = await prisma.designation.create({
+    data: { name: 'Associate Professor', description: 'Mid-level teaching staff' },
+  });
+  const deptCS = await prisma.department.create({
+    data: { name: 'Computer Science', code: 'CS-DEPT', isActive: true },
+  });
+  const deptIT = await prisma.department.create({
+    data: { name: 'Information Technology', code: 'IT-DEPT', isActive: true },
+  });
+
+  // 4. Create Faculty Users & Records
   const userFaculty1 = await prisma.user.create({
     data: { name: 'Dr. Alan Turing', email: 'turing@eduerp.com', password: commonPassword, role: 'FACULTY', isActive: true },
   });
@@ -105,6 +119,8 @@ async function main() {
       employeeCode: 'FAC-2026-001',
       designation: 'Professor',
       department: 'Computer Science',
+      designationId: designationProf.id,
+      departmentId: deptCS.id,
       dateOfJoining: new Date('2024-01-01'),
       qualification: 'PhD in Computer Science',
       bankAccount: '12345678901',
@@ -123,6 +139,8 @@ async function main() {
       employeeCode: 'FAC-2026-002',
       designation: 'Associate Professor',
       department: 'Information Technology',
+      designationId: designationAssocProf.id,
+      departmentId: deptIT.id,
       dateOfJoining: new Date('2024-06-01'),
       qualification: 'PhD in Information Systems',
       bankAccount: '98765432109',
@@ -131,7 +149,7 @@ async function main() {
     },
   });
 
-  // 4. Create Batches (linked to Courses & Faculty)
+  // 5. Create Batches (linked to Courses & Faculty)
   const batchCS_A = await prisma.batch.create({
     data: { name: 'Batch 2026-A', courseId: courseCS.id, startDate: new Date('2026-06-01'), facultyId: faculty1.id, isActive: true },
   });
@@ -355,9 +373,6 @@ async function main() {
       assignmentId: assignment1.id,
       studentId: student1.id,
       submittedAt: new Date(),
-      marksAwarded: 95,
-      feedback: 'Great solution using arrays.',
-      gradedBy: userFaculty1.id,
     },
   });
 
@@ -407,7 +422,7 @@ async function main() {
       status: 'PAID',
       transactionRef: 'TXN-UPI-789456',
       collectedBy: superAdmin.id,
-      receiptNumber: 'REC-2026-0001',
+      receiptNumber: 'RCP-2026-0001',
       remarks: 'First installment paid online.',
     },
   });
@@ -421,7 +436,7 @@ async function main() {
       paymentDate: new Date('2026-06-03'),
       status: 'PAID',
       collectedBy: superAdmin.id,
-      receiptNumber: 'REC-2026-0002',
+      receiptNumber: 'RCP-2026-0002',
       remarks: 'First installment paid in cash.',
     },
   });
