@@ -369,6 +369,7 @@ const CollectForm = ({ onClose, onSuccess }) => {
 const FeeCollectionPage = () => {
   const navigate = useNavigate();
   const [payments, setPayments] = useState([]);
+  const [totalPayments, setTotalPayments] = useState(0);
   const [loading, setLoading] = useState(false);
   const [isCollectOpen, setIsCollectOpen] = useState(false);
   const [alert, setAlert] = useState(null);
@@ -390,6 +391,7 @@ const FeeCollectionPage = () => {
       if (filters.method) params.method = filters.method;
       const res = await feeService.getPayments(params);
       setPayments(res.data || []);
+      setTotalPayments(res.total ?? 0);
     } catch {
       showAlert('error', 'Failed to load payments.');
     } finally {
@@ -421,7 +423,7 @@ const FeeCollectionPage = () => {
     </button>
   );
 
-  const totalPages = Math.ceil(payments.length / limit) || 1;
+  const totalPages = Math.ceil(totalPayments / limit) || 1;
 
   return (
     <>
