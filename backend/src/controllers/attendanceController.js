@@ -1,6 +1,4 @@
-const { PrismaClient } = require('@prisma/client');
-
-const prisma = new PrismaClient();
+const prisma = require('../db');
 
 // Helper to normalize a date input to midnight UTC to prevent timezone/time-of-day mismatch
 const normalizeToUTCDate = (dateInput) => {

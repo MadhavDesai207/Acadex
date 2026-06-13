@@ -1,8 +1,6 @@
-const { PrismaClient } = require('@prisma/client');
+const prisma = require('../db');
 const bcrypt = require('bcryptjs');
 const { generateTempPassword } = require('../utils/helpers');
-
-const prisma = new PrismaClient();
 
 /**
  * @desc    Create a new admission application

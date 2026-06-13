@@ -1,5 +1,4 @@
-const { PrismaClient } = require('@prisma/client');
-const prisma = new PrismaClient();
+const prisma = require('../db');
 
 const VALID_DAYS = [1, 2, 3, 4, 5, 6, 7];
 const TIME_REGEX = /^([01]\d|2[0-3]):[0-5]\d$/;

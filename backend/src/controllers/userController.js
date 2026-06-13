@@ -1,6 +1,5 @@
-const { PrismaClient } = require('@prisma/client');
+const prisma = require('../db');
 const bcrypt = require('bcryptjs');
-const prisma = new PrismaClient();
 
 /**
  * @desc    Get all staff users (ADMIN, SUPER_ADMIN, RECEPTIONIST)

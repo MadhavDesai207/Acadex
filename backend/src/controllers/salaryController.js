@@ -1,7 +1,5 @@
-const { PrismaClient } = require('@prisma/client');
+const prisma = require('../db');
 const { getAttendanceSummaryService } = require('./attendanceController');
-
-const prisma = new PrismaClient();
 
 /**
  * Calculates the number of working days in a month (excluding Sundays).
