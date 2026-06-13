@@ -107,80 +107,62 @@ const createFaculty = async (req, res, next) => {
     const year = new Date().getFullYear();
     const prefix = `FAC-${year}-`;
 
-    const lastFaculty = await prisma.faculty.findFirst({
-      where: {
-        employeeCode: {
-          startsWith: prefix
-        }
-      },
-      orderBy: {
-        employeeCode: 'desc'
-      }
-    });
-
-    let sequence = 1;
-    if (lastFaculty) {
-      const parts = lastFaculty.employeeCode.split('-');
-      const lastSeqStr = parts[parts.length - 1];
-      const lastSeq = parseInt(lastSeqStr, 10);
-      if (!isNaN(lastSeq)) {
-        sequence = lastSeq + 1;
-      }
-    }
-
-    const employeeCode = `${prefix}${String(sequence).padStart(3, '0')}`;
-    const autoPassword = `FAC@${employeeCode}`;
-
-    // Hash the password (bcrypt salt rounds: 10)
-    const salt = await bcrypt.genSalt(10);
-    const hashedPassword = await bcrypt.hash(autoPassword, salt);
-
-    // Execute User & Faculty creation in a Prisma transaction
-    const newFaculty = await prisma.$transaction(async (tx) => {
-      // Create associated User account
-      const user = await tx.user.create({
-        data: {
-          name,
-          email: email.toLowerCase().trim(),
-          password: hashedPassword,
-          role: 'FACULTY',
-          phone: phone || null,
-          isActive: true
-        }
+    // Generate unique employee code with retry on concurrent collision
+    let newFaculty;
+    for (let attempt = 0; attempt < 3; attempt++) {
+      const lastFaculty = await prisma.faculty.findFirst({
+        where: { employeeCode: { startsWith: prefix } },
+        orderBy: { createdAt: 'desc' }
       });
+      let sequence = 1;
+      if (lastFaculty) {
+        const parts = lastFaculty.employeeCode.split('-');
+        const n = parseInt(parts[parts.length - 1], 10);
+        if (!isNaN(n)) sequence = n + 1;
+      }
+      const employeeCode = `${prefix}${String(sequence).padStart(4, '0')}`;
+      const autoPassword = `FAC@${employeeCode}`;
+      const salt = await bcrypt.genSalt(10);
+      const hashedPassword = await bcrypt.hash(autoPassword, salt);
 
-      // Create Faculty profile linked to User
-      const faculty = await tx.faculty.create({
-        data: {
-          userId: user.id,
-          employeeCode,
-          designation: resolvedDesignation,
-          department: resolvedDepartment,
-          designationId: resolvedDesignationId,
-          departmentId: resolvedDepartmentId,
-          dateOfJoining: joiningDate,
-          qualification: qualification || null,
-          bankAccount: bankAccount || null,
-          ifscCode: ifscCode || null,
-          baseSalary: salary,
-          isActive: true
-        },
-        include: {
-          user: {
-            select: {
-              id: true,
-              name: true,
-              email: true,
-              phone: true,
-              role: true,
+      try {
+        newFaculty = await prisma.$transaction(async (tx) => {
+          const user = await tx.user.create({
+            data: {
+              name,
+              email: email.toLowerCase().trim(),
+              password: hashedPassword,
+              role: 'FACULTY',
+              phone: phone || null,
               isActive: true
             }
-          }
-        }
-      });
-
-      return faculty;
-    });
+          });
+          return tx.faculty.create({
+            data: {
+              userId: user.id,
+              employeeCode,
+              designation: resolvedDesignation,
+              department: resolvedDepartment,
+              designationId: resolvedDesignationId,
+              departmentId: resolvedDepartmentId,
+              dateOfJoining: joiningDate,
+              qualification: qualification || null,
+              bankAccount: bankAccount || null,
+              ifscCode: ifscCode || null,
+              baseSalary: salary,
+              isActive: true
+            },
+            include: {
+              user: { select: { id: true, name: true, email: true, phone: true, role: true, isActive: true } }
+            }
+          });
+        });
+        break;
+      } catch (err) {
+        if (err.code === 'P2002' && attempt < 2) continue;
+        throw err;
+      }
+    }
 
     return res.status(201).json({
       message: 'Faculty profile and account created successfully',

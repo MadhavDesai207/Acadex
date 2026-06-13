@@ -87,92 +87,62 @@ const createStudent = async (req, res, next) => {
     const year = new Date().getFullYear();
     const prefix = `${course.code.toUpperCase()}-${year}-`;
 
-    // Query last generated roll number for sequence
-    const lastStudent = await prisma.student.findFirst({
-      where: {
-        rollNumber: {
-          startsWith: prefix
-        }
-      },
-      orderBy: {
-        rollNumber: 'desc'
-      }
-    });
-
-    let sequence = 1;
-    if (lastStudent) {
-      const parts = lastStudent.rollNumber.split('-');
-      const lastSeqStr = parts[parts.length - 1];
-      const lastSeq = parseInt(lastSeqStr, 10);
-      if (!isNaN(lastSeq)) {
-        sequence = lastSeq + 1;
-      }
-    }
-
-    const rollNumber = `${prefix}${String(sequence).padStart(3, '0')}`;
-    const autoPassword = `STUD@${rollNumber}`;
-
-    // Hash the password (bcrypt salt rounds: 10)
-    const salt = await bcrypt.genSalt(10);
-    const hashedPassword = await bcrypt.hash(autoPassword, salt);
-
-    // Execute User & Student creation in a Prisma transaction
-    const newStudent = await prisma.$transaction(async (tx) => {
-      // Create associated User account
-      const user = await tx.user.create({
-        data: {
-          name,
-          email: email.toLowerCase().trim(),
-          password: hashedPassword,
-          role: 'STUDENT',
-          phone: phone || null,
-          isActive: true
-        }
+    // Generate unique roll number with retry on concurrent collision
+    let newStudent;
+    for (let attempt = 0; attempt < 3; attempt++) {
+      const lastStudent = await prisma.student.findFirst({
+        where: { rollNumber: { startsWith: prefix } },
+        orderBy: { createdAt: 'desc' }
       });
+      let sequence = 1;
+      if (lastStudent) {
+        const parts = lastStudent.rollNumber.split('-');
+        const n = parseInt(parts[parts.length - 1], 10);
+        if (!isNaN(n)) sequence = n + 1;
+      }
+      const rollNumber = `${prefix}${String(sequence).padStart(4, '0')}`;
+      const autoPassword = `STUD@${rollNumber}`;
+      const salt = await bcrypt.genSalt(10);
+      const hashedPassword = await bcrypt.hash(autoPassword, salt);
 
-      // Create Student profile linked to User
-      const student = await tx.student.create({
-        data: {
-          userId: user.id,
-          rollNumber,
-          dateOfBirth: dob,
-          gender: gender.toUpperCase(),
-          address: address || null,
-          parentName,
-          parentPhone,
-          courseId,
-          batchId,
-          isActive: true
-        },
-        include: {
-          user: {
-            select: {
-              id: true,
-              name: true,
-              email: true,
-              phone: true,
-              role: true,
+      try {
+        newStudent = await prisma.$transaction(async (tx) => {
+          const user = await tx.user.create({
+            data: {
+              name,
+              email: email.toLowerCase().trim(),
+              password: hashedPassword,
+              role: 'STUDENT',
+              phone: phone || null,
               isActive: true
             }
-          },
-          course: {
-            select: {
-              id: true,
-              name: true,
-              code: true
+          });
+          return tx.student.create({
+            data: {
+              userId: user.id,
+              rollNumber,
+              dateOfBirth: dob,
+              gender: gender.toUpperCase(),
+              address: address || null,
+              parentName,
+              parentPhone,
+              courseId,
+              batchId,
+              isActive: true
+            },
+            include: {
+              user: { select: { id: true, name: true, email: true, phone: true, role: true, isActive: true } },
+              course: { select: { id: true, name: true, code: true } },
+              batch: { select: { id: true, name: true } }
             }
-          },
-          batch: {
-            select: {
-              id: true,
-              name: true
-            }
-          }
-        }
-      });
-
-      return student;
-    });
+          });
+        });
+        break;
+      } catch (err) {
+        if (err.code === 'P2002' && attempt < 2) continue;
+        throw err;
+      }
+    }
 
     return res.status(201).json({
       message: 'Student and account created successfully',
