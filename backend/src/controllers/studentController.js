@@ -359,8 +359,6 @@ const updateStudent = async (req, res, next) => {
         return res.status(400).json({ message: 'The selected batch does not belong to the selected course' });
       }
 
-      // Log the batch transfer (changing batch) as required (admin-only action)
-      console.log(`[BATCH_TRANSFER] Student ${id} transferred from batch ${existingStudent.batchId} to ${batchId} by admin ${req.user.userId}`);
     }
 
     let parsedDOB;
