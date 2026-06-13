@@ -57,8 +57,13 @@ const BatchForm = ({ onSubmit, initialData, onClose }) => {
     const payload = { ...form };
     if (!payload.endDate) delete payload.endDate;
     if (!payload.facultyId) delete payload.facultyId;
-    await onSubmit(payload);
-    setLoading(false);
+    try {
+      await onSubmit(payload);
+    } catch {
+      // parent handles error display
+    } finally {
+      setLoading(false);
+    }
   };
 
   return (

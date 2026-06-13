@@ -12,10 +12,10 @@ const BatchDetail = () => {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    batchService.getBatchById(id).then((data) => {
-      setBatch(data);
-      setLoading(false);
-    });
+    batchService.getBatchById(id)
+      .then((data) => { setBatch(data); })
+      .catch(() => { setBatch(null); })
+      .finally(() => { setLoading(false); });
   }, [id]);
 
   const studentHeaders = [

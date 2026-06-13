@@ -39,13 +39,18 @@ const CourseForm = ({ onSubmit, initialData, onClose }) => {
     e.preventDefault();
     if (!validate()) return;
     setLoading(true);
-    await onSubmit({
-      name: form.name.trim(),
-      code: form.code.trim(),
-      durationMonths: Number(form.durationMonths),
-      fees: Number(form.fees)
-    });
-    setLoading(false);
+    try {
+      await onSubmit({
+        name: form.name.trim(),
+        code: form.code.trim(),
+        durationMonths: Number(form.durationMonths),
+        fees: Number(form.fees)
+      });
+    } catch {
+      // parent handles error display
+    } finally {
+      setLoading(false);
+    }
   };
 
   const field = (key, label, placeholder, type = 'text', extra = {}) => (

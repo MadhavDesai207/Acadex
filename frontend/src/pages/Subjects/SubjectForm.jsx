@@ -40,12 +40,17 @@ const SubjectForm = ({ onSubmit, initialData, onClose }) => {
     e.preventDefault();
     if (!validate()) return;
     setLoading(true);
-    await onSubmit({
-      name: form.name.trim(),
-      code: form.code.trim(),
-      courseId: form.courseId
-    });
-    setLoading(false);
+    try {
+      await onSubmit({
+        name: form.name.trim(),
+        code: form.code.trim(),
+        courseId: form.courseId
+      });
+    } catch {
+      // parent handles error display
+    } finally {
+      setLoading(false);
+    }
   };
 
   return (

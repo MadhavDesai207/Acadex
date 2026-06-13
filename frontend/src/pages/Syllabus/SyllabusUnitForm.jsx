@@ -52,8 +52,13 @@ const SyllabusUnitForm = ({ onSubmit, initialData, onClose }) => {
     e.preventDefault();
     if (!validate()) return;
     setLoading(true);
-    await onSubmit({ ...form, unitNumber: Number(form.unitNumber) });
-    setLoading(false);
+    try {
+      await onSubmit({ ...form, unitNumber: Number(form.unitNumber) });
+    } catch {
+      // parent handles error display
+    } finally {
+      setLoading(false);
+    }
   };
 
   return (

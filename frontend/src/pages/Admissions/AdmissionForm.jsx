@@ -78,10 +78,14 @@ const AdmissionForm = ({ onSubmit, onClose }) => {
   const handleSubmit = async (e) => {
     e.preventDefault();
     if (!validate()) return;
-
     setLoading(true);
-    await onSubmit(formData);
-    setLoading(false);
+    try {
+      await onSubmit(formData);
+    } catch {
+      // parent handles error display
+    } finally {
+      setLoading(false);
+    }
   };
 
   return (

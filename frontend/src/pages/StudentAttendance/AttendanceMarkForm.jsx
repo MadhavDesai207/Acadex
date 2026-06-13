@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useSearchParams, useNavigate } from 'react-router-dom';
-import { CheckCircle } from 'lucide-react';
+import { CheckCircle, AlertCircle } from 'lucide-react';
 import Button from '../../components/Button';
 import Select from '../../components/Select';
 import Input from '../../components/Input';
@@ -64,12 +64,19 @@ const AttendanceMarkForm = () => {
       status: records[s.id]?.status || 'PRESENT',
       note: records[s.id]?.note || null
     }));
-    const res = await studentAttendanceService.bulkMark(selectedBatch, date, payload);
-    if (res.success) {
-      setAlert({ message: 'Attendance saved successfully' });
-      setTimeout(() => setAlert(null), 3000);
+    try {
+      const res = await studentAttendanceService.bulkMark(selectedBatch, date, payload);
+      if (res.success) {
+        setAlert({ type: 'success', message: 'Attendance saved successfully' });
+        setTimeout(() => setAlert(null), 3000);
+      }
+    } catch (err) {
+      const msg = err.response?.data?.message || 'Something went wrong. Please try again.';
+      setAlert({ type: 'error', message: msg });
+      setTimeout(() => setAlert(null), 4000);
+    } finally {
+      setSubmitting(false);
     }
-    setSubmitting(false);
   };
 
   return (
@@ -81,8 +88,8 @@ const AttendanceMarkForm = () => {
         </div>
 
         {alert && (
-          <div className="flex gap-2.5 p-3 rounded-lg bg-status-success/15 border border-status-success/30 text-status-success text-sm">
-            <CheckCircle size={18} className="shrink-0 mt-0.5" />
+          <div className={`flex gap-2.5 p-3 rounded-lg text-sm border ${alert.type === 'error' ? 'bg-status-danger/15 border-status-danger/30 text-status-danger' : 'bg-status-success/15 border-status-success/30 text-status-success'}`}>
+            {alert.type === 'error' ? <AlertCircle size={18} className="shrink-0 mt-0.5" /> : <CheckCircle size={18} className="shrink-0 mt-0.5" />}
             <span>{alert.message}</span>
           </div>
         )}

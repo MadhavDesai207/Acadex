@@ -54,18 +54,21 @@ const AssignmentPage = () => {
   useEffect(() => { loadAssignments(); }, [filterBatch, filterStatus]);
 
   const handleFormSubmit = async (formData) => {
-    let res;
-    if (editingAssignment) {
-      res = await assignmentService.updateAssignment(editingAssignment.id, formData);
-    } else {
-      res = await assignmentService.createAssignment(formData);
-    }
-    if (res.success) {
-      setAlert({ message: res.message });
-      setIsFormOpen(false);
-      setEditingAssignment(null);
-      loadAssignments();
-      setTimeout(() => setAlert(null), 3000);
+    try {
+      const res = editingAssignment
+        ? await assignmentService.updateAssignment(editingAssignment.id, formData)
+        : await assignmentService.createAssignment(formData);
+      if (res.success) {
+        setAlert({ type: 'success', message: res.message });
+        setIsFormOpen(false);
+        setEditingAssignment(null);
+        loadAssignments();
+        setTimeout(() => setAlert(null), 3000);
+      }
+    } catch (err) {
+      const msg = err.response?.data?.message || 'Something went wrong. Please try again.';
+      setAlert({ type: 'error', message: msg });
+      setTimeout(() => setAlert(null), 4000);
     }
   };
 

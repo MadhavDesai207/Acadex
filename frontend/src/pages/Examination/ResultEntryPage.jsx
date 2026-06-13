@@ -104,14 +104,18 @@ const ResultEntryPage = () => {
       status: computeStatus(row.marksObtained),
       remarks: row.remarks || null
     }));
-    // Pass examId as first argument, results array as second
-    const res = await resultService.saveBulkResults(id, results);
-    setSaving(false);
-    if (res.success) {
-      setAlert({ message: res.message || 'Results saved successfully!', type: 'success' });
-      setTimeout(() => setAlert(null), 3000);
-    } else {
-      setAlert({ message: res.message || 'Failed to save results.', type: 'error' });
+    try {
+      const res = await resultService.saveBulkResults(id, results);
+      if (res.success) {
+        setAlert({ message: res.message || 'Results saved successfully!', type: 'success' });
+        setTimeout(() => setAlert(null), 3000);
+      } else {
+        setAlert({ message: res.message || 'Failed to save results.', type: 'error' });
+      }
+    } catch (err) {
+      setAlert({ message: err.response?.data?.message || 'Something went wrong. Please try again.', type: 'error' });
+    } finally {
+      setSaving(false);
     }
   };
 

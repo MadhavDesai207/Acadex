@@ -89,8 +89,13 @@ const TimetableForm = ({ onSubmit, initialData, batchId, onClose }) => {
     e.preventDefault();
     if (!validate()) return;
     setLoading(true);
-    await onSubmit({ ...form, dayOfWeek: Number(form.dayOfWeek) });
-    setLoading(false);
+    try {
+      await onSubmit({ ...form, dayOfWeek: Number(form.dayOfWeek) });
+    } catch {
+      // parent handles error display
+    } finally {
+      setLoading(false);
+    }
   };
 
   return (

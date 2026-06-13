@@ -55,8 +55,13 @@ const AssignmentForm = ({ onSubmit, initialData, onClose }) => {
     e.preventDefault();
     if (!validate()) return;
     setLoading(true);
-    await onSubmit({ ...form, maxMarks: Number(form.maxMarks) });
-    setLoading(false);
+    try {
+      await onSubmit({ ...form, maxMarks: Number(form.maxMarks) });
+    } catch {
+      // parent handles error display
+    } finally {
+      setLoading(false);
+    }
   };
 
   return (

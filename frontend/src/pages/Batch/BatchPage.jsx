@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Plus, Search, Eye, Edit2, ToggleLeft, ToggleRight, CheckCircle } from 'lucide-react';
+import { Plus, Search, Eye, Edit2, ToggleLeft, ToggleRight, CheckCircle, AlertCircle } from 'lucide-react';
 import Table from '../../components/Table';
 import Button from '../../components/Button';
 import Modal from '../../components/Modal';
@@ -57,18 +57,21 @@ const BatchPage = () => {
   }, [search, filterCourseId, filterActive]);
 
   const handleFormSubmit = async (formData) => {
-    let res;
-    if (editingBatch) {
-      res = await batchService.updateBatch(editingBatch.id, formData);
-    } else {
-      res = await batchService.createBatch(formData);
-    }
-    if (res.success) {
-      setAlert({ type: 'success', message: res.message });
-      setIsFormOpen(false);
-      setEditingBatch(null);
-      loadBatches();
-      setTimeout(() => setAlert(null), 3000);
+    try {
+      const res = editingBatch
+        ? await batchService.updateBatch(editingBatch.id, formData)
+        : await batchService.createBatch(formData);
+      if (res.success) {
+        setAlert({ type: 'success', message: res.message });
+        setIsFormOpen(false);
+        setEditingBatch(null);
+        loadBatches();
+        setTimeout(() => setAlert(null), 3000);
+      }
+    } catch (err) {
+      const msg = err.response?.data?.message || 'Something went wrong. Please try again.';
+      setAlert({ type: 'error', message: msg });
+      setTimeout(() => setAlert(null), 4000);
     }
   };
 
@@ -156,8 +159,8 @@ const BatchPage = () => {
         </div>
 
         {alert && (
-          <div className="flex gap-2.5 p-3 rounded-lg bg-status-success/15 border border-status-success/30 text-status-success text-sm">
-            <CheckCircle size={18} className="shrink-0 mt-0.5" />
+          <div className={`flex gap-2.5 p-3 rounded-lg text-sm border ${alert.type === 'error' ? 'bg-status-danger/15 border-status-danger/30 text-status-danger' : 'bg-status-success/15 border-status-success/30 text-status-success'}`}>
+            {alert.type === 'error' ? <AlertCircle size={18} className="shrink-0 mt-0.5" /> : <CheckCircle size={18} className="shrink-0 mt-0.5" />}
             <span>{alert.message}</span>
           </div>
         )}

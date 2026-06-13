@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Plus, Search, Edit2, ToggleLeft, ToggleRight, CheckCircle } from 'lucide-react';
+import { Plus, Search, Edit2, ToggleLeft, ToggleRight, CheckCircle, AlertCircle } from 'lucide-react';
 import Table from '../../components/Table';
 import Button from '../../components/Button';
 import Modal from '../../components/Modal';
@@ -44,16 +44,22 @@ const CoursePage = () => {
   }, [search]);
 
   const handleFormSubmit = async (formData) => {
-    const res = editingCourse
-      ? await courseService.updateCourse(editingCourse.id, formData)
-      : await courseService.createCourse(formData);
+    try {
+      const res = editingCourse
+        ? await courseService.updateCourse(editingCourse.id, formData)
+        : await courseService.createCourse(formData);
 
-    if (res.success) {
-      setAlert({ message: res.message });
-      setIsFormOpen(false);
-      setEditingCourse(null);
-      loadCourses();
-      setTimeout(() => setAlert(null), 3000);
+      if (res.success) {
+        setAlert({ type: 'success', message: res.message });
+        setIsFormOpen(false);
+        setEditingCourse(null);
+        loadCourses();
+        setTimeout(() => setAlert(null), 3000);
+      }
+    } catch (err) {
+      const msg = err.response?.data?.message || 'Something went wrong. Please try again.';
+      setAlert({ type: 'error', message: msg });
+      setTimeout(() => setAlert(null), 4000);
     }
   };
 
@@ -168,8 +174,8 @@ const CoursePage = () => {
 
         {/* Alert */}
         {alert && (
-          <div className="flex gap-2.5 p-3 rounded-lg bg-status-success/15 border border-status-success/30 text-status-success text-sm">
-            <CheckCircle size={18} className="shrink-0 mt-0.5" />
+          <div className={`flex gap-2.5 p-3 rounded-lg text-sm border ${alert.type === 'error' ? 'bg-status-danger/15 border-status-danger/30 text-status-danger' : 'bg-status-success/15 border-status-success/30 text-status-success'}`}>
+            {alert.type === 'error' ? <AlertCircle size={18} className="shrink-0 mt-0.5" /> : <CheckCircle size={18} className="shrink-0 mt-0.5" />}
             <span>{alert.message}</span>
           </div>
         )}

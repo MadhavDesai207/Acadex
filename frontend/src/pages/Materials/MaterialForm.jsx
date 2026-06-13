@@ -55,8 +55,13 @@ const MaterialForm = ({ onSubmit, initialData, onClose }) => {
     setLoading(true);
     const payload = { ...form };
     if (!payload.batchId) delete payload.batchId;
-    await onSubmit(payload);
-    setLoading(false);
+    try {
+      await onSubmit(payload);
+    } catch {
+      // parent handles error display
+    } finally {
+      setLoading(false);
+    }
   };
 
   return (

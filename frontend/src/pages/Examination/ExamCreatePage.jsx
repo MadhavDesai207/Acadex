@@ -77,13 +77,18 @@ const ExamCreatePage = () => {
       passingMarks: Number(form.passingMarks),
       questionIds: selectedQuestions.map((q) => q.id)
     };
-    const res = await examService.createExam(payload);
-    setLoading(false);
-    if (res.success) {
-      setAlert({ message: res.message || 'Exam created successfully!', type: 'success' });
-      setTimeout(() => navigate('/exams'), 1500);
-    } else {
-      setAlert({ message: res.message || 'Failed to create exam.', type: 'error' });
+    try {
+      const res = await examService.createExam(payload);
+      if (res.success) {
+        setAlert({ message: res.message || 'Exam created successfully!', type: 'success' });
+        setTimeout(() => navigate('/exams'), 1500);
+      } else {
+        setAlert({ message: res.message || 'Failed to create exam.', type: 'error' });
+      }
+    } catch (err) {
+      setAlert({ message: err.response?.data?.message || 'Something went wrong. Please try again.', type: 'error' });
+    } finally {
+      setLoading(false);
     }
   };
 

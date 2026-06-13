@@ -52,17 +52,18 @@ const QuestionBankPage = () => {
   };
 
   const handleSubmit = async (formData) => {
-    let res;
-    if (editing) {
-      res = await questionService.updateQuestion(editing.id, formData);
-    } else {
-      res = await questionService.createQuestion(formData);
-    }
-    if (res.success) {
-      showAlert(res.message || (editing ? 'Question updated.' : 'Question added.'));
-      setIsFormOpen(false);
-      setEditing(null);
-      loadQuestions();
+    try {
+      const res = editing
+        ? await questionService.updateQuestion(editing.id, formData)
+        : await questionService.createQuestion(formData);
+      if (res.success) {
+        showAlert(res.message || (editing ? 'Question updated.' : 'Question added.'));
+        setIsFormOpen(false);
+        setEditing(null);
+        loadQuestions();
+      }
+    } catch (err) {
+      showAlert(err.response?.data?.message || 'Something went wrong. Please try again.', 'error');
     }
   };
 

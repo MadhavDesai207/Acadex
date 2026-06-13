@@ -62,8 +62,13 @@ const QuestionForm = ({ onSubmit, initialData, onClose }) => {
     e.preventDefault();
     if (!validate()) return;
     setLoading(true);
-    await onSubmit({ ...form, marks: Number(form.marks) });
-    setLoading(false);
+    try {
+      await onSubmit({ ...form, marks: Number(form.marks) });
+    } catch {
+      // parent handles error display
+    } finally {
+      setLoading(false);
+    }
   };
 
   const filledOptions = form.options.filter((o) => o.trim());
