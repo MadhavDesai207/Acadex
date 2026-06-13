@@ -184,8 +184,8 @@ const resetUserPassword = async (req, res, next) => {
     const { id } = req.params;
     const { password } = req.body;
 
-    if (!password || password.trim().length < 6) {
-      return res.status(400).json({ message: 'New password must be at least 6 characters long.' });
+    if (!password || password.trim().length < 8) {
+      return res.status(400).json({ message: 'New password must be at least 8 characters long.' });
     }
 
     const user = await prisma.user.findUnique({
