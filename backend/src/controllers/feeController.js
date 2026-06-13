@@ -603,9 +603,20 @@ const getPayments = async (req, res, next) => {
         where.paymentDate.lte = toDate;
       }
     }
-    if (method) where.paymentMethod = method;
+    if (method) {
+      const VALID_METHODS = ['CASH', 'BANK_TRANSFER', 'CHEQUE', 'ONLINE', 'UPI', 'CREDIT_ADJUSTMENT'];
+      const upper = method.toUpperCase();
+      if (!VALID_METHODS.includes(upper)) {
+        return res.status(400).json({ success: false, message: `Invalid payment method. Must be one of: ${VALID_METHODS.join(', ')}` });
+      }
+      where.paymentMethod = upper;
+    }
 
-    const skip = (parseInt(page) - 1) * parseInt(limit);
+    const pageNum = parseInt(page);
+    const limitNum = parseInt(limit);
+    if (isNaN(pageNum) || pageNum < 1) return res.status(400).json({ success: false, message: 'page must be a positive integer.' });
+    if (isNaN(limitNum) || limitNum < 1) return res.status(400).json({ success: false, message: 'limit must be a positive integer.' });
+    const skip = (pageNum - 1) * limitNum;
 
     const [payments, total] = await Promise.all([
       prisma.feePayment.findMany({
@@ -626,12 +637,12 @@ const getPayments = async (req, res, next) => {
         },
         orderBy: { paymentDate: 'desc' },
         skip,
-        take: parseInt(limit)
+        take: limitNum
       }),
       prisma.feePayment.count({ where })
     ]);
 
-    return res.status(200).json({ success: true, data: payments, total, page: parseInt(page) });
+    return res.status(200).json({ success: true, data: payments, total, page: pageNum });
   } catch (error) {
     next(error);
   }

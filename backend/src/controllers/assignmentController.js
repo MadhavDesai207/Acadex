@@ -6,7 +6,14 @@ const getAssignments = async (req, res, next) => {
     const { batchId, status } = req.query;
     const where = {};
     if (batchId) where.batchId = batchId;
-    if (status) where.status = status.toUpperCase();
+    if (status) {
+      const upper = status.toUpperCase();
+      const validStatuses = ['DRAFT', 'PUBLISHED', 'CLOSED'];
+      if (!validStatuses.includes(upper)) {
+        return res.status(400).json({ success: false, message: `Invalid status. Must be one of: ${validStatuses.join(', ')}` });
+      }
+      where.status = upper;
+    }
 
     if (req.user.role === 'STUDENT') {
       where.status = 'PUBLISHED';

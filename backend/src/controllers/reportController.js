@@ -17,10 +17,21 @@ const getRevenueReport = async (req, res, next) => {
         where.paymentDate.lte = toDate;
       }
     }
-    if (paymentMethod) where.paymentMethod = paymentMethod;
+    if (paymentMethod) {
+      const VALID_METHODS = ['CASH', 'BANK_TRANSFER', 'CHEQUE', 'ONLINE', 'UPI', 'CREDIT_ADJUSTMENT'];
+      const upper = paymentMethod.toUpperCase();
+      if (!VALID_METHODS.includes(upper)) {
+        return res.status(400).json({ success: false, message: `Invalid paymentMethod. Must be one of: ${VALID_METHODS.join(', ')}` });
+      }
+      where.paymentMethod = upper;
+    }
     if (courseId) where.studentFee = { feeStructure: { courseId } };
 
-    const skip = (parseInt(page) - 1) * parseInt(limit);
+    const pageNum = parseInt(page);
+    const limitNum = parseInt(limit);
+    if (isNaN(pageNum) || pageNum < 1) return res.status(400).json({ success: false, message: 'page must be a positive integer.' });
+    if (isNaN(limitNum) || limitNum < 1) return res.status(400).json({ success: false, message: 'limit must be a positive integer.' });
+    const skip = (pageNum - 1) * limitNum;
 
     // Fetch all for aggregations + paginated for the table
     const [allForAgg, payments, totalCount] = await Promise.all([
@@ -53,7 +64,7 @@ const getRevenueReport = async (req, res, next) => {
         },
         orderBy: { paymentDate: 'desc' },
         skip,
-        take: parseInt(limit)
+        take: limitNum
       }),
       prisma.feePayment.count({ where })
     ]);
@@ -87,7 +98,7 @@ const getRevenueReport = async (req, res, next) => {
         })).sort((a, b) => b.amount - a.amount),
         payments,
         total: totalCount,
-        page: parseInt(page)
+        page: pageNum
       }
     });
   } catch (error) {
@@ -299,7 +310,14 @@ const getExaminationReport = async (req, res, next) => {
 
     if (courseId) where.courseId = courseId;
     if (batchId) where.batchId = batchId;
-    if (examType) where.examType = examType;
+    if (examType) {
+      const upper = examType.toUpperCase();
+      const validTypes = ['INTERNAL', 'EXTERNAL', 'PRACTICAL'];
+      if (!validTypes.includes(upper)) {
+        return res.status(400).json({ success: false, message: `Invalid examType. Must be one of: ${validTypes.join(', ')}` });
+      }
+      where.examType = upper;
+    }
     if (from || to) {
       where.examDate = {};
       if (from) where.examDate.gte = new Date(from);
