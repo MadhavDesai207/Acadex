@@ -105,6 +105,13 @@ const getAttendanceReport = async (req, res, next) => {
       return res.status(400).json({ success: false, message: 'batchId is required.' });
     }
 
+    if (req.user.role === 'FACULTY') {
+      const faculty = await prisma.faculty.findFirst({ where: { userId: req.user.userId } });
+      if (!faculty) return res.status(403).json({ success: false, message: 'Faculty profile not found.' });
+      const allowed = (await prisma.batch.findMany({ where: { facultyId: faculty.id }, select: { id: true } })).map(b => b.id);
+      if (!allowed.includes(batchId)) return res.status(403).json({ success: false, message: 'Access denied to this batch.' });
+    }
+
     const batch = await prisma.batch.findUnique({
       where: { id: batchId },
       include: { course: { select: { name: true } } }
@@ -194,6 +201,13 @@ const getAcademicReport = async (req, res, next) => {
       return res.status(400).json({ success: false, message: 'courseId is required.' });
     }
 
+    if (req.user.role === 'FACULTY' && batchId) {
+      const faculty = await prisma.faculty.findFirst({ where: { userId: req.user.userId } });
+      if (!faculty) return res.status(403).json({ success: false, message: 'Faculty profile not found.' });
+      const allowed = (await prisma.batch.findMany({ where: { facultyId: faculty.id }, select: { id: true } })).map(b => b.id);
+      if (!allowed.includes(batchId)) return res.status(403).json({ success: false, message: 'Access denied to this batch.' });
+    }
+
     const unitWhere = { courseId, isActive: true };
     if (subjectId) unitWhere.subjectId = subjectId;
 
@@ -273,6 +287,14 @@ const getAcademicReport = async (req, res, next) => {
 const getExaminationReport = async (req, res, next) => {
   try {
     const { courseId, batchId, examType, from, to } = req.query;
+
+    if (req.user.role === 'FACULTY' && batchId) {
+      const faculty = await prisma.faculty.findFirst({ where: { userId: req.user.userId } });
+      if (!faculty) return res.status(403).json({ success: false, message: 'Faculty profile not found.' });
+      const allowed = (await prisma.batch.findMany({ where: { facultyId: faculty.id }, select: { id: true } })).map(b => b.id);
+      if (!allowed.includes(batchId)) return res.status(403).json({ success: false, message: 'Access denied to this batch.' });
+    }
+
     const where = {};
 
     if (courseId) where.courseId = courseId;
@@ -360,23 +382,22 @@ const getPerformanceReport = async (req, res, next) => {
       if (!self) return res.status(404).json({ success: false, message: 'Student record not found.' });
       whereStudent.id = self.id;
     } else if (role === 'FACULTY') {
-      const faculty = await prisma.faculty.findUnique({ where: { userId } });
-      if (faculty) {
-        const facultyBatchIds = (await prisma.batch.findMany({
-          where: { facultyId: faculty.id },
-          select: { id: true }
-        })).map(b => b.id);
+      const faculty = await prisma.faculty.findFirst({ where: { userId } });
+      if (!faculty) return res.status(403).json({ success: false, message: 'Faculty profile not found.' });
+      const facultyBatchIds = (await prisma.batch.findMany({
+        where: { facultyId: faculty.id },
+        select: { id: true }
+      })).map(b => b.id);
 
-        if (batchId) {
-          if (!facultyBatchIds.includes(batchId)) {
-            return res.status(403).json({ success: false, message: 'Access denied to this batch.' });
-          }
-          whereStudent.batchId = batchId;
-        } else {
-          whereStudent.batchId = { in: facultyBatchIds };
+      if (batchId) {
+        if (!facultyBatchIds.includes(batchId)) {
+          return res.status(403).json({ success: false, message: 'Access denied to this batch.' });
         }
-        if (studentId) whereStudent.id = studentId;
+        whereStudent.batchId = batchId;
+      } else {
+        whereStudent.batchId = { in: facultyBatchIds };
       }
+      if (studentId) whereStudent.id = studentId;
     } else {
       if (batchId) whereStudent.batchId = batchId;
       if (studentId) whereStudent.id = studentId;

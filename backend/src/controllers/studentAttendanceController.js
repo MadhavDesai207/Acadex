@@ -29,6 +29,12 @@ const bulkMarkAttendance = async (req, res, next) => {
     const batch = await prisma.batch.findUnique({ where: { id: batchId } });
     if (!batch) return res.status(404).json({ success: false, message: 'Batch not found' });
 
+    if (req.user.role === 'FACULTY') {
+      const faculty = await prisma.faculty.findFirst({ where: { userId: req.user.userId } });
+      if (!faculty) return res.status(403).json({ success: false, message: 'Faculty profile not found.' });
+      if (batch.facultyId !== faculty.id) return res.status(403).json({ success: false, message: 'Access denied to this batch.' });
+    }
+
     const payloads = [];
     for (const rec of records) {
       const { studentId, status, note } = rec;
