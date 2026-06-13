@@ -1,5 +1,6 @@
 const { PrismaClient } = require('@prisma/client');
 const bcrypt = require('bcryptjs');
+const { generateTempPassword } = require('../utils/helpers');
 
 const prisma = new PrismaClient();
 
@@ -101,9 +102,9 @@ const createStudent = async (req, res, next) => {
         if (!isNaN(n)) sequence = n + 1;
       }
       const rollNumber = `${prefix}${String(sequence).padStart(4, '0')}`;
-      const autoPassword = `STUD@${rollNumber}`;
+      const tempPassword = generateTempPassword();
       const salt = await bcrypt.genSalt(10);
-      const hashedPassword = await bcrypt.hash(autoPassword, salt);
+      const hashedPassword = await bcrypt.hash(tempPassword, salt);
 
       try {
         newStudent = await prisma.$transaction(async (tx) => {
@@ -114,7 +115,8 @@ const createStudent = async (req, res, next) => {
               password: hashedPassword,
               role: 'STUDENT',
               phone: phone || null,
-              isActive: true
+              isActive: true,
+              mustChangePassword: true
             }
           });
           return tx.student.create({
@@ -146,7 +148,8 @@ const createStudent = async (req, res, next) => {
 
     return res.status(201).json({
       message: 'Student and account created successfully',
-      data: newStudent
+      data: newStudent,
+      tempPassword
     });
 
   } catch (error) {
