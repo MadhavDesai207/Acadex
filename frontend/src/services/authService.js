@@ -6,18 +6,19 @@ const authService = {
     const response = await apiClient.post('/auth/login', { email, password });
     if (response.data && response.data.token) {
       localStorage.setItem('token', response.data.token);
+      // Store the full user object returned by login (includes mustChangePassword etc.)
       localStorage.setItem('user', JSON.stringify(response.data.user));
     }
     return response.data;
   },
 
-  // Get current user profile
+  // Get current user profile from server and refresh localStorage
   getCurrentUser: async () => {
     const response = await apiClient.get('/auth/me');
-    if (response.data && response.data.user) {
-      localStorage.setItem('user', JSON.stringify(response.data.user));
+    if (response.data) {
+      localStorage.setItem('user', JSON.stringify(response.data));
     }
-    return response.data.user;
+    return response.data;
   },
 
   // Logout
@@ -32,12 +33,16 @@ const authService = {
     }
   },
 
-  // Change password (especially for first-time login)
+  // Change password — refreshes localStorage so mustChangePassword clears immediately
   changePassword: async (currentPassword, newPassword) => {
     const response = await apiClient.put('/auth/change-password', {
       currentPassword,
       newPassword,
     });
+    try {
+      const fresh = await apiClient.get('/auth/me');
+      if (fresh.data) localStorage.setItem('user', JSON.stringify(fresh.data));
+    } catch (_) {}
     return response.data;
   },
 
