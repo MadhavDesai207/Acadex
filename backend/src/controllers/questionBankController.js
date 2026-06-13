@@ -340,7 +340,13 @@ const deleteQuestion = async (req, res, next) => {
       });
     }
 
-    // Questions in question bank can be hard deleted
+    const usageCount = await prisma.examQuestion.count({ where: { questionId: id } });
+    if (usageCount > 0) {
+      return res.status(400).json({
+        message: `Question is used in ${usageCount} exam(s) and cannot be deleted. Removing it would rewrite historical exam compositions.`
+      });
+    }
+
     await prisma.questionBank.delete({
       where: { id }
     });

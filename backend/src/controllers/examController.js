@@ -410,13 +410,19 @@ const deleteExam = async (req, res, next) => {
       });
     }
 
-    // Hard delete exam (automatically cascades deletes to student results in DB)
+    const resultCount = await prisma.examResult.count({ where: { examId: id } });
+    if (resultCount > 0) {
+      return res.status(400).json({
+        message: `Exam has ${resultCount} student result(s) and cannot be deleted. Historical grade data must be preserved.`
+      });
+    }
+
     await prisma.exam.delete({
       where: { id }
     });
 
     return res.status(200).json({
-      message: 'Exam and all its associated student results deleted successfully'
+      message: 'Exam deleted successfully'
     });
   } catch (error) {
     next(error);
