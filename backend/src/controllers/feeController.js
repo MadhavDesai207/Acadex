@@ -488,19 +488,32 @@ const collectFee = async (req, res, next) => {
       target = parseFloat(studentFee.netPayable);
     }
 
+    // Subtract prior partial payments so credit application and status reflect the true remaining balance
+    const priorPaymentsAgg = await prisma.feePayment.aggregate({
+      where: {
+        studentFeeId,
+        installmentId: installmentId || null,
+        status: 'PARTIALLY_PAID'
+      },
+      _sum: { amountPaid: true, creditApplied: true }
+    });
+    const priorPaid = parseFloat(priorPaymentsAgg._sum.amountPaid || 0)
+      + parseFloat(priorPaymentsAgg._sum.creditApplied || 0);
+    const remaining = parseFloat(Math.max(0, target - priorPaid).toFixed(2));
+
     // Apply credit only when admin explicitly opts in
     const creditToApply = applyCredit
-      ? Math.min(creditAvailable, Math.max(0, parseFloat((target - cash).toFixed(2))))
+      ? Math.min(creditAvailable, Math.max(0, parseFloat((remaining - cash).toFixed(2))))
       : 0;
     const effectiveTotal = parseFloat((cash + creditToApply).toFixed(2));
 
-    // Any excess over target becomes new credit
-    const excess = parseFloat(Math.max(0, effectiveTotal - target).toFixed(2));
+    // Any excess over remaining becomes new credit
+    const excess = parseFloat(Math.max(0, effectiveTotal - remaining).toFixed(2));
 
     // Net credit balance change
     const newCreditBalance = parseFloat((creditAvailable - creditToApply + excess).toFixed(2));
 
-    const status = effectiveTotal >= target ? 'PAID' : 'PARTIALLY_PAID';
+    const status = effectiveTotal >= remaining ? 'PAID' : 'PARTIALLY_PAID';
 
     // Wrap receipt number generation + insert in a transaction so concurrent requests
     // cannot generate the same receipt number.
