@@ -503,6 +503,12 @@ const enrollAdmission = async (req, res, next) => {
             where: { id },
             data: { enrolledStudentId: newStudent.id, status: 'ENROLLED' }
           });
+          if (admission.inquiryId) {
+            await tx.inquiry.update({
+              where: { id: admission.inquiryId },
+              data: { status: 'CONVERTED' }
+            });
+          }
           return newStudent;
         });
         break;
