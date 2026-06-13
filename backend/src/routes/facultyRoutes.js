@@ -4,6 +4,7 @@ const {
   createFaculty,
   getFaculty,
   getFacultyById,
+  getMyFaculty,
   updateFaculty,
   toggleFacultyStatus
 } = require('../controllers/facultyController');
@@ -22,6 +23,13 @@ router.get('/', authenticate, authorize('ADMIN'), getFaculty);
  * @access  Private (ADMIN only)
  */
 router.post('/', authenticate, authorize('ADMIN'), createFaculty);
+
+/**
+ * @route   GET /api/v1/faculty/me
+ * @desc    Get own faculty profile
+ * @access  Private (FACULTY)
+ */
+router.get('/me', authenticate, authorize('FACULTY'), getMyFaculty);
 
 /**
  * @route   GET /api/v1/faculty/:id

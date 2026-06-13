@@ -69,10 +69,7 @@ const SalaryPage = () => {
       });
       setSalaryRecords(records);
     } else {
-      // Find own faculty profile matching email, then fetch history
-      const facList = await facultyService.getFaculty();
-      const facObj = facList.find(f => f.user?.email === currentUser.email) || facList[0];
-      
+      const facObj = await facultyService.getMyFaculty();
       if (facObj) {
         const history = await salaryService.getFacultySalaryHistory(facObj.id);
         setPersonalHistory(history);

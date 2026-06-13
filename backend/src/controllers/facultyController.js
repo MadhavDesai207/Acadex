@@ -518,10 +518,39 @@ const toggleFacultyStatus = async (req, res, next) => {
   }
 };
 
+/**
+ * @desc    Get own faculty profile (for FACULTY role)
+ * @route   GET /api/v1/faculty/me
+ * @access  Private (FACULTY)
+ */
+const getMyFaculty = async (req, res, next) => {
+  try {
+    const faculty = await prisma.faculty.findFirst({
+      where: { userId: req.user.userId },
+      include: {
+        user: {
+          select: { id: true, name: true, email: true, phone: true, role: true, isActive: true }
+        },
+        designationRecord: { select: { id: true, name: true } },
+        departmentRecord: { select: { id: true, name: true } }
+      }
+    });
+
+    if (!faculty) {
+      return res.status(404).json({ success: false, message: 'Faculty profile not found for your account.' });
+    }
+
+    return res.status(200).json(faculty);
+  } catch (error) {
+    next(error);
+  }
+};
+
 module.exports = {
   createFaculty,
   getFaculty,
   getFacultyById,
+  getMyFaculty,
   updateFaculty,
   toggleFacultyStatus
 };

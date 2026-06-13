@@ -6,6 +6,11 @@ const facultyService = {
     return response.data.faculty || response.data;
   },
 
+  getMyFaculty: async () => {
+    const response = await apiClient.get('/faculty/me');
+    return response.data;
+  },
+
   getFacultyById: async (id) => {
     const response = await apiClient.get(`/faculty/${id}`);
     return response.data.faculty || response.data;

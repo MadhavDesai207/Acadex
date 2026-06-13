@@ -67,10 +67,7 @@ const AttendancePage = () => {
         });
         setFacultySummaryList(summaries);
       } else {
-        // Fetch personal faculty summary
-        const facList = await facultyService.getFaculty();
-        const facObj = facList.find(f => f.user?.email === currentUser.email) || facList[0];
-        
+        const facObj = await facultyService.getMyFaculty();
         if (facObj) {
           const sum = await attendanceService.getFacultySummary(facObj.id, selectedMonth, selectedYear);
           setPersonalSummary({
