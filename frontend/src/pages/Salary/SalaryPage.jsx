@@ -92,7 +92,7 @@ const SalaryPage = () => {
     if (res.success) {
       setAlert({
         type: 'success',
-        message: `${res.message} Generated: ${res.generatedCount}, Skipped: ${res.skippedCount}.`
+        message: `${res.message} Generated: ${res.generated}, Skipped: ${res.skipped}.`
       });
       loadSalaries();
       setTimeout(() => setAlert(null), 4000);
