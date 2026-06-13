@@ -1,5 +1,5 @@
 import React from 'react';
-import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
+import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
 import LoginPage from './pages/Login/LoginPage';
 import DashboardPage from './pages/Dashboard/DashboardPage';
 import StudentListPage from './pages/Students/StudentListPage';
@@ -50,6 +50,7 @@ import ConversionReportPage from './pages/Reports/ConversionReportPage';
 import DueFeeReportPage from './pages/Reports/DueFeeReportPage';
 import TopProgressBar from './components/TopProgressBar';
 import ProtectedLayout from './layouts/ProtectedLayout';
+import NotFoundPage from './pages/NotFound/NotFoundPage';
 
 function App() {
   return (
@@ -503,8 +504,8 @@ function App() {
 
         </Route>
 
-        {/* Redirect Fallback */}
-        <Route path="*" element={<Navigate to="/dashboard" replace />} />
+        {/* 404 Fallback */}
+        <Route path="*" element={<NotFoundPage />} />
       </Routes>
     </Router>
   );
