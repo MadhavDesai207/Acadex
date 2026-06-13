@@ -35,11 +35,20 @@ const bulkMarkAttendance = async (req, res, next) => {
       if (batch.facultyId !== faculty.id) return res.status(403).json({ success: false, message: 'Access denied to this batch.' });
     }
 
+    const batchStudents = await prisma.student.findMany({
+      where: { batchId, isActive: true },
+      select: { id: true }
+    });
+    const validStudentIds = new Set(batchStudents.map(s => s.id));
+
     const payloads = [];
     for (const rec of records) {
       const { studentId, status, note } = rec;
       if (!studentId || !status) {
         return res.status(400).json({ success: false, message: 'Each record must have studentId and status' });
+      }
+      if (!validStudentIds.has(studentId)) {
+        return res.status(400).json({ success: false, message: `Student ${studentId} is not an active member of this batch.` });
       }
       const upper = status.toUpperCase();
       if (!VALID_STATUSES.includes(upper)) {
