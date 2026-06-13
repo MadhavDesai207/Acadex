@@ -1,12 +1,20 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Mail, Lock, GraduationCap, ArrowRight } from 'lucide-react';
 import Input from '../../components/Input';
 import Button from '../../components/Button';
 
+const REMEMBER_KEY = 'acadex_remembered_email';
+
 const LoginForm = ({ onSubmit, loading }) => {
   const [email, setEmail]       = useState('');
   const [password, setPassword] = useState('');
+  const [remember, setRemember] = useState(false);
   const [errors, setErrors]     = useState({});
+
+  useEffect(() => {
+    const saved = localStorage.getItem(REMEMBER_KEY);
+    if (saved) { setEmail(saved); setRemember(true); }
+  }, []);
 
   const validate = () => {
     const e = {};
@@ -19,7 +27,10 @@ const LoginForm = ({ onSubmit, loading }) => {
 
   const handleSubmit = (e) => {
     e.preventDefault();
-    if (validate()) onSubmit({ email, password });
+    if (!validate()) return;
+    if (remember) localStorage.setItem(REMEMBER_KEY, email);
+    else localStorage.removeItem(REMEMBER_KEY);
+    onSubmit({ email, password });
   };
 
   // Allow Enter to progress through fields
@@ -75,6 +86,8 @@ const LoginForm = ({ onSubmit, loading }) => {
           <label className="flex items-center gap-2 text-slate-400 cursor-pointer select-none group">
             <input
               type="checkbox"
+              checked={remember}
+              onChange={(e) => setRemember(e.target.checked)}
               className="w-3.5 h-3.5 rounded border-slate-600 bg-slate-900 text-brand accent-brand cursor-pointer"
             />
             <span className="group-hover:text-slate-300 transition-colors">Remember me</span>
