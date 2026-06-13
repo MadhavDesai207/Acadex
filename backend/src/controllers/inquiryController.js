@@ -218,18 +218,20 @@ const getInquiries = async (req, res, next) => {
 
     // Filter by follow-up date (exact date or 'today')
     if (followUpDate) {
+      const parseToUTCDate = (str) => {
+        const parts = str.split('-').map(Number);
+        if (parts.length !== 3 || parts.some(isNaN)) return null;
+        return new Date(Date.UTC(parts[0], parts[1] - 1, parts[2]));
+      };
       if (followUpDate.toLowerCase() === 'today') {
-        const today = new Date();
-        const todayStr = today.toISOString().split('T')[0];
-        where.followUpDate = new Date(todayStr);
+        const now = new Date();
+        where.followUpDate = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate()));
       } else {
-        const date = new Date(followUpDate);
-        if (!isNaN(date.getTime())) {
-          const dateStr = date.toISOString().split('T')[0];
-          where.followUpDate = new Date(dateStr);
-        } else {
+        const parsed = parseToUTCDate(followUpDate);
+        if (!parsed) {
           return res.status(400).json({ message: 'Invalid followUpDate format. Please use YYYY-MM-DD or today.' });
         }
+        where.followUpDate = parsed;
       }
     }
 
