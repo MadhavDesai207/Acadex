@@ -75,6 +75,9 @@ const createBatch = async (req, res, next) => {
       if (isNaN(end.getTime())) {
         return res.status(400).json({ message: 'Invalid endDate format' });
       }
+      if (end <= start) {
+        return res.status(400).json({ message: 'endDate must be after startDate.' });
+      }
     }
 
     // Verify faculty exists if provided
@@ -160,6 +163,10 @@ const updateBatch = async (req, res, next) => {
       } else {
         const end = new Date(endDate);
         if (isNaN(end.getTime())) return res.status(400).json({ success: false, message: 'Invalid endDate' });
+        const effectiveStart = data.startDate || existing.startDate;
+        if (end <= effectiveStart) {
+          return res.status(400).json({ success: false, message: 'endDate must be after startDate.' });
+        }
         data.endDate = end;
       }
     }

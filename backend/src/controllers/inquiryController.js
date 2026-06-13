@@ -35,9 +35,9 @@ const createInquiry = async (req, res, next) => {
       });
     }
 
-    // Duplicate phone number check
+    // Duplicate phone number check — allow re-inquiry for DROPPED leads
     const existingInquiry = await prisma.inquiry.findFirst({
-      where: { phone }
+      where: { phone, status: { not: 'DROPPED' } }
     });
     if (existingInquiry) {
       return res.status(400).json({
@@ -52,15 +52,17 @@ const createInquiry = async (req, res, next) => {
       });
     }
 
-    // Validate assigned staff user exists
+    // Validate assigned staff user exists and is staff (not a student)
     if (assignedTo) {
       const staff = await prisma.user.findUnique({
         where: { id: assignedTo }
       });
       if (!staff) {
-        return res.status(400).json({
-          message: 'Assigned staff user not found'
-        });
+        return res.status(400).json({ message: 'Assigned staff user not found' });
+      }
+      const staffRoles = ['SUPER_ADMIN', 'ADMIN', 'FACULTY', 'RECEPTIONIST'];
+      if (!staffRoles.includes(staff.role)) {
+        return res.status(400).json({ message: 'Inquiries can only be assigned to staff members.' });
       }
     }
 
@@ -349,10 +351,10 @@ const updateInquiry = async (req, res, next) => {
       }
     }
 
-    // 3. Duplicate phone number check
+    // 3. Duplicate phone number check — allow re-inquiry for DROPPED leads
     if (phone && phone !== existingInquiry.phone) {
       const existingPhone = await prisma.inquiry.findFirst({
-        where: { phone }
+        where: { phone, status: { not: 'DROPPED' } }
       });
       if (existingPhone) {
         return res.status(400).json({
@@ -369,15 +371,17 @@ const updateInquiry = async (req, res, next) => {
         });
       }
 
-      // Validate assigned staff user exists
+      // Validate assigned staff user exists and is staff (not a student)
       if (assignedTo) {
         const staff = await prisma.user.findUnique({
           where: { id: assignedTo }
         });
         if (!staff) {
-          return res.status(400).json({
-            message: 'Assigned staff user not found'
-          });
+          return res.status(400).json({ message: 'Assigned staff user not found' });
+        }
+        const staffRoles = ['SUPER_ADMIN', 'ADMIN', 'FACULTY', 'RECEPTIONIST'];
+        if (!staffRoles.includes(staff.role)) {
+          return res.status(400).json({ message: 'Inquiries can only be assigned to staff members.' });
         }
       }
     }

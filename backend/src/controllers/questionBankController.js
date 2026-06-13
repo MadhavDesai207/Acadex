@@ -35,9 +35,10 @@ const createQuestion = async (req, res, next) => {
 
     // Validate options if provided (must be an array of strings)
     if (options && !Array.isArray(options)) {
-      return res.status(400).json({
-        message: 'options must be an array of strings'
-      });
+      return res.status(400).json({ message: 'options must be an array of strings' });
+    }
+    if (options && options.length > 0 && !options.includes(correctAnswer.trim())) {
+      return res.status(400).json({ message: 'correctAnswer must be one of the provided options.' });
     }
 
     // Validate difficulty format if provided
@@ -256,15 +257,20 @@ const updateQuestion = async (req, res, next) => {
 
     if (options) {
       if (!Array.isArray(options)) {
-        return res.status(400).json({
-          message: 'options must be an array of strings'
-        });
+        return res.status(400).json({ message: 'options must be an array of strings' });
       }
       updateData.options = options;
     }
 
     if (correctAnswer) {
       updateData.correctAnswer = correctAnswer.trim();
+    }
+
+    // Validate correctAnswer is within the effective options list
+    const effectiveOptions = updateData.options || existingQuestion.options;
+    const effectiveAnswer = updateData.correctAnswer || existingQuestion.correctAnswer;
+    if (effectiveOptions && effectiveOptions.length > 0 && !effectiveOptions.includes(effectiveAnswer)) {
+      return res.status(400).json({ message: 'correctAnswer must be one of the provided options.' });
     }
 
     if (marks !== undefined) {

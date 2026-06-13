@@ -448,8 +448,11 @@ const getMonthlySummary = async (req, res, next) => {
 
     return res.status(200).json(summary);
   } catch (error) {
-    if (error.message.includes('Invalid') || error.message.includes('not found')) {
+    if (error.message.startsWith('Invalid')) {
       return res.status(400).json({ message: error.message });
+    }
+    if (error.message.includes('not found')) {
+      return res.status(404).json({ message: error.message });
     }
     next(error);
   }

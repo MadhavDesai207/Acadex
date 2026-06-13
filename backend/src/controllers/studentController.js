@@ -44,6 +44,9 @@ const createStudent = async (req, res, next) => {
         message: 'Invalid dateOfBirth format. Please provide a valid date.'
       });
     }
+    if (dob >= new Date()) {
+      return res.status(400).json({ message: 'dateOfBirth must be in the past.' });
+    }
 
     // Check if user already exists
     const existingUser = await prisma.user.findUnique({
@@ -365,9 +368,10 @@ const updateStudent = async (req, res, next) => {
     if (dateOfBirth) {
       parsedDOB = new Date(dateOfBirth);
       if (isNaN(parsedDOB.getTime())) {
-        return res.status(400).json({
-          message: 'Invalid dateOfBirth format'
-        });
+        return res.status(400).json({ message: 'Invalid dateOfBirth format' });
+      }
+      if (parsedDOB >= new Date()) {
+        return res.status(400).json({ message: 'dateOfBirth must be in the past.' });
       }
     }
 
