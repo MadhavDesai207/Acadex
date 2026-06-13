@@ -468,7 +468,7 @@ const collectFee = async (req, res, next) => {
       if (!installment) return res.status(400).json({ success: false, message: 'Installment not found.' });
 
       const existingPaid = await prisma.feePayment.findFirst({
-        where: { installmentId, status: { in: ['PAID', 'WAIVED'] } }
+        where: { studentFeeId, installmentId, status: { in: ['PAID', 'WAIVED'] } }
       });
       if (existingPaid) {
         return res.status(400).json({ success: false, message: 'This installment is already fully paid.' });
