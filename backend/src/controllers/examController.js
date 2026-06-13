@@ -145,12 +145,13 @@ const getExams = async (req, res, next) => {
 
     const where = {};
 
-    if (courseId) {
-      where.courseId = courseId;
-    }
-
-    if (batchId) {
-      where.batchId = batchId;
+    if (req.user.role === 'STUDENT') {
+      const student = await prisma.student.findUnique({ where: { userId: req.user.userId } });
+      if (!student) return res.status(403).json({ message: 'Student profile not found.' });
+      where.batchId = student.batchId;
+    } else {
+      if (courseId) where.courseId = courseId;
+      if (batchId) where.batchId = batchId;
     }
 
     if (examType) {
@@ -240,6 +241,13 @@ const getExamById = async (req, res, next) => {
       return res.status(404).json({
         message: 'Exam not found'
       });
+    }
+
+    if (isStudent) {
+      const student = await prisma.student.findUnique({ where: { userId: req.user.userId } });
+      if (!student || exam.batchId !== student.batchId) {
+        return res.status(403).json({ message: 'Access denied to this exam.' });
+      }
     }
 
     return res.status(200).json(exam);

@@ -5,18 +5,22 @@ const getAssignments = async (req, res, next) => {
   try {
     const { batchId, status } = req.query;
     const where = {};
-    if (batchId) where.batchId = batchId;
-    if (status) {
-      const upper = status.toUpperCase();
-      const validStatuses = ['DRAFT', 'PUBLISHED', 'CLOSED'];
-      if (!validStatuses.includes(upper)) {
-        return res.status(400).json({ success: false, message: `Invalid status. Must be one of: ${validStatuses.join(', ')}` });
-      }
-      where.status = upper;
-    }
 
     if (req.user.role === 'STUDENT') {
+      const student = await prisma.student.findUnique({ where: { userId: req.user.userId } });
+      if (!student) return res.status(403).json({ success: false, message: 'Student profile not found.' });
+      where.batchId = student.batchId;
       where.status = 'PUBLISHED';
+    } else {
+      if (batchId) where.batchId = batchId;
+      if (status) {
+        const upper = status.toUpperCase();
+        const validStatuses = ['DRAFT', 'PUBLISHED', 'CLOSED'];
+        if (!validStatuses.includes(upper)) {
+          return res.status(400).json({ success: false, message: `Invalid status. Must be one of: ${validStatuses.join(', ')}` });
+        }
+        where.status = upper;
+      }
     }
 
     const assignments = await prisma.assignment.findMany({
@@ -174,6 +178,9 @@ const submitAssignment = async (req, res, next) => {
 
     const assignment = await prisma.assignment.findUnique({ where: { id } });
     if (!assignment) return res.status(404).json({ success: false, message: 'Assignment not found' });
+    if (assignment.batchId !== student.batchId) {
+      return res.status(403).json({ success: false, message: 'This assignment does not belong to your batch.' });
+    }
     if (assignment.status !== 'PUBLISHED') {
       return res.status(400).json({ success: false, message: 'This assignment is not open for submissions' });
     }

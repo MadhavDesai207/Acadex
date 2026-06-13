@@ -95,6 +95,13 @@ const getBatchProgress = async (req, res, next) => {
     const batch = await prisma.batch.findUnique({ where: { id: batchId } });
     if (!batch) return res.status(404).json({ success: false, message: 'Batch not found' });
 
+    if (req.user.role === 'STUDENT') {
+      const student = await prisma.student.findUnique({ where: { userId: req.user.userId } });
+      if (!student || student.batchId !== batchId) {
+        return res.status(403).json({ success: false, message: 'Access denied to this batch syllabus.' });
+      }
+    }
+
     const unitWhere = { isActive: true, courseId: batch.courseId };
     if (subjectId) unitWhere.subjectId = subjectId;
 

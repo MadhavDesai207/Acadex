@@ -21,8 +21,15 @@ const getTimetable = async (req, res, next) => {
   try {
     const { batchId, facultyId } = req.query;
     const where = { isActive: true };
-    if (batchId) where.batchId = batchId;
-    if (facultyId) where.facultyId = facultyId;
+
+    if (req.user.role === 'STUDENT') {
+      const student = await prisma.student.findUnique({ where: { userId: req.user.userId } });
+      if (!student) return res.status(403).json({ success: false, message: 'Student profile not found.' });
+      where.batchId = student.batchId;
+    } else {
+      if (batchId) where.batchId = batchId;
+      if (facultyId) where.facultyId = facultyId;
+    }
 
     const slots = await prisma.timetable.findMany({
       where,
@@ -190,6 +197,14 @@ const deleteSlot = async (req, res, next) => {
 const getBatchTimetable = async (req, res, next) => {
   try {
     const { batchId } = req.params;
+
+    if (req.user.role === 'STUDENT') {
+      const student = await prisma.student.findUnique({ where: { userId: req.user.userId } });
+      if (!student || student.batchId !== batchId) {
+        return res.status(403).json({ success: false, message: 'Access denied to this batch timetable.' });
+      }
+    }
+
     const slots = await prisma.timetable.findMany({
       where: { batchId, isActive: true },
       include: {

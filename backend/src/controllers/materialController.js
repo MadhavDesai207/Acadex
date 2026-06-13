@@ -8,7 +8,14 @@ const getMaterials = async (req, res, next) => {
     const { subjectId, batchId } = req.query;
     const where = { isActive: true };
     if (subjectId) where.subjectId = subjectId;
-    if (batchId) where.batchId = batchId;
+
+    if (req.user.role === 'STUDENT') {
+      const student = await prisma.student.findUnique({ where: { userId: req.user.userId } });
+      if (!student) return res.status(403).json({ success: false, message: 'Student profile not found.' });
+      where.batchId = student.batchId;
+    } else if (batchId) {
+      where.batchId = batchId;
+    }
 
     const materials = await prisma.studyMaterial.findMany({
       where,
