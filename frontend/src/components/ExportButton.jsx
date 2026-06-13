@@ -1,17 +1,22 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { Download, Printer } from 'lucide-react';
 
-const ExportButton = ({ data = [], columns = [], filename = 'report' }) => {
-  const exportCSV = () => {
-    if (!data.length || !columns.length) return;
+const ExportButton = ({ data = [], columns = [], filename = 'report', fetchAllForExport }) => {
+  const [exporting, setExporting] = useState(false);
+
+  const buildAndDownloadCSV = (rows) => {
+    if (!rows.length || !columns.length) return;
     const header = columns.map(c => `"${c.label}"`).join(',');
-    const rows = data.map(row =>
+    const csvRows = rows.map(row =>
       columns.map(c => {
         const val = c.key.split('.').reduce((obj, k) => obj?.[k], row) ?? '';
-        return `"${String(val).replace(/"/g, '""')}"`;
+        const str = String(val);
+        // Neutralise CSV formula injection (=, +, -, @)
+        const safe = /^[=+\-@]/.test(str) ? `'${str}` : str;
+        return `"${safe.replace(/"/g, '""')}"`;
       }).join(',')
     );
-    const csv = [header, ...rows].join('\n');
+    const csv = [header, ...csvRows].join('\n');
     const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
     const url = URL.createObjectURL(blob);
     const link = document.createElement('a');
@@ -21,18 +26,37 @@ const ExportButton = ({ data = [], columns = [], filename = 'report' }) => {
     URL.revokeObjectURL(url);
   };
 
+  const exportCSV = async () => {
+    if (exporting) return;
+    if (fetchAllForExport) {
+      setExporting(true);
+      try {
+        const allData = await fetchAllForExport();
+        buildAndDownloadCSV(allData);
+      } catch {
+        buildAndDownloadCSV(data);
+      } finally {
+        setExporting(false);
+      }
+    } else {
+      if (!data.length) return;
+      buildAndDownloadCSV(data);
+    }
+  };
+
   return (
     <div className="flex gap-2">
       <button
         onClick={exportCSV}
-        className="flex items-center gap-1.5 px-3 py-2 rounded-lg text-xs font-medium text-slate-300 bg-slate-800 hover:bg-slate-700 hover:text-white transition-all border border-slate-700/50"
+        disabled={exporting}
+        className="flex items-center gap-1.5 px-3 py-2 rounded-lg text-xs font-medium text-slate-300 bg-slate-800 hover:bg-slate-700 hover:text-white transition-all border border-slate-700/50 disabled:opacity-50 disabled:cursor-wait"
       >
         <Download size={13} />
-        Export CSV
+        {exporting ? 'Exporting…' : 'Export CSV'}
       </button>
       <button
         onClick={() => window.print()}
-        className="flex items-center gap-1.5 px-3 py-2 rounded-lg text-xs font-medium text-slate-300 bg-slate-800 hover:bg-slate-700 hover:text-white transition-all border border-slate-700/50"
+        className="flex items-center gap-1.5 px-3 py-2 rounded-lg text-xs font-medium text-slate-300 bg-slate-800 hover:bg-slate-700 hover:text-white transition-all border border-slate-700/50 no-print"
       >
         <Printer size={13} />
         Print

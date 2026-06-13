@@ -170,16 +170,31 @@
     display: none !important;
   }
 
-  body {
+  /* Reset dark backgrounds on root wrappers */
+  html, body, #root, #root > div {
     background: white !important;
     color: #0f172a !important;
+  }
+
+  body {
     font-size: 12pt;
+  }
+
+  /* Hide ambient glow blobs */
+  .pointer-events-none.fixed {
+    display: none !important;
   }
 
   main {
     margin: 0 !important;
-    padding: 0 !important;
+    padding: 0.5cm !important;
     width: 100% !important;
+    min-height: unset !important;
+  }
+
+  /* Reset all Tailwind bg utility classes that use CSS vars */
+  [class*="bg-bg-"] {
+    background: white !important;
   }
 
   .glass-panel, .glass-card {
@@ -193,7 +208,11 @@
     color: #0f172a !important;
   }
 
-  .text-slate-300, .text-slate-400, .text-slate-200 {
+  .text-white {
+    color: #0f172a !important;
+  }
+
+  .text-slate-100, .text-slate-200, .text-slate-300, .text-slate-400, .text-slate-500 {
     color: #374151 !important;
   }
 
@@ -213,6 +232,7 @@
   }
 
   @page {
+    size: A4 landscape;
     margin: 1.5cm;
   }
 }

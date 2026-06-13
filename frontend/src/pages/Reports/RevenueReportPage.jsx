@@ -160,7 +160,21 @@ const RevenueReportPage = () => {
           <div className="glass-panel rounded-2xl p-5 border border-slate-700/50">
             <div className="flex items-center justify-between mb-4">
               <h3 className="text-sm font-bold text-white">Payment Transactions</h3>
-              <ExportButton data={report.payments || []} columns={csvColumns} filename="revenue_report" />
+              <ExportButton
+                data={report.payments || []}
+                columns={csvColumns}
+                filename="revenue_report"
+                fetchAllForExport={async () => {
+                  const params = {};
+                  if (filters.from) params.from = filters.from;
+                  if (filters.to) params.to = filters.to;
+                  if (filters.courseId) params.courseId = filters.courseId;
+                  if (filters.paymentMethod) params.paymentMethod = filters.paymentMethod;
+                  params.limit = 10000;
+                  const res = await reportService.getRevenue(params);
+                  return res.data?.payments || [];
+                }}
+              />
             </div>
             <div className="overflow-x-auto">
               <table className="w-full text-sm text-left border-collapse">

@@ -389,7 +389,7 @@ const getPerformanceReport = async (req, res, next) => {
         course: { select: { name: true, code: true } },
         batch: { select: { name: true } }
       },
-      take: role === 'STUDENT' ? 1 : 50
+      ...(role === 'STUDENT' ? { take: 1 } : {})
     });
 
     const report = await Promise.all(students.map(async (student) => {
