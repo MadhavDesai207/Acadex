@@ -141,9 +141,13 @@ const updateBatch = async (req, res, next) => {
 
     const data = {};
     if (name) data.name = name;
-    if (courseId) {
+    if (courseId && courseId !== existing.courseId) {
       const course = await prisma.course.findUnique({ where: { id: courseId } });
       if (!course) return res.status(400).json({ success: false, message: 'Course not found' });
+      const enrolledCount = await prisma.student.count({ where: { batchId: id } });
+      if (enrolledCount > 0) {
+        return res.status(400).json({ success: false, message: `Cannot change course: ${enrolledCount} student(s) are enrolled in this batch.` });
+      }
       data.courseId = courseId;
     }
     if (startDate) {
