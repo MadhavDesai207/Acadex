@@ -276,9 +276,10 @@ const studentDashboard = async (req, res, next) => {
 
     const now = new Date();
 
-    const [totalAttendance, presentCount, completedExams, latestResults] = await Promise.all([
+    const [totalAttendance, presentCount, halfDayCount, completedExams, latestResults] = await Promise.all([
       prisma.attendance.count({ where: { studentId: student.id } }),
       prisma.attendance.count({ where: { studentId: student.id, status: 'PRESENT' } }),
+      prisma.attendance.count({ where: { studentId: student.id, status: 'HALF_DAY' } }),
       prisma.examResult.count({ where: { studentId: student.id } }),
       prisma.examResult.findMany({
         where: { studentId: student.id },
@@ -312,7 +313,7 @@ const studentDashboard = async (req, res, next) => {
           enrolledBatch: student.batch?.name || 'Not assigned',
           course: student.course?.name || 'Not enrolled',
           attendanceRate: totalAttendance > 0
-            ? parseFloat(((presentCount / totalAttendance) * 100).toFixed(1))
+            ? parseFloat((((presentCount + halfDayCount * 0.5) / totalAttendance) * 100).toFixed(1))
             : 0,
           attendancePresent: presentCount,
           attendanceTotal: totalAttendance,

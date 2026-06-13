@@ -140,18 +140,18 @@ const getAttendanceReport = async (req, res, next) => {
       else if (r.status === 'ON_LEAVE') studentMap[r.studentId].onLeave++;
     }
 
-    const studentIds = Object.keys(studentMap);
-    const students = studentIds.length > 0
-      ? await prisma.student.findMany({
-          where: { id: { in: studentIds } },
-          include: { user: { select: { name: true } } }
-        })
-      : [];
+    // Fetch all active students in the batch (or just the filtered one) so
+    // zero-record students appear in the report rather than being invisible.
+    const students = await prisma.student.findMany({
+      where: studentId ? { id: studentId, batchId } : { batchId, isActive: true },
+      include: { user: { select: { name: true } } }
+    });
 
     const report = students.map(s => {
-      const att = studentMap[s.id];
-      const percentage = att.total > 0
-        ? parseFloat(((att.present / att.total) * 100).toFixed(1))
+      const att = studentMap[s.id] || { present: 0, absent: 0, halfDay: 0, onLeave: 0, total: 0 };
+      const effective = att.present + att.halfDay * 0.5;
+      const percentage = totalWorkingDays > 0
+        ? parseFloat(((effective / totalWorkingDays) * 100).toFixed(1))
         : 0;
       return {
         studentId: s.id,
