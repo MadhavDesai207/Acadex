@@ -210,6 +210,7 @@ const getExams = async (req, res, next) => {
 const getExamById = async (req, res, next) => {
   try {
     const { id } = req.params;
+    const isStudent = req.user.role === 'STUDENT';
 
     const exam = await prisma.exam.findUnique({
       where: { id },
@@ -217,19 +218,21 @@ const getExamById = async (req, res, next) => {
         course: { select: { id: true, name: true, code: true } },
         batch: { select: { id: true, name: true } },
         creator: { select: { id: true, name: true, email: true, role: true } },
-        questions: {
-          include: {
-            question: {
-              select: {
-                id: true,
-                questionText: true,
-                marks: true,
-                difficulty: true,
-                subject: { select: { name: true } }
+        ...(!isStudent && {
+          questions: {
+            include: {
+              question: {
+                select: {
+                  id: true,
+                  questionText: true,
+                  marks: true,
+                  difficulty: true,
+                  subject: { select: { name: true } }
+                }
               }
             }
           }
-        }
+        })
       }
     });
 
