@@ -5,7 +5,10 @@ const ExportButton = ({ data = [], columns = [], filename = 'report', fetchAllFo
   const [exporting, setExporting] = useState(false);
 
   const buildAndDownloadCSV = (rows) => {
-    if (!rows.length || !columns.length) return;
+    if (!rows.length || !columns.length) {
+      alert('No data available to export.');
+      return;
+    }
     const header = columns.map(c => `"${c.label}"`).join(',');
     const csvRows = rows.map(row =>
       columns.map(c => {
@@ -39,7 +42,6 @@ const ExportButton = ({ data = [], columns = [], filename = 'report', fetchAllFo
         setExporting(false);
       }
     } else {
-      if (!data.length) return;
       buildAndDownloadCSV(data);
     }
   };
