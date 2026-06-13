@@ -145,8 +145,17 @@ const updateFeeStructure = async (req, res, next) => {
     const data = {};
     if (name) data.name = name;
     if (totalAmount !== undefined) {
-      if (parseFloat(totalAmount) <= 0) return res.status(400).json({ success: false, message: 'totalAmount must be positive.' });
-      data.totalAmount = parseFloat(totalAmount);
+      const parsed = parseFloat(totalAmount);
+      if (parsed <= 0) return res.status(400).json({ success: false, message: 'totalAmount must be positive.' });
+      const installments = await prisma.feeInstallment.findMany({ where: { feeStructureId: id }, select: { amount: true } });
+      const installmentSum = parseFloat(installments.reduce((s, i) => s + parseFloat(i.amount), 0).toFixed(2));
+      if (installmentSum > parsed + 0.01) {
+        return res.status(400).json({
+          success: false,
+          message: `totalAmount (${parsed}) cannot be less than existing installment sum (${installmentSum}).`
+        });
+      }
+      data.totalAmount = parsed;
     }
     if (frequency) data.frequency = frequency;
     if (isActive !== undefined) data.isActive = Boolean(isActive);
@@ -295,16 +304,25 @@ const assignFee = async (req, res, next) => {
     ]);
     if (!student) return res.status(400).json({ success: false, message: 'Student not found.' });
     if (!structure) return res.status(400).json({ success: false, message: 'Fee structure not found.' });
+    if (!structure.isActive) return res.status(400).json({ success: false, message: 'Fee structure is inactive.' });
+    if (structure.courseId !== student.courseId) {
+      return res.status(400).json({ success: false, message: "Fee structure does not belong to the student's course." });
+    }
 
     let discount = null;
     let scholarship = null;
     if (discountId) {
       discount = await prisma.discount.findUnique({ where: { id: discountId } });
       if (!discount) return res.status(400).json({ success: false, message: 'Discount not found.' });
+      if (!discount.isActive) return res.status(400).json({ success: false, message: 'Discount is inactive.' });
+      if (discount.courseId && discount.courseId !== student.courseId) {
+        return res.status(400).json({ success: false, message: "Discount is not applicable to the student's course." });
+      }
     }
     if (scholarshipId) {
       scholarship = await prisma.scholarship.findUnique({ where: { id: scholarshipId } });
       if (!scholarship) return res.status(400).json({ success: false, message: 'Scholarship not found.' });
+      if (!scholarship.isActive) return res.status(400).json({ success: false, message: 'Scholarship is inactive.' });
     }
 
     const netPayable = calcNetPayable(structure.totalAmount, discount, scholarship);
