@@ -132,12 +132,8 @@ const NotificationBell = () => {
   const [open, setOpen] = useState(false);
   const ref = useRef(null);
 
-  const notifications = [
-    { id: 1, text: 'New admission application submitted', time: '10 mins ago', unread: true, type: 'admission' },
-    { id: 2, text: 'Exam marks due for Grade 12 Chemistry', time: '2 hours ago', unread: true, type: 'exam' },
-    { id: 3, text: 'Salary voucher generated for May 2026', time: '1 day ago', unread: false, type: 'salary' },
-  ];
-  const unread = notifications.filter(n => n.unread).length;
+  const notifications = [];
+  const unread = 0;
 
   useEffect(() => {
     const handler = (e) => {
@@ -175,30 +171,9 @@ const NotificationBell = () => {
             )}
           </div>
 
-          {/* Today group */}
-          <div className="px-4 pt-3 pb-1">
-            <p className="text-[10px] font-bold uppercase tracking-widest text-slate-600 mb-2">Today</p>
-          </div>
-
-          <div className="max-h-72 overflow-y-auto">
-            {notifications.map(n => (
-              <div
-                key={n.id}
-                className={`mx-2 mb-1 px-3 py-2.5 rounded-lg cursor-pointer transition-colors hover:bg-slate-800/50 ${n.unread ? 'bg-brand/5' : ''}`}
-              >
-                {n.unread && <span className="w-1.5 h-1.5 rounded-full bg-brand-light inline-block mr-2 mb-0.5" />}
-                <p className={`text-xs leading-relaxed ${n.unread ? 'text-slate-200 font-medium' : 'text-slate-400'}`}>
-                  {n.text}
-                </p>
-                <p className="text-[10px] text-slate-600 mt-0.5">{n.time}</p>
-              </div>
-            ))}
-          </div>
-
-          <div className="px-4 py-2.5 border-t border-slate-800 text-center">
-            <button className="text-xs text-brand-light hover:underline font-medium">
-              View all notifications
-            </button>
+          <div className="px-4 py-8 flex flex-col items-center gap-2 text-center">
+            <Bell size={22} className="text-slate-700" />
+            <p className="text-xs text-slate-500">No notifications</p>
           </div>
         </div>
       )}
@@ -255,7 +230,7 @@ const ProfileMenu = ({ user, onOpenSettings }) => {
           {/* Actions */}
           <div className="p-1">
             <button
-              onClick={() => { setOpen(false); navigate('/dashboard'); }}
+              onClick={() => { setOpen(false); onOpenSettings(); }}
               className="flex items-center gap-2.5 w-full px-3 py-2 rounded-lg text-sm text-slate-300 hover:bg-slate-800/60 hover:text-white transition-colors text-left"
             >
               <User size={14} className="text-slate-500" />
