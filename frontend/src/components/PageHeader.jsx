@@ -19,7 +19,7 @@ const PageHeader = ({
   className = '',
 }) => {
   return (
-    <div className={`flex flex-col sm:flex-row sm:items-start justify-between gap-4 ${className}`}>
+    <div className={`flex flex-col md:flex-row md:items-center justify-between gap-4 ${className}`}>
       <div className="flex flex-col gap-1 min-w-0">
         {breadcrumb && breadcrumb.length > 0 && (
           <Breadcrumb items={breadcrumb} />
@@ -28,14 +28,14 @@ const PageHeader = ({
           {title}
         </h1>
         {subtitle && (
-          <p className="text-sm text-slate-400 leading-relaxed max-w-2xl">
+          <p className="text-xs md:text-sm text-slate-400 leading-relaxed max-w-2xl">
             {subtitle}
           </p>
         )}
       </div>
 
       {actions && (
-        <div className="flex items-center gap-2.5 shrink-0 flex-wrap sm:flex-nowrap">
+        <div className="flex items-center gap-2.5 shrink-0 flex-wrap md:flex-nowrap">
           {actions}
         </div>
       )}

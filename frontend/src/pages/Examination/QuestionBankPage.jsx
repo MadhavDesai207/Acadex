@@ -2,8 +2,10 @@ import React, { useState, useEffect } from 'react';
 import { Plus, Edit2, Trash2, CheckCircle, AlertCircle } from 'lucide-react';
 import Table from '../../components/Table';
 import Button from '../../components/Button';
+import PageHeader from '../../components/PageHeader';
 import Modal from '../../components/Modal';
 import Input from '../../components/Input';
+import Select from '../../components/Select';
 import ConfirmDialog from '../../components/ConfirmDialog';
 import DifficultyBadge from '../../components/DifficultyBadge';
 import QuestionForm from './QuestionForm';
@@ -123,15 +125,15 @@ const QuestionBankPage = () => {
   return (
     <>
       <div className="flex flex-col gap-6">
-        <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
-          <div>
-            <h1 className="text-2xl md:text-3xl font-extrabold tracking-tight text-white font-heading">Question Bank</h1>
-            <p className="text-xs text-slate-400">Manage all MCQ questions used in exams.</p>
-          </div>
-          <Button variant="primary" onClick={() => { setEditing(null); setIsFormOpen(true); }} className="flex items-center gap-2">
-            <Plus size={16} /> <span>Add Question</span>
-          </Button>
-        </div>
+        <PageHeader
+          title="Question Bank"
+          subtitle="Manage all MCQ questions used in exams."
+          actions={
+            <Button variant="primary" onClick={() => { setEditing(null); setIsFormOpen(true); }} className="flex items-center gap-2">
+              <Plus size={16} /> <span>Add Question</span>
+            </Button>
+          }
+        />
 
         {alert && (
           <div className={`flex gap-2.5 p-3 rounded-lg text-sm border ${

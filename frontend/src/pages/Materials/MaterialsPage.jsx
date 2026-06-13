@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { Plus, CheckCircle, AlertCircle } from 'lucide-react';
 import Button from '../../components/Button';
+import PageHeader from '../../components/PageHeader';
 import Modal from '../../components/Modal';
 import Select from '../../components/Select';
 import MaterialCard from '../../components/MaterialCard';
@@ -93,17 +94,15 @@ const MaterialsPage = () => {
   return (
     <>
       <div className="flex flex-col gap-6">
-        <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
-          <div>
-            <h1 className="text-2xl md:text-3xl font-extrabold tracking-tight text-white font-heading">Study Materials</h1>
-            <p className="text-xs text-slate-400">Learning resources per subject and batch.</p>
-          </div>
-          {canManage && (
+        <PageHeader
+          title="Study Materials"
+          subtitle="Learning resources per subject and batch."
+          actions={canManage && (
             <Button variant="primary" onClick={() => { setEditingMaterial(null); setIsFormOpen(true); }} className="flex items-center gap-2">
               <Plus size={16} /> <span>Add Material</span>
             </Button>
           )}
-        </div>
+        />
 
         {alert && (
           <div className={`flex gap-2.5 p-3 rounded-lg text-sm border ${alert.type === 'error' ? 'bg-status-danger/15 border-status-danger/30 text-status-danger' : 'bg-status-success/15 border-status-success/30 text-status-success'}`}>

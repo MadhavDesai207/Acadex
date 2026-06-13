@@ -46,6 +46,13 @@ const authService = {
     return response.data;
   },
 
+  // Update name/phone; refreshes localStorage
+  updateProfile: async (data) => {
+    const response = await apiClient.patch('/auth/me', data);
+    if (response.data) localStorage.setItem('user', JSON.stringify(response.data));
+    return response.data;
+  },
+
   // Check if user is logged in locally
   isAuthenticated: () => {
     return !!localStorage.getItem('token');

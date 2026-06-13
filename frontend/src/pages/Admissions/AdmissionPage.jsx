@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { Plus, Search, Eye, Award, CheckCircle, ShieldAlert, Heart, AlertCircle } from 'lucide-react';
 import Table from '../../components/Table';
 import Button from '../../components/Button';
+import PageHeader from '../../components/PageHeader';
 import Modal from '../../components/Modal';
 import AdmissionForm from './AdmissionForm';
 import AdmissionReviewModal from './AdmissionReviewModal';
@@ -145,25 +146,16 @@ const AdmissionPage = () => {
       <div className="flex flex-col gap-6">
         
         {/* Header Toolbar */}
-        <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
-          <div>
-            <h1 className="text-2xl md:text-3xl font-extrabold tracking-tight text-white font-heading">
-              Admissions Registry
-            </h1>
-            <p className="text-xs md:text-sm text-slate-400">
-              Audit applicant profiles, update academic vetting status, and process student enrollments.
-            </p>
-          </div>
-
-          <Button
-            variant="primary"
-            onClick={() => setIsFormOpen(true)}
-            className="flex items-center gap-2"
-          >
-            <Plus size={16} />
-            <span>Create File</span>
-          </Button>
-        </div>
+        <PageHeader
+          title="Admissions Registry"
+          subtitle="Audit applicant profiles, update academic vetting status, and process student enrollments."
+          actions={
+            <Button variant="primary" onClick={() => setIsFormOpen(true)} className="flex items-center gap-2">
+              <Plus size={16} />
+              <span>Create File</span>
+            </Button>
+          }
+        />
 
         {/* Alerts Toast */}
         {alert && (

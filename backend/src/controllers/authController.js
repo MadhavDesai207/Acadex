@@ -183,9 +183,37 @@ const changePassword = async (req, res, next) => {
   }
 };
 
+/**
+ * @desc    Update current user name/phone
+ * @route   PATCH /api/v1/auth/me
+ * @access  Private
+ */
+const updateProfile = async (req, res, next) => {
+  try {
+    const { name, phone } = req.body;
+    if (!name && phone === undefined) {
+      return res.status(400).json({ message: 'Provide at least name or phone to update.' });
+    }
+    const data = {};
+    if (name !== undefined) {
+      if (typeof name !== 'string' || !name.trim()) {
+        return res.status(400).json({ message: 'name must be a non-empty string.' });
+      }
+      data.name = name.trim();
+    }
+    if (phone !== undefined) data.phone = phone || null;
+    const updated = await prisma.user.update({ where: { id: req.user.userId }, data });
+    const { password: _, ...userWithoutPassword } = updated;
+    return res.status(200).json(userWithoutPassword);
+  } catch (error) {
+    next(error);
+  }
+};
+
 module.exports = {
   login,
   logout,
   getMe,
-  changePassword
+  changePassword,
+  updateProfile
 };

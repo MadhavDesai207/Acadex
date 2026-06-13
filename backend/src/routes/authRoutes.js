@@ -1,7 +1,7 @@
 const express = require('express');
 const router = express.Router();
 const rateLimit = require('express-rate-limit');
-const { login, logout, getMe, changePassword } = require('../controllers/authController');
+const { login, logout, getMe, changePassword, updateProfile } = require('../controllers/authController');
 const { authenticate } = require('../middleware/authMiddleware');
 
 const loginLimiter = rateLimit({
@@ -39,5 +39,12 @@ router.get('/me', authenticate, getMe);
  * @access  Private
  */
 router.put('/change-password', authenticate, changePassword);
+
+/**
+ * @route   PATCH /api/v1/auth/me
+ * @desc    Update current user name/phone
+ * @access  Private
+ */
+router.patch('/me', authenticate, updateProfile);
 
 module.exports = router;

@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { NavLink, useNavigate, useLocation } from 'react-router-dom';
 import {
   LayoutDashboard, ClipboardList, CheckSquare, Users, UserSquare2,
@@ -7,7 +7,7 @@ import {
   ChevronRight, BookMarked, BookCopy, Wallet, CreditCard, Receipt,
   AlertCircle, Tag, FlaskConical, HelpCircle, ClipboardCheck,
   BarChart2, ScrollText, Star, FileBarChart2, PieChart, TrendingUp,
-  GanttChart, Briefcase, Building2, PanelLeftClose, PanelLeftOpen
+  GanttChart, Briefcase, Building2
 } from 'lucide-react';
 import authService from '../services/authService';
 
@@ -21,13 +21,12 @@ const NavItem = ({ item, role, onNavigate, collapsed }) => {
       <NavLink
         to={item.path}
         end={item.end}
-        title={collapsed ? item.label : undefined}
+        title={item.label}
         className={({ isActive }) =>
-          `flex items-center gap-3 rounded-lg text-sm font-medium transition-all duration-150 group relative
-           ${collapsed ? 'px-2.5 py-2.5 justify-center' : 'px-3 py-2.5'}
+          `flex items-center px-3 py-2.5 rounded-lg text-sm font-medium transition-colors duration-150 group relative border-l-[3px]
            ${isActive
-             ? 'bg-brand/15 text-white border-l-[3px] border-brand-light'
-             : 'text-slate-400 hover:bg-slate-800/70 hover:text-slate-200 border-l-[3px] border-transparent'
+             ? 'bg-brand/15 text-white border-brand-light'
+             : 'text-slate-400 hover:bg-slate-800/70 hover:text-slate-200 border-transparent'
            }`
         }
         onClick={onNavigate}
@@ -38,7 +37,17 @@ const NavItem = ({ item, role, onNavigate, collapsed }) => {
               className={`shrink-0 transition-colors ${isActive ? 'text-brand-light' : 'text-slate-500 group-hover:text-slate-300'}`}
               size={17}
             />
-            {!collapsed && <span className="truncate">{item.label}</span>}
+            <span
+              className={`truncate whitespace-nowrap overflow-hidden ${collapsed ? 'opacity-0 max-w-0 ml-0' : 'opacity-100 max-w-[160px] ml-3'}`}
+              style={{
+                transitionProperty: 'opacity, max-width, margin-left',
+                transitionDuration: collapsed ? '100ms, 130ms, 100ms' : '200ms, 240ms, 200ms',
+                transitionTimingFunction: 'cubic-bezier(0.4,0,0.2,1)',
+                transitionDelay: collapsed ? '0ms' : '50ms',
+              }}
+            >
+              {item.label}
+            </span>
           </>
         )}
       </NavLink>
@@ -57,35 +66,21 @@ const NavGroup = ({ group, role, onNavigate, collapsed }) => {
   const isAnyChildActive = visibleChildren.some(c => location.pathname.startsWith(c.path));
   const [open, setOpen] = useState(isAnyChildActive);
 
-  // Auto-open when child route becomes active
   useEffect(() => {
     if (isAnyChildActive) setOpen(true);
   }, [location.pathname]);
 
-  if (collapsed) {
-    // In collapsed mode, show only the group icon (no children)
-    return (
-      <li>
-        <button
-          title={group.label}
-          className={`flex items-center justify-center w-full px-2.5 py-2.5 rounded-lg transition-all duration-150 border-l-[3px]
-            ${isAnyChildActive
-              ? 'bg-brand/15 text-brand-light border-brand-light'
-              : 'text-slate-500 hover:bg-slate-800/70 hover:text-slate-300 border-transparent'
-            }`}
-          onClick={() => setOpen(o => !o)}
-        >
-          <Icon size={17} />
-        </button>
-      </li>
-    );
-  }
+  useEffect(() => {
+    if (collapsed) setOpen(false);
+    else if (isAnyChildActive) setOpen(true);
+  }, [collapsed]);
 
   return (
     <li>
       <button
-        onClick={() => setOpen(o => !o)}
-        className={`flex items-center gap-3 w-full px-3 py-2.5 rounded-lg text-sm font-medium transition-all duration-150 group border-l-[3px]
+        onClick={() => !collapsed && setOpen(o => !o)}
+        title={collapsed ? group.label : undefined}
+        className={`flex items-center px-3 py-2.5 w-full rounded-lg text-sm font-medium transition-colors duration-150 group border-l-[3px]
           ${isAnyChildActive
             ? 'text-slate-300 border-brand/50'
             : 'text-slate-500 hover:bg-slate-800/70 hover:text-slate-300 border-transparent'
@@ -95,74 +90,115 @@ const NavGroup = ({ group, role, onNavigate, collapsed }) => {
           className={`shrink-0 transition-colors ${isAnyChildActive ? 'text-brand-light' : 'text-slate-500 group-hover:text-slate-400'}`}
           size={17}
         />
-        <span className="flex-1 text-left">{group.label}</span>
-        <span className="text-slate-600 transition-transform duration-200" style={{ transform: open ? 'rotate(0deg)' : 'rotate(-90deg)' }}>
+        <span
+          className={`flex-1 text-left whitespace-nowrap overflow-hidden ${collapsed ? 'opacity-0 max-w-0 ml-0' : 'opacity-100 max-w-[120px] ml-3'}`}
+          style={{
+            transitionProperty: 'opacity, max-width, margin-left',
+            transitionDuration: collapsed ? '100ms, 130ms, 100ms' : '200ms, 240ms, 200ms',
+            transitionTimingFunction: 'cubic-bezier(0.4,0,0.2,1)',
+            transitionDelay: collapsed ? '0ms' : '70ms',
+          }}
+        >
+          {group.label}
+        </span>
+        <span
+          className={`text-slate-600 ${collapsed ? 'opacity-0' : 'opacity-100'} ${open ? 'rotate-0' : '-rotate-90'}`}
+          style={{
+            transitionProperty: 'opacity, transform',
+            transitionDuration: collapsed ? '80ms' : '180ms',
+            transitionTimingFunction: 'cubic-bezier(0.4,0,0.2,1)',
+            transitionDelay: collapsed ? '0ms' : '100ms',
+          }}
+        >
           <ChevronDown size={13} />
         </span>
       </button>
 
-      {open && (
-        <ul className="mt-0.5 ml-8 pl-3 border-l border-slate-700/50 space-y-0.5 animate-fadeIn">
-          {visibleChildren.map(child => {
-            const ChildIcon = child.icon;
-            return (
-              <li key={child.path}>
-                <NavLink
-                  to={child.path}
-                  end={!!child.end}
-                  className={({ isActive }) =>
-                    `flex items-center gap-2 px-2.5 py-1.5 rounded-md text-xs font-medium transition-all duration-150
-                     ${isActive
-                       ? 'bg-brand text-white shadow-sm shadow-brand/20'
-                       : 'text-slate-500 hover:bg-slate-800/60 hover:text-slate-300'
-                     }`
-                  }
-                  onClick={onNavigate}
-                >
-                  {({ isActive }) => (
-                    <>
-                      <ChildIcon
-                        className={`shrink-0 ${isActive ? 'text-white' : 'text-slate-600'}`}
-                        size={13}
-                      />
-                      <span>{child.label}</span>
-                    </>
-                  )}
-                </NavLink>
-              </li>
-            );
-          })}
-        </ul>
-      )}
+      <ul
+        className={`mt-0.5 ml-8 pl-3 border-l border-slate-700/50 space-y-0.5 overflow-hidden ${(open && !collapsed) ? 'max-h-[500px]' : 'max-h-0'}`}
+        style={{
+          transitionProperty: 'max-height',
+          transitionDuration: (open && !collapsed) ? '340ms' : '200ms',
+          transitionTimingFunction: (open && !collapsed) ? 'cubic-bezier(0,0,0.2,1)' : 'cubic-bezier(0.4,0,1,1)',
+        }}
+      >
+        {visibleChildren.map(child => {
+          const ChildIcon = child.icon;
+          return (
+            <li key={child.path}>
+              <NavLink
+                to={child.path}
+                end={!!child.end}
+                className={({ isActive }) =>
+                  `flex items-center gap-2 px-2.5 py-1.5 rounded-md text-xs font-medium transition-all duration-150
+                   ${isActive
+                     ? 'bg-brand text-white shadow-sm shadow-brand/20'
+                     : 'text-slate-500 hover:bg-slate-800/60 hover:text-slate-300'
+                   }`
+                }
+                onClick={onNavigate}
+              >
+                {({ isActive }) => (
+                  <>
+                    <ChildIcon
+                      className={`shrink-0 ${isActive ? 'text-white' : 'text-slate-600'}`}
+                      size={13}
+                    />
+                    <span>{child.label}</span>
+                  </>
+                )}
+              </NavLink>
+            </li>
+          );
+        })}
+      </ul>
     </li>
   );
 };
 
 /* ─── Section Label ────────────────────────────── */
-const SectionLabel = ({ label, collapsed }) => {
-  if (collapsed) return <div className="h-px bg-slate-800/60 mx-2 my-1" />;
-  return (
-    <li className="pt-3 pb-0.5">
-      <p className="px-3 text-[10px] font-bold text-slate-600 uppercase tracking-widest">{label}</p>
-    </li>
-  );
-};
+const SectionLabel = ({ label, collapsed }) => (
+  <li className="pt-3 pb-0.5">
+    <p
+      className={`px-3 text-[10px] font-bold text-slate-600 uppercase tracking-widest whitespace-nowrap overflow-hidden ${collapsed ? 'opacity-0' : 'opacity-100'}`}
+      style={{
+        transitionProperty: 'opacity',
+        transitionDuration: collapsed ? '80ms' : '220ms',
+        transitionTimingFunction: 'ease',
+        transitionDelay: collapsed ? '0ms' : '110ms',
+      }}
+    >
+      {label}
+    </p>
+  </li>
+);
 
 /* ─── Sidebar ──────────────────────────────────── */
-const Sidebar = ({ isOpen, toggleSidebar }) => {
+const Sidebar = ({ isOpen, toggleSidebar, onExpandChange }) => {
   const navigate = useNavigate();
   const user = authService.getLocalUser() || { role: 'STUDENT', name: 'User' };
   const role = user.role;
 
-  // Desktop collapse state
-  const [collapsed, setCollapsed] = useState(() => {
-    try { return localStorage.getItem('sidebar-collapsed') === 'true'; } catch { return false; }
-  });
+  const [hovered, setHovered] = useState(false);
+  const collapseTimer = useRef(null);
+  const isExpanded = hovered;
+  const showExpanded = isOpen || isExpanded;
 
-  const toggleCollapsed = () => {
-    const next = !collapsed;
-    setCollapsed(next);
-    try { localStorage.setItem('sidebar-collapsed', String(next)); } catch {}
+  const handleMouseEnter = () => {
+    if (collapseTimer.current) {
+      clearTimeout(collapseTimer.current);
+      collapseTimer.current = null;
+    }
+    setHovered(true);
+    onExpandChange?.(true);
+  };
+
+  const handleMouseLeave = () => {
+    collapseTimer.current = setTimeout(() => {
+      setHovered(false);
+      onExpandChange?.(false);
+      collapseTimer.current = null;
+    }, 200);
   };
 
   const handleLogout = async () => {
@@ -306,17 +342,49 @@ const Sidebar = ({ isOpen, toggleSidebar }) => {
 
   return (
     <aside
-      className={`fixed top-0 left-0 z-40 h-screen pt-14 transition-all duration-300 ease-in-out
+      onMouseEnter={handleMouseEnter}
+      onMouseLeave={handleMouseLeave}
+      className={`fixed top-0 left-0 z-40 h-screen pt-14 overflow-hidden
         ${isOpen ? 'translate-x-0' : '-translate-x-full'}
-        ${collapsed ? 'w-[60px]' : 'w-64'}
-        bg-bg-surface border-r border-slate-700/40 md:translate-x-0`}
+        ${(isOpen || isExpanded) ? 'w-64' : 'w-[60px]'}
+        bg-bg-surface border-r border-slate-700/40 md:translate-x-0
+        ${isExpanded ? 'shadow-2xl shadow-slate-950/60' : ''}`}
+      style={{
+        transition: 'width 240ms cubic-bezier(0.4,0,0.2,1), transform 240ms cubic-bezier(0.4,0,0.2,1), box-shadow 240ms ease',
+        willChange: 'width',
+      }}
     >
       <div className="h-full flex flex-col bg-bg-surface">
 
         {/* User Card */}
-        {!collapsed && (
-          <div className="px-3 py-3 border-b border-slate-800/60">
-            <div className="flex items-center gap-2.5 p-2.5 rounded-xl bg-bg-deep/50 border border-slate-800/60">
+        <div className="relative border-b border-slate-800/60 overflow-hidden shrink-0" style={{ height: '68px' }}>
+          {/* Collapsed avatar — centered */}
+          <div
+            className="absolute inset-0 flex justify-center items-center"
+            style={{
+              opacity: showExpanded ? 0 : 1,
+              transition: `opacity ${showExpanded ? '100ms' : '200ms'} ease`,
+              pointerEvents: showExpanded ? 'none' : 'auto',
+            }}
+          >
+            <div className="relative">
+              <div className="w-9 h-9 rounded-full bg-gradient-to-br from-brand to-brand-dark flex items-center justify-center text-white font-bold text-xs border border-brand/40">
+                {initials}
+              </div>
+              <span className="absolute -bottom-0.5 -right-0.5 w-2.5 h-2.5 bg-status-success rounded-full border-2 border-bg-surface" />
+            </div>
+          </div>
+          {/* Expanded card — full name/role */}
+          <div
+            className="absolute inset-0 flex items-center px-3"
+            style={{
+              opacity: showExpanded ? 1 : 0,
+              transition: `opacity ${showExpanded ? '200ms' : '100ms'} ease`,
+              transitionDelay: showExpanded ? '60ms' : '0ms',
+              pointerEvents: showExpanded ? 'auto' : 'none',
+            }}
+          >
+            <div className="flex items-center gap-2.5 p-2.5 rounded-xl bg-bg-deep/50 border border-slate-800/60 w-full">
               <div className="relative shrink-0">
                 <div className="w-8 h-8 rounded-full bg-gradient-to-br from-brand to-brand-dark flex items-center justify-center text-white font-bold text-xs border border-brand/40">
                   {initials}
@@ -329,26 +397,14 @@ const Sidebar = ({ isOpen, toggleSidebar }) => {
               </div>
             </div>
           </div>
-        )}
-
-        {collapsed && (
-          <div className="px-2 py-3 border-b border-slate-800/60 flex justify-center">
-            <div className="relative">
-              <div className="w-9 h-9 rounded-full bg-gradient-to-br from-brand to-brand-dark flex items-center justify-center text-white font-bold text-xs border border-brand/40">
-                {initials}
-              </div>
-              <span className="absolute -bottom-0.5 -right-0.5 w-2.5 h-2.5 bg-status-success rounded-full border-2 border-bg-surface" />
-            </div>
-          </div>
-        )}
+        </div>
 
         {/* Nav List */}
         <nav className="flex-1 overflow-y-auto px-2 py-2">
           <ul className="space-y-0.5">
             {navConfig.map((entry, idx) => {
-              // Filter sections: only show if there's at least one visible item/group below
               if (entry.type === 'section') {
-                return <SectionLabel key={`sec-${idx}`} label={entry.label} collapsed={collapsed} />;
+                return <SectionLabel key={`sec-${idx}`} label={entry.label} collapsed={!showExpanded} />;
               }
               if (entry.type === 'group') {
                 const visible = entry.children?.some(c => c.roles.includes(role));
@@ -359,7 +415,7 @@ const Sidebar = ({ isOpen, toggleSidebar }) => {
                     group={entry}
                     role={role}
                     onNavigate={onNavigate}
-                    collapsed={collapsed}
+                    collapsed={!showExpanded}
                   />
                 );
               }
@@ -369,37 +425,33 @@ const Sidebar = ({ isOpen, toggleSidebar }) => {
                   item={entry}
                   role={role}
                   onNavigate={onNavigate}
-                  collapsed={collapsed}
+                  collapsed={!showExpanded}
                 />
               );
             })}
           </ul>
         </nav>
 
-        {/* Bottom: Collapse toggle + Logout */}
-        <div className="border-t border-slate-800/60 p-2 flex flex-col gap-1">
-          {/* Collapse toggle (desktop only) */}
-          <button
-            onClick={toggleCollapsed}
-            title={collapsed ? 'Expand sidebar' : 'Collapse sidebar'}
-            className="hidden md:flex items-center gap-3 w-full px-3 py-2 rounded-lg text-slate-500 hover:bg-slate-800/60 hover:text-slate-300 transition-colors text-sm font-medium"
-          >
-            {collapsed
-              ? <PanelLeftOpen size={16} />
-              : <><PanelLeftClose size={16} /><span>Collapse</span></>
-            }
-          </button>
-
-          {/* Logout */}
+        {/* Bottom: Logout */}
+        <div className="border-t border-slate-800/60 p-2">
           <button
             onClick={handleLogout}
-            className={`flex items-center gap-3 w-full px-3 py-2 rounded-lg text-sm font-medium text-slate-500
-              hover:bg-status-danger/10 hover:text-status-danger transition-all duration-150
-              ${collapsed ? 'justify-center' : ''}`}
-            title={collapsed ? 'Sign Out' : undefined}
+            className="flex items-center px-3 py-2 w-full rounded-lg text-sm font-medium text-slate-500
+              hover:bg-status-danger/10 hover:text-status-danger transition-colors duration-150"
+            title="Sign Out"
           >
             <LogOut size={16} className="shrink-0" />
-            {!collapsed && <span>Sign Out</span>}
+            <span
+              className={`whitespace-nowrap overflow-hidden ${showExpanded ? 'opacity-100 max-w-[120px] ml-3' : 'opacity-0 max-w-0 ml-0'}`}
+              style={{
+                transitionProperty: 'opacity, max-width, margin-left',
+                transitionDuration: !showExpanded ? '100ms, 130ms, 100ms' : '200ms, 240ms, 200ms',
+                transitionTimingFunction: 'cubic-bezier(0.4,0,0.2,1)',
+                transitionDelay: !showExpanded ? '0ms' : '70ms',
+              }}
+            >
+              Sign Out
+            </span>
           </button>
         </div>
       </div>

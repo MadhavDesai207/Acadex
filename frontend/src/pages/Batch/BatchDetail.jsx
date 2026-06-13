@@ -60,7 +60,7 @@ const BatchDetail = () => {
             <ArrowLeft size={16} />
           </button>
           <div>
-            <h1 className="text-2xl font-extrabold tracking-tight text-white font-heading">{batch.name}</h1>
+            <h1 className="text-2xl md:text-3xl font-extrabold tracking-tight text-white font-heading">{batch.name}</h1>
             <p className="text-xs text-slate-400">{batch.course?.name} ({batch.course?.code})</p>
           </div>
           <span className={`ml-auto inline-flex px-3 py-1 text-xs font-bold rounded-full ${batch.isActive ? 'bg-status-success/15 text-status-success' : 'bg-status-danger/15 text-status-danger'}`}>

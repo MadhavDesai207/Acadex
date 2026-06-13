@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { Search, AlertCircle } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import Table from '../../components/Table';
+import PageHeader from '../../components/PageHeader';
 import feeService from '../../services/feeService';
 
 const fmt = (v) =>
@@ -83,18 +84,16 @@ const DueFeePage = () => {
   return (
     <>
       <div className="flex flex-col gap-6">
-        <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
-          <div>
-            <h1 className="text-2xl md:text-3xl font-extrabold tracking-tight text-white font-heading">Due Fees</h1>
-            <p className="text-xs md:text-sm text-slate-400">Students with overdue installments.</p>
-          </div>
-          <div className="flex items-center gap-3">
+        <PageHeader
+          title="Due Fees"
+          subtitle="Students with overdue installments."
+          actions={
             <div className="text-right">
               <p className="text-xs text-slate-400">Total Outstanding</p>
               <p className="text-xl font-extrabold text-status-danger">{fmt(totalAmountDue)}</p>
             </div>
-          </div>
-        </div>
+          }
+        />
 
         {/* Summary Cards */}
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4">

@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { UserCheck } from 'lucide-react';
+import { UserCheck, AlertCircle } from 'lucide-react';
 import ReportLayout from '../../layouts/ReportLayout';
 import ReportFilterBar from '../../components/ReportFilterBar';
 import ExportButton from '../../components/ExportButton';
@@ -23,6 +23,7 @@ const AttendanceReportPage = () => {
   const [report, setReport] = useState(null);
   const [loading, setLoading] = useState(false);
   const [generated, setGenerated] = useState(false);
+  const [filterError, setFilterError] = useState('');
 
   useEffect(() => {
     apiClient.get('/batches').then(r => {
@@ -32,7 +33,8 @@ const AttendanceReportPage = () => {
   }, []);
 
   const handleGenerate = async () => {
-    if (!filters.batchId) return alert('Please select a batch.');
+    if (!filters.batchId) { setFilterError('Please select a batch.'); return; }
+    setFilterError('');
     setLoading(true);
     try {
       const params = { batchId: filters.batchId };
@@ -53,6 +55,7 @@ const AttendanceReportPage = () => {
     setFilters({ batchId: '', from: '', to: '', studentId: '' });
     setReport(null);
     setGenerated(false);
+    setFilterError('');
   };
 
   const csvColumns = [
@@ -68,6 +71,13 @@ const AttendanceReportPage = () => {
 
   return (
     <ReportLayout title="Attendance Report" description="Per-student attendance percentages for a batch and date range">
+
+      {filterError && (
+        <div className="flex items-center gap-2 px-3 py-2 mb-3 rounded-lg bg-status-danger/10 border border-status-danger/30 text-status-danger text-sm">
+          <AlertCircle size={15} className="shrink-0" />
+          {filterError}
+        </div>
+      )}
 
       <ReportFilterBar onGenerate={handleGenerate} onReset={handleReset} loading={loading}>
         <div className="flex flex-col gap-1">

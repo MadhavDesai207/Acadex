@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { Plus, Eye, Edit2, Send, CheckCircle, AlertCircle, Lock, X } from 'lucide-react';
 import Table from '../../components/Table';
 import Button from '../../components/Button';
+import PageHeader from '../../components/PageHeader';
 import Modal from '../../components/Modal';
 import Select from '../../components/Select';
 import ConfirmDialog from '../../components/ConfirmDialog';
@@ -187,17 +188,15 @@ const AssignmentPage = () => {
   return (
     <>
       <div className="flex flex-col gap-6">
-        <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
-          <div>
-            <h1 className="text-2xl md:text-3xl font-extrabold tracking-tight text-white font-heading">Assignments</h1>
-            <p className="text-xs text-slate-400">Create, distribute, and grade assignments.</p>
-          </div>
-          {canManage && (
+        <PageHeader
+          title="Assignments"
+          subtitle="Create, distribute, and grade assignments."
+          actions={canManage && (
             <Button variant="primary" onClick={() => { setEditingAssignment(null); setIsFormOpen(true); }} className="flex items-center gap-2">
               <Plus size={16} /> <span>New Assignment</span>
             </Button>
           )}
-        </div>
+        />
 
         {alert && (
           <div className={`flex gap-2.5 p-3 rounded-lg text-sm border ${

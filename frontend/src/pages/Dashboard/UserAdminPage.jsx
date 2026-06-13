@@ -3,6 +3,7 @@ import { Users, Shield, Key, Power, Search, CheckCircle, AlertTriangle, UserChec
 import Table from '../../components/Table';
 import Select from '../../components/Select';
 import Button from '../../components/Button';
+import PageHeader from '../../components/PageHeader';
 import Modal from '../../components/Modal';
 import Input from '../../components/Input';
 import userService from '../../services/userService';
@@ -248,14 +249,10 @@ const UserAdminPage = () => {
       <div className="flex flex-col gap-6">
         
         {/* Header toolbar */}
-        <div>
-          <h1 className="text-2xl md:text-3xl font-extrabold tracking-tight text-white font-heading">
-            System Accounts Manager
-          </h1>
-          <p className="text-xs md:text-sm text-slate-400">
-            Monitor login logs, suspend accounts, reset credentials, and escalate authority roles.
-          </p>
-        </div>
+        <PageHeader
+          title="System Accounts Manager"
+          subtitle="Monitor login logs, suspend accounts, reset credentials, and escalate authority roles."
+        />
 
         {/* Alerts banner toast */}
         {alert && (

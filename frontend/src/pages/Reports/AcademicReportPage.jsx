@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { BookOpen, CheckCircle, Circle } from 'lucide-react';
+import { BookOpen, CheckCircle, Circle, AlertCircle } from 'lucide-react';
 import ReportLayout from '../../layouts/ReportLayout';
 import ReportFilterBar from '../../components/ReportFilterBar';
 import ExportButton from '../../components/ExportButton';
@@ -27,6 +27,7 @@ const AcademicReportPage = () => {
   const [loading, setLoading] = useState(false);
   const [generated, setGenerated] = useState(false);
   const [expandedSubject, setExpandedSubject] = useState(null);
+  const [filterError, setFilterError] = useState('');
 
   useEffect(() => {
     Promise.all([
@@ -49,7 +50,8 @@ const AcademicReportPage = () => {
   }, [filters.courseId]);
 
   const handleGenerate = async () => {
-    if (!filters.courseId) return alert('Please select a course.');
+    if (!filters.courseId) { setFilterError('Please select a course.'); return; }
+    setFilterError('');
     setLoading(true);
     try {
       const params = { courseId: filters.courseId };
@@ -70,10 +72,18 @@ const AcademicReportPage = () => {
     setFilters({ courseId: '', subjectId: '', batchId: '' });
     setReport(null);
     setGenerated(false);
+    setFilterError('');
   };
 
   return (
     <ReportLayout title="Academic Report" description="Syllabus coverage percentage per subject and batch">
+
+      {filterError && (
+        <div className="flex items-center gap-2 px-3 py-2 mb-3 rounded-lg bg-status-danger/10 border border-status-danger/30 text-status-danger text-sm">
+          <AlertCircle size={15} className="shrink-0" />
+          {filterError}
+        </div>
+      )}
 
       <ReportFilterBar onGenerate={handleGenerate} onReset={handleReset} loading={loading}>
         <div className="flex flex-col gap-1">

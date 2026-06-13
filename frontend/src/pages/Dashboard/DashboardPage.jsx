@@ -63,7 +63,7 @@ const DashboardPage = () => {
       {!loading && (
         <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 mb-2">
           <QuickAction icon={UserPlus} label="New Admission" onClick={() => navigate('/students/add')} color="bg-brand/20 text-brand-light border-brand/30" />
-          <QuickAction icon={CreditCard} label="Collect Fee" onClick={() => navigate('/fees')} color="bg-emerald-500/20 text-emerald-400 border-emerald-500/30" />
+          <QuickAction icon={CreditCard} label="Collect Fee" onClick={() => navigate('/fees/collect')} color="bg-emerald-500/20 text-emerald-400 border-emerald-500/30" />
           <QuickAction icon={Plus} label="Add Inquiry" onClick={() => navigate('/inquiries')} color="bg-status-info/20 text-status-info border-status-info/30" />
           <QuickAction icon={Search} label="Student Search" onClick={() => navigate('/students')} color="bg-amber-500/20 text-amber-400 border-amber-500/30" />
         </div>
@@ -87,7 +87,7 @@ const DashboardPage = () => {
       {!loading && (
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
           <StatsCard title="Revenue This Month" value={`₹${(kpis.revenueThisMonth ?? 0).toLocaleString()}`} icon={DollarSign} description="Fee collections" variant="emerald" />
-          <StatsCard title="Overdue Fee Students" value={kpis.overdueFeesCount ?? 0} icon={AlertCircle} description="Students with overdue installments" variant="rose" onClick={() => navigate('/fees')} />
+          <StatsCard title="Overdue Fee Students" value={kpis.overdueFeesCount ?? 0} icon={AlertCircle} description="Students with overdue installments" variant="rose" onClick={() => navigate('/fees/due')} />
         </div>
       )}
 

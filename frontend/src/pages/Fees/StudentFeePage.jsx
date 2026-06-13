@@ -13,7 +13,7 @@ import studentService from '../../services/studentService';
 const fmt = (v) =>
   new Intl.NumberFormat('en-IN', { style: 'currency', currency: 'INR', maximumFractionDigits: 0 }).format(v);
 
-const AssignFeeModal = ({ studentId, onClose, onSuccess }) => {
+const AssignFeeModal = ({ studentId, courseId, onClose, onSuccess }) => {
   const [structures, setStructures] = useState([]);
   const [discounts, setDiscounts] = useState([]);
   const [scholarships, setScholarships] = useState([]);
@@ -24,7 +24,7 @@ const AssignFeeModal = ({ studentId, onClose, onSuccess }) => {
 
   useEffect(() => {
     Promise.all([
-      feeService.getStructures({ isActive: true }),
+      feeService.getStructures({ isActive: true, ...(courseId && { courseId }) }),
       feeService.getDiscounts(),
       feeService.getScholarships()
     ]).then(([sr, dr, scr]) => {
@@ -407,6 +407,7 @@ const StudentFeePage = () => {
           >
             <AssignFeeModal
               studentId={selectedStudent.id}
+              courseId={selectedStudent.courseId || selectedStudent.course?.id}
               onClose={() => setIsAssignOpen(false)}
               onSuccess={(msg) => {
                 setIsAssignOpen(false);

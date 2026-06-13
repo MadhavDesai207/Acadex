@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { Plus, Search, Eye, Edit2, ToggleLeft, ToggleRight, CheckCircle, AlertCircle } from 'lucide-react';
 import Table from '../../components/Table';
 import Button from '../../components/Button';
+import PageHeader from '../../components/PageHeader';
 import Modal from '../../components/Modal';
 import Select from '../../components/Select';
 import BatchForm from './BatchForm';
@@ -146,17 +147,15 @@ const BatchPage = () => {
   return (
     <>
       <div className="flex flex-col gap-6">
-        <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
-          <div>
-            <h1 className="text-2xl md:text-3xl font-extrabold tracking-tight text-white font-heading">Batch Management</h1>
-            <p className="text-xs md:text-sm text-slate-400">Manage student batches across courses.</p>
-          </div>
-          {isAdmin && (
+        <PageHeader
+          title="Batch Management"
+          subtitle="Manage student batches across courses."
+          actions={isAdmin && (
             <Button variant="primary" onClick={() => { setEditingBatch(null); setIsFormOpen(true); }} className="flex items-center gap-2">
               <Plus size={16} /> <span>New Batch</span>
             </Button>
           )}
-        </div>
+        />
 
         {alert && (
           <div className={`flex gap-2.5 p-3 rounded-lg text-sm border ${alert.type === 'error' ? 'bg-status-danger/15 border-status-danger/30 text-status-danger' : 'bg-status-success/15 border-status-success/30 text-status-success'}`}>

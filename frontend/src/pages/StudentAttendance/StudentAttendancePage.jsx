@@ -3,6 +3,7 @@ import { useNavigate, useSearchParams } from 'react-router-dom';
 import { Plus, CheckCircle } from 'lucide-react';
 import Table from '../../components/Table';
 import Button from '../../components/Button';
+import PageHeader from '../../components/PageHeader';
 import Modal from '../../components/Modal';
 import Select from '../../components/Select';
 import Input from '../../components/Input';
@@ -83,22 +84,22 @@ const StudentAttendancePage = () => {
   return (
     <>
       <div className="flex flex-col gap-6">
-        <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
-          <div>
-            <h1 className="text-2xl md:text-3xl font-extrabold tracking-tight text-white font-heading">Student Attendance</h1>
-            <p className="text-xs text-slate-400">View and manage student attendance records.</p>
-          </div>
-          <div className="flex gap-2">
-            {canMark && (
-              <Button variant="primary" onClick={() => navigate(`/student-attendance/mark${selectedBatch ? `?batchId=${selectedBatch}` : ''}`)} className="flex items-center gap-2">
-                <Plus size={16} /> <span>Mark Attendance</span>
+        <PageHeader
+          title="Student Attendance"
+          subtitle="View and manage student attendance records."
+          actions={
+            <div className="flex gap-2">
+              {canMark && (
+                <Button variant="primary" onClick={() => navigate(`/student-attendance/mark${selectedBatch ? `?batchId=${selectedBatch}` : ''}`)} className="flex items-center gap-2">
+                  <Plus size={16} /> <span>Mark Attendance</span>
+                </Button>
+              )}
+              <Button variant="ghost" onClick={() => navigate('/student-attendance/summary')}>
+                View Summary
               </Button>
-            )}
-            <Button variant="ghost" onClick={() => navigate('/student-attendance/summary')}>
-              View Summary
-            </Button>
-          </div>
-        </div>
+            </div>
+          }
+        />
 
         {alert && (
           <div className="flex gap-2.5 p-3 rounded-lg bg-status-success/15 border border-status-success/30 text-status-success text-sm">

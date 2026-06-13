@@ -3,7 +3,9 @@ import { useNavigate } from 'react-router-dom';
 import { Plus, Eye, ClipboardList, Trash2, CheckCircle, AlertCircle } from 'lucide-react';
 import Table from '../../components/Table';
 import Button from '../../components/Button';
+import PageHeader from '../../components/PageHeader';
 import Input from '../../components/Input';
+import Select from '../../components/Select';
 import ConfirmDialog from '../../components/ConfirmDialog';
 import ExamTypeBadge from '../../components/ExamTypeBadge';
 import examService from '../../services/examService';
@@ -141,15 +143,15 @@ const ExamListPage = () => {
   return (
     <>
       <div className="flex flex-col gap-6">
-        <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
-          <div>
-            <h1 className="text-2xl md:text-3xl font-extrabold tracking-tight text-white font-heading">Exams</h1>
-            <p className="text-xs text-slate-400">Manage all scheduled exams and enter results.</p>
-          </div>
-          <Button variant="primary" onClick={() => navigate('/exams/create')} className="flex items-center gap-2">
-            <Plus size={16} /> <span>Create Exam</span>
-          </Button>
-        </div>
+        <PageHeader
+          title="Exams"
+          subtitle="Manage all scheduled exams and enter results."
+          actions={
+            <Button variant="primary" onClick={() => navigate('/exams/create')} className="flex items-center gap-2">
+              <Plus size={16} /> <span>Create Exam</span>
+            </Button>
+          }
+        />
 
         {alert && (
           <div className={`flex gap-2.5 p-3 rounded-lg text-sm border ${

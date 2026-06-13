@@ -108,10 +108,11 @@ const createFaculty = async (req, res, next) => {
 
     // Generate unique employee code with retry on concurrent collision
     let newFaculty;
+    let tempPassword;
     for (let attempt = 0; attempt < 3; attempt++) {
       const lastFaculty = await prisma.faculty.findFirst({
         where: { employeeCode: { startsWith: prefix } },
-        orderBy: { createdAt: 'desc' }
+        orderBy: { id: 'desc' }
       });
       let sequence = 1;
       if (lastFaculty) {
@@ -120,7 +121,7 @@ const createFaculty = async (req, res, next) => {
         if (!isNaN(n)) sequence = n + 1;
       }
       const employeeCode = `${prefix}${String(sequence).padStart(4, '0')}`;
-      const tempPassword = generateTempPassword();
+      tempPassword = generateTempPassword();
       const salt = await bcrypt.genSalt(10);
       const hashedPassword = await bcrypt.hash(tempPassword, salt);
 

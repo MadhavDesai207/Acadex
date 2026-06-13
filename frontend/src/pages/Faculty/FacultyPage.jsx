@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { Plus, Search, Eye, Edit2, ShieldX, UserCheck, ShieldAlert, CheckCircle } from 'lucide-react';
 import Table from '../../components/Table';
 import Button from '../../components/Button';
+import PageHeader from '../../components/PageHeader';
 import Modal from '../../components/Modal';
 import FacultyForm from './FacultyForm';
 import facultyService from '../../services/facultyService';
@@ -58,19 +59,25 @@ const FacultyPage = () => {
 
   // Create or Update Submissions
   const handleFormSubmit = async (formData) => {
-    let res;
-    if (editingFaculty) {
-      res = await facultyService.updateFaculty(editingFaculty.id, formData);
-    } else {
-      res = await facultyService.createFaculty(formData);
-    }
+    try {
+      let res;
+      if (editingFaculty) {
+        res = await facultyService.updateFaculty(editingFaculty.id, formData);
+      } else {
+        res = await facultyService.createFaculty(formData);
+      }
 
-    if (res.success) {
-      setAlert({ type: 'success', message: res.message });
-      setIsFormOpen(false);
-      setEditingFaculty(null);
-      loadFaculty();
-      setTimeout(() => setAlert(null), 3000);
+      if (res.success) {
+        setAlert({ type: 'success', message: res.message });
+        setIsFormOpen(false);
+        setEditingFaculty(null);
+        loadFaculty();
+        setTimeout(() => setAlert(null), 3000);
+      }
+    } catch (err) {
+      setAlert({ type: 'error', message: err.response?.data?.message || 'Failed to save faculty. Please try again.' });
+      setTimeout(() => setAlert(null), 4000);
+      throw err;
     }
   };
 
@@ -186,32 +193,20 @@ const FacultyPage = () => {
       <div className="flex flex-col gap-6">
         
         {/* Header Toolbar */}
-        <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
-          <div>
-            <h1 className="text-2xl md:text-3xl font-extrabold tracking-tight text-white font-heading">
-              Faculty Registry
-            </h1>
-            <p className="text-xs md:text-sm text-slate-400">
-              Manage faculty employment details, designations, salaries, and system login credentials.
-            </p>
-          </div>
-
-          <Button
-            variant="primary"
-            onClick={() => {
-              setEditingFaculty(null);
-              setIsFormOpen(true);
-            }}
-            className="flex items-center gap-2"
-          >
-            <Plus size={16} />
-            <span>Add Faculty</span>
-          </Button>
-        </div>
+        <PageHeader
+          title="Faculty Registry"
+          subtitle="Manage faculty employment details, designations, salaries, and system login credentials."
+          actions={
+            <Button variant="primary" onClick={() => { setEditingFaculty(null); setIsFormOpen(true); }} className="flex items-center gap-2">
+              <Plus size={16} />
+              <span>Add Faculty</span>
+            </Button>
+          }
+        />
 
         {/* Alert Dialog */}
         {alert && (
-          <div className="flex gap-2.5 p-3 rounded-lg bg-status-success/15 border border-status-success/30 text-status-success text-sm animate-fadeIn">
+          <div className={`flex gap-2.5 p-3 rounded-lg text-sm animate-fadeIn border ${alert.type === 'error' ? 'bg-status-danger/15 border-status-danger/30 text-status-danger' : 'bg-status-success/15 border-status-success/30 text-status-success'}`}>
             <CheckCircle size={18} className="shrink-0 mt-0.5" />
             <span>{alert.message}</span>
           </div>

@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { Plus, Search, Edit2, ToggleLeft, ToggleRight, CheckCircle } from 'lucide-react';
 import Table from '../../components/Table';
 import Button from '../../components/Button';
+import PageHeader from '../../components/PageHeader';
 import Modal from '../../components/Modal';
 import DesignationForm from './DesignationForm';
 import designationService from '../../services/designationService';
@@ -119,26 +120,16 @@ const DesignationPage = () => {
   return (
     <>
       <div className="flex flex-col gap-6">
-        <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
-          <div>
-            <h1 className="text-2xl md:text-3xl font-extrabold tracking-tight text-white font-heading">
-              Designations
-            </h1>
-            <p className="text-xs md:text-sm text-slate-400">
-              Manage faculty designations. These are used when registering faculty profiles.
-            </p>
-          </div>
-          {isAdmin && (
-            <Button
-              variant="primary"
-              onClick={() => { setEditingDesignation(null); setIsFormOpen(true); }}
-              className="flex items-center gap-2"
-            >
+        <PageHeader
+          title="Designations"
+          subtitle="Manage faculty designations. These are used when registering faculty profiles."
+          actions={isAdmin && (
+            <Button variant="primary" onClick={() => { setEditingDesignation(null); setIsFormOpen(true); }} className="flex items-center gap-2">
               <Plus size={16} />
               <span>New Designation</span>
             </Button>
           )}
-        </div>
+        />
 
         {alert && (
           <div className="flex gap-2.5 p-3 rounded-lg bg-status-success/15 border border-status-success/30 text-status-success text-sm">

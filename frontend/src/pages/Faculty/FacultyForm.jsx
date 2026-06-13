@@ -142,8 +142,11 @@ const FacultyForm = ({ onSubmit, initialData = null, onClose }) => {
     if (!validate()) return;
 
     setLoading(true);
-    await onSubmit(formData);
-    setLoading(false);
+    try {
+      await onSubmit(formData);
+    } finally {
+      setLoading(false);
+    }
   };
 
   return (

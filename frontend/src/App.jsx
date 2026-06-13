@@ -1,5 +1,5 @@
 import React from 'react';
-import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
+import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
 import LoginPage from './pages/Login/LoginPage';
 import DashboardPage from './pages/Dashboard/DashboardPage';
 import StudentListPage from './pages/Students/StudentListPage';
@@ -57,6 +57,9 @@ function App() {
     <Router>
       <TopProgressBar />
       <Routes>
+        {/* Root redirect */}
+        <Route path="/" element={<Navigate to="/dashboard" replace />} />
+
         {/* Public Route */}
         <Route path="/login" element={<LoginPage />} />
 

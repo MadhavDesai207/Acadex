@@ -231,7 +231,7 @@ const InquiryForm = ({ onSubmit, initialData = null, onClose }) => {
           Cancel
         </Button>
         <Button variant="primary" type="submit" loading={loading}>
-          {initialData ? 'Save Changes' : 'Log Prospect'}
+          {initialData ? 'Save Changes' : 'Submit Inquiry'}
         </Button>
       </div>
     </form>

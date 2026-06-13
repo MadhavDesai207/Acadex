@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { Plus, Search, Edit2, ToggleLeft, ToggleRight, CheckCircle, AlertCircle } from 'lucide-react';
 import Table from '../../components/Table';
 import Button from '../../components/Button';
+import PageHeader from '../../components/PageHeader';
 import Modal from '../../components/Modal';
 import Select from '../../components/Select';
 import ConfirmDialog from '../../components/ConfirmDialog';
@@ -146,26 +147,16 @@ const SubjectPage = () => {
   return (
     <>
       <div className="flex flex-col gap-6">
-        <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
-          <div>
-            <h1 className="text-2xl md:text-3xl font-extrabold tracking-tight text-white font-heading">
-              Subjects
-            </h1>
-            <p className="text-xs md:text-sm text-slate-400">
-              Manage subjects per course. Subjects are used in timetables, syllabus, materials, and assignments.
-            </p>
-          </div>
-          {isAdmin && (
-            <Button
-              variant="primary"
-              onClick={() => { setEditingSubject(null); setIsFormOpen(true); }}
-              className="flex items-center gap-2"
-            >
+        <PageHeader
+          title="Subjects"
+          subtitle="Manage subjects per course. Subjects are used in timetables, syllabus, materials, and assignments."
+          actions={isAdmin && (
+            <Button variant="primary" onClick={() => { setEditingSubject(null); setIsFormOpen(true); }} className="flex items-center gap-2">
               <Plus size={16} />
               <span>New Subject</span>
             </Button>
           )}
-        </div>
+        />
 
         {alert && (
           <div className={`flex gap-2.5 p-3 rounded-lg text-sm border ${alert.type === 'error' ? 'bg-status-danger/15 border-status-danger/30 text-status-danger' : 'bg-status-success/15 border-status-success/30 text-status-success'}`}>

@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { Plus, Search, Edit2, Eye, CheckCircle, AlertCircle, ToggleLeft, ToggleRight } from 'lucide-react';
 import Table from '../../components/Table';
 import Button from '../../components/Button';
+import PageHeader from '../../components/PageHeader';
 import Modal from '../../components/Modal';
 import Input from '../../components/Input';
 import FeeStructureForm from './FeeStructureForm';
@@ -334,15 +335,15 @@ const FeeStructurePage = () => {
   return (
     <>
       <div className="flex flex-col gap-6">
-        <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
-          <div>
-            <h1 className="text-2xl md:text-3xl font-extrabold tracking-tight text-white font-heading">Fee Structures</h1>
-            <p className="text-xs md:text-sm text-slate-400">Define fee templates per course with installment schedules.</p>
-          </div>
-          <Button variant="primary" onClick={() => { setEditingStructure(null); setIsFormOpen(true); }} className="flex items-center gap-2">
-            <Plus size={16} /> New Structure
-          </Button>
-        </div>
+        <PageHeader
+          title="Fee Structures"
+          subtitle="Define fee templates per course with installment schedules."
+          actions={
+            <Button variant="primary" onClick={() => { setEditingStructure(null); setIsFormOpen(true); }} className="flex items-center gap-2">
+              <Plus size={16} /> New Structure
+            </Button>
+          }
+        />
 
         {alert && (
           <div className={`flex gap-2.5 p-3 rounded-lg text-sm border ${alert.type === 'success' ? 'bg-status-success/15 border-status-success/30 text-status-success' : 'bg-status-danger/15 border-status-danger/30 text-status-danger'}`}>

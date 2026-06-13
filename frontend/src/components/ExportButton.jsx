@@ -1,12 +1,14 @@
 import React, { useState } from 'react';
-import { Download, Printer } from 'lucide-react';
+import { Download, Printer, AlertCircle } from 'lucide-react';
 
 const ExportButton = ({ data = [], columns = [], filename = 'report', fetchAllForExport }) => {
   const [exporting, setExporting] = useState(false);
+  const [exportError, setExportError] = useState('');
 
   const buildAndDownloadCSV = (rows) => {
     if (!rows.length || !columns.length) {
-      alert('No data available to export.');
+      setExportError('No data available to export.');
+      setTimeout(() => setExportError(''), 3500);
       return;
     }
     const header = columns.map(c => `"${c.label}"`).join(',');
@@ -47,6 +49,13 @@ const ExportButton = ({ data = [], columns = [], filename = 'report', fetchAllFo
   };
 
   return (
+    <div className="flex flex-col gap-1.5">
+      {exportError && (
+        <div className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg bg-status-danger/10 border border-status-danger/30 text-status-danger text-xs">
+          <AlertCircle size={13} className="shrink-0" />
+          {exportError}
+        </div>
+      )}
     <div className="flex gap-2">
       <button
         onClick={exportCSV}
@@ -63,6 +72,7 @@ const ExportButton = ({ data = [], columns = [], filename = 'report', fetchAllFo
         <Printer size={13} />
         Print
       </button>
+    </div>
     </div>
   );
 };

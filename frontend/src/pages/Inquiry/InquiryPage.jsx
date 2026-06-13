@@ -15,6 +15,7 @@ import {
 } from 'lucide-react';
 import Table from '../../components/Table';
 import Button from '../../components/Button';
+import PageHeader from '../../components/PageHeader';
 import Modal from '../../components/Modal';
 import Select from '../../components/Select';
 import Input from '../../components/Input';
@@ -326,28 +327,23 @@ const InquiryPage = () => {
       <div className="flex flex-col gap-6">
         
         {/* Header Toolbar */}
-        <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
-          <div>
-            <h1 className="text-2xl md:text-3xl font-extrabold tracking-tight text-white font-heading">
-              Inquiry Pipeline
-            </h1>
-            <p className="text-xs md:text-sm text-slate-400">
-              Manage prospective student inquiries, schedule follow-ups, and convert leads to admissions.
-            </p>
-          </div>
-
-          <Button
-            variant="primary"
-            onClick={() => {
-              setEditingInquiry(null);
-              setIsFormOpen(true);
-            }}
-            className="flex items-center gap-2"
-          >
-            <Plus size={16} />
-            <span>Add Inquiry</span>
-          </Button>
-        </div>
+        <PageHeader
+          title="Inquiry Pipeline"
+          subtitle="Manage prospective student inquiries, schedule follow-ups, and convert leads to admissions."
+          actions={
+            <Button
+              variant="primary"
+              onClick={() => {
+                setEditingInquiry(null);
+                setIsFormOpen(true);
+              }}
+              className="flex items-center gap-2"
+            >
+              <Plus size={16} />
+              <span>Add Inquiry</span>
+            </Button>
+          }
+        />
 
         {/* Alerts Banner */}
         {alert && (

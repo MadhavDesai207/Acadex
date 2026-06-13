@@ -28,6 +28,7 @@ const GlobalSearch = () => {
   const [open, setOpen] = useState(false);
   const [query, setQuery] = useState('');
   const inputRef = useRef(null);
+  const isMac = navigator.platform.toUpperCase().includes('MAC') || navigator.userAgent.includes('Mac');
 
   // Open with Ctrl+K / ⌘K
   useEffect(() => {
@@ -63,7 +64,7 @@ const GlobalSearch = () => {
       >
         <Search size={14} />
         <span className="text-xs">Search...</span>
-        <kbd className="ml-6 text-[10px] text-slate-600 bg-slate-900 border border-slate-700 rounded px-1 py-0.5">⌘K</kbd>
+        <kbd className="ml-6 text-[10px] text-slate-600 bg-slate-900 border border-slate-700 rounded px-1 py-0.5">{isMac ? '⌘K' : 'Ctrl+K'}</kbd>
       </button>
 
       {/* Mobile search icon */}
@@ -78,10 +79,10 @@ const GlobalSearch = () => {
       {open && (
         <div className="fixed inset-0 z-50 flex items-start justify-center pt-[15vh] px-4">
           <div
-            className="absolute inset-0 bg-slate-950/70 backdrop-blur-sm"
+            className="absolute inset-0 bg-slate-950/80 backdrop-blur-md"
             onClick={() => setOpen(false)}
           />
-          <div className="relative w-full max-w-lg glass-panel rounded-2xl border border-slate-700/60 shadow-2xl animate-scaleIn z-10 overflow-hidden p-0">
+          <div className="relative w-full max-w-lg rounded-2xl border border-slate-700/60 shadow-2xl animate-scaleIn z-10 overflow-hidden p-0" style={{ background: 'rgb(15, 23, 42)' }}>
             {/* Search input */}
             <div className="flex items-center gap-3 px-4 py-3 border-b border-slate-800">
               <Search size={16} className="text-slate-400 shrink-0" />
@@ -182,7 +183,7 @@ const NotificationBell = () => {
 };
 
 /* ─── Profile Menu ────────────────────────────── */
-const ProfileMenu = ({ user, onOpenSettings }) => {
+const ProfileMenu = ({ user, onOpen }) => {
   const navigate = useNavigate();
   const [open, setOpen] = useState(false);
   const ref = useRef(null);
@@ -217,8 +218,7 @@ const ProfileMenu = ({ user, onOpenSettings }) => {
       </button>
 
       {open && (
-        <div className="absolute right-0 mt-2 w-56 glass-panel rounded-xl border border-slate-700/60 shadow-2xl py-0 overflow-hidden animate-slideDown z-50">
-          {/* User info */}
+        <div className="absolute right-0 mt-2 w-56 rounded-xl border border-slate-700/60 shadow-2xl py-0 overflow-hidden animate-slideDown z-50" style={{ background: 'rgb(15, 23, 42)', backgroundColor: 'rgb(15, 23, 42)' }}>
           <div className="px-4 py-3 border-b border-slate-800">
             <p className="text-sm font-bold text-white truncate">{user.name}</p>
             <p className="text-xs text-slate-400 truncate mt-0.5">{user.email}</p>
@@ -227,17 +227,16 @@ const ProfileMenu = ({ user, onOpenSettings }) => {
             </span>
           </div>
 
-          {/* Actions */}
           <div className="p-1">
             <button
-              onClick={() => { setOpen(false); onOpenSettings(); }}
+              onClick={() => { setOpen(false); onOpen('profile'); }}
               className="flex items-center gap-2.5 w-full px-3 py-2 rounded-lg text-sm text-slate-300 hover:bg-slate-800/60 hover:text-white transition-colors text-left"
             >
               <User size={14} className="text-slate-500" />
               My Profile
             </button>
             <button
-              onClick={() => { setOpen(false); onOpenSettings(); }}
+              onClick={() => { setOpen(false); onOpen('security'); }}
               className="flex items-center gap-2.5 w-full px-3 py-2 rounded-lg text-sm text-slate-300 hover:bg-slate-800/60 hover:text-white transition-colors text-left"
             >
               <Settings size={14} className="text-slate-500" />
@@ -260,54 +259,87 @@ const ProfileMenu = ({ user, onOpenSettings }) => {
   );
 };
 
-/* ─── Quick Settings Modal ────────────────────── */
-const QuickSettingsModal = ({ isOpen, onClose, user }) => {
+/* ─── Account Settings Modal ─────────────────── */
+const AccountSettingsModal = ({ isOpen, onClose, initialTab = 'profile', user, onProfileUpdated }) => {
+  const [tab, setTab] = useState(initialTab);
+
+  // Profile tab state
+  const [name, setName]   = useState(user.name || '');
+  const [phone, setPhone] = useState(user.phone || '');
+  const [profileError, setProfileError]     = useState('');
+  const [profileSuccess, setProfileSuccess] = useState('');
+  const [profileLoading, setProfileLoading] = useState(false);
+
+  // Security tab state
   const [currentPassword, setCurrentPassword] = useState('');
   const [newPassword, setNewPassword]         = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
-  const [error, setError]   = useState('');
-  const [success, setSuccess] = useState('');
-  const [loading, setLoading] = useState(false);
+  const [secError, setSecError]     = useState('');
+  const [secSuccess, setSecSuccess] = useState('');
+  const [secLoading, setSecLoading] = useState(false);
 
-  const reset = () => {
+  // Sync tab when opened from different entry points
+  useEffect(() => { if (isOpen) setTab(initialTab); }, [isOpen, initialTab]);
+
+  const handleClose = () => {
+    setProfileError(''); setProfileSuccess('');
+    setSecError(''); setSecSuccess('');
     setCurrentPassword(''); setNewPassword(''); setConfirmPassword('');
-    setError(''); setSuccess(''); setLoading(false);
+    onClose();
   };
 
-  const handleClose = () => { reset(); onClose(); };
-
-  const handleSubmit = async (e) => {
+  const handleProfileSave = async (e) => {
     e.preventDefault();
-    setError(''); setSuccess('');
+    setProfileError(''); setProfileSuccess('');
+    if (!name.trim()) { setProfileError('Name is required.'); return; }
+    setProfileLoading(true);
+    try {
+      await authService.updateProfile({ name: name.trim(), phone: phone.trim() || null });
+      setProfileSuccess('Profile updated successfully!');
+      if (onProfileUpdated) onProfileUpdated();
+    } catch (err) {
+      setProfileError(err.response?.data?.message || 'Failed to update profile.');
+    } finally {
+      setProfileLoading(false);
+    }
+  };
 
-    if (!currentPassword || !newPassword || !confirmPassword) {
-      setError('All fields are required.'); return;
-    }
-    if (newPassword.length < 8) {
-      setError('New password must be at least 8 characters.'); return;
-    }
-    if (newPassword === currentPassword) {
-      setError('New password must differ from the current one.'); return;
-    }
-    if (newPassword !== confirmPassword) {
-      setError('Passwords do not match.'); return;
-    }
-
-    setLoading(true);
+  const handlePasswordSave = async (e) => {
+    e.preventDefault();
+    setSecError(''); setSecSuccess('');
+    if (!currentPassword || !newPassword || !confirmPassword) { setSecError('All fields are required.'); return; }
+    if (newPassword.length < 8) { setSecError('New password must be at least 8 characters.'); return; }
+    if (newPassword === currentPassword) { setSecError('New password must differ from current.'); return; }
+    if (newPassword !== confirmPassword) { setSecError('Passwords do not match.'); return; }
+    setSecLoading(true);
     try {
       await authService.changePassword(currentPassword, newPassword);
-      setSuccess('Password updated successfully!');
+      setSecSuccess('Password updated successfully!');
       setCurrentPassword(''); setNewPassword(''); setConfirmPassword('');
     } catch (err) {
-      setError(err.response?.data?.message || 'Failed to update password. Check your current password.');
+      setSecError(err.response?.data?.message || 'Failed to update password. Check your current password.');
     } finally {
-      setLoading(false);
+      setSecLoading(false);
     }
   };
 
   const initials = user.name
     ? user.name.split(' ').map(n => n[0]).join('').toUpperCase().substring(0, 2)
     : 'U';
+
+  const tabBtn = (id, label, Icon) => (
+    <button
+      onClick={() => setTab(id)}
+      className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold transition-colors ${
+        tab === id
+          ? 'bg-brand/20 text-brand-light border border-brand/30'
+          : 'text-slate-400 hover:text-white hover:bg-slate-800/60'
+      }`}
+    >
+      <Icon size={12} />
+      {label}
+    </button>
+  );
 
   return (
     <Modal
@@ -316,10 +348,9 @@ const QuickSettingsModal = ({ isOpen, onClose, user }) => {
       title="Account Settings"
       description="Manage your profile and security"
       size="md"
-      loading={loading}
     >
-      <div className="flex flex-col gap-5 mt-1">
-        {/* Profile Card */}
+      <div className="flex flex-col gap-4 mt-1">
+        {/* Avatar + name card */}
         <div className="flex items-center gap-3 p-3.5 rounded-xl bg-bg-deep/50 border border-slate-800/60">
           <div className="w-11 h-11 rounded-full bg-gradient-to-br from-brand to-brand-dark flex items-center justify-center text-white font-bold border border-brand/40 shrink-0">
             {initials}
@@ -336,57 +367,79 @@ const QuickSettingsModal = ({ isOpen, onClose, user }) => {
           </span>
         </div>
 
-        {/* Password Section */}
-        <div>
-          <h4 className="text-sm font-bold text-white mb-3 flex items-center gap-2">
-            <KeyRound size={14} className="text-slate-400" />
-            Change Password
-          </h4>
-          <form onSubmit={handleSubmit} className="flex flex-col gap-3.5">
-            <Input
-              label="Current Password"
-              name="currentPassword"
-              type="password"
-              placeholder="••••••••"
-              value={currentPassword}
-              onChange={e => setCurrentPassword(e.target.value)}
-            />
-            <Input
-              label="New Password"
-              name="newPassword"
-              type="password"
-              placeholder="••••••••"
-              value={newPassword}
-              onChange={e => setNewPassword(e.target.value)}
-              helperText="Minimum 8 characters"
-            />
-            <Input
-              label="Confirm New Password"
-              name="confirmPassword"
-              type="password"
-              placeholder="••••••••"
-              value={confirmPassword}
-              onChange={e => setConfirmPassword(e.target.value)}
-            />
+        {/* Tabs */}
+        <div className="flex gap-2">
+          {tabBtn('profile', 'Profile', User)}
+          {tabBtn('security', 'Security', KeyRound)}
+        </div>
 
-            {error && (
+        {/* Profile tab */}
+        {tab === 'profile' && (
+          <form onSubmit={handleProfileSave} className="flex flex-col gap-3.5">
+            <Input
+              label="Full Name"
+              name="name"
+              type="text"
+              placeholder="Your name"
+              value={name}
+              onChange={e => setName(e.target.value)}
+            />
+            <Input
+              label="Phone"
+              name="phone"
+              type="text"
+              placeholder="e.g. 9876543210"
+              value={phone}
+              onChange={e => setPhone(e.target.value)}
+            />
+            <Input
+              label="Email"
+              name="email"
+              type="email"
+              value={user.email}
+              disabled
+              helperText="Email cannot be changed"
+            />
+            {profileError && (
               <div className="flex gap-2 p-3 rounded-lg bg-status-danger/10 border border-status-danger/20 text-status-danger text-xs">
-                <ShieldAlert size={13} className="shrink-0 mt-0.5" />
-                <span>{error}</span>
+                <ShieldAlert size={13} className="shrink-0 mt-0.5" /><span>{profileError}</span>
               </div>
             )}
-            {success && (
+            {profileSuccess && (
               <div className="flex gap-2 p-3 rounded-lg bg-status-success/10 border border-status-success/20 text-status-success text-xs">
-                <CheckCircle2 size={13} className="shrink-0 mt-0.5" />
-                <span>{success}</span>
+                <CheckCircle2 size={13} className="shrink-0 mt-0.5" /><span>{profileSuccess}</span>
               </div>
             )}
+            <Button type="submit" loading={profileLoading} className="w-full">
+              Save Profile
+            </Button>
+          </form>
+        )}
 
-            <Button type="submit" loading={loading} className="w-full">
+        {/* Security tab */}
+        {tab === 'security' && (
+          <form onSubmit={handlePasswordSave} className="flex flex-col gap-3.5">
+            <Input label="Current Password" name="currentPassword" type="password" placeholder="••••••••"
+              value={currentPassword} onChange={e => setCurrentPassword(e.target.value)} />
+            <Input label="New Password" name="newPassword" type="password" placeholder="••••••••"
+              value={newPassword} onChange={e => setNewPassword(e.target.value)} helperText="Minimum 8 characters" />
+            <Input label="Confirm New Password" name="confirmPassword" type="password" placeholder="••••••••"
+              value={confirmPassword} onChange={e => setConfirmPassword(e.target.value)} />
+            {secError && (
+              <div className="flex gap-2 p-3 rounded-lg bg-status-danger/10 border border-status-danger/20 text-status-danger text-xs">
+                <ShieldAlert size={13} className="shrink-0 mt-0.5" /><span>{secError}</span>
+              </div>
+            )}
+            {secSuccess && (
+              <div className="flex gap-2 p-3 rounded-lg bg-status-success/10 border border-status-success/20 text-status-success text-xs">
+                <CheckCircle2 size={13} className="shrink-0 mt-0.5" /><span>{secSuccess}</span>
+              </div>
+            )}
+            <Button type="submit" loading={secLoading} className="w-full">
               Update Password
             </Button>
           </form>
-        </div>
+        )}
       </div>
     </Modal>
   );
@@ -394,8 +447,21 @@ const QuickSettingsModal = ({ isOpen, onClose, user }) => {
 
 /* ─── Navbar ──────────────────────────────────── */
 const Navbar = ({ onToggleSidebar }) => {
-  const user = authService.getLocalUser() || { name: 'User', email: 'user@acadex.com', role: 'STUDENT' };
+  const [localUser, setLocalUser] = useState(
+    () => authService.getLocalUser() || { name: 'User', email: 'user@acadex.com', role: 'STUDENT' }
+  );
   const [showSettings, setShowSettings] = useState(false);
+  const [settingsTab, setSettingsTab] = useState('profile');
+
+  const handleOpen = (tab) => {
+    setSettingsTab(tab);
+    setShowSettings(true);
+  };
+
+  const handleProfileUpdated = () => {
+    const fresh = authService.getLocalUser();
+    if (fresh) setLocalUser(fresh);
+  };
 
   return (
     <>
@@ -422,16 +488,17 @@ const Navbar = ({ onToggleSidebar }) => {
           {/* Right: Actions */}
           <div className="flex items-center gap-1.5">
             <NotificationBell />
-            <ProfileMenu user={user} onOpenSettings={() => setShowSettings(true)} />
+            <ProfileMenu user={localUser} onOpen={handleOpen} />
           </div>
         </div>
       </nav>
 
-      {/* Quick Settings Modal */}
-      <QuickSettingsModal
+      <AccountSettingsModal
         isOpen={showSettings}
         onClose={() => setShowSettings(false)}
-        user={user}
+        initialTab={settingsTab}
+        user={localUser}
+        onProfileUpdated={handleProfileUpdated}
       />
     </>
   );

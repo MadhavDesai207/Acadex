@@ -4,6 +4,7 @@ import { DollarSign, CheckCircle, ShieldAlert, Sparkles, CreditCard, Edit, HelpC
 import Table from '../../components/Table';
 import Select from '../../components/Select';
 import Button from '../../components/Button';
+import PageHeader from '../../components/PageHeader';
 import Modal from '../../components/Modal';
 import Input from '../../components/Input';
 import salaryService from '../../services/salaryService';
@@ -451,30 +452,18 @@ const SalaryPage = () => {
       <div className="flex flex-col gap-6">
         
         {/* Header Toolbar */}
-        <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
-          <div>
-            <h1 className="text-2xl md:text-3xl font-extrabold tracking-tight text-white font-heading">
-              Payroll Ledger
-            </h1>
-            <p className="text-xs md:text-sm text-slate-400">
-              {isAdmin 
-                ? 'Generate monthly faculty salaries, apply deduction/bonus adjustments, and authorize payouts.' 
-                : 'Review your payroll histories details, bonuses, deductions, and salary disbursement logs.'
-              }
-            </p>
-          </div>
-
-          {isAdmin && (
-            <Button
-              variant="primary"
-              onClick={() => setIsWizardOpen(true)}
-              className="flex items-center gap-2"
-            >
+        <PageHeader
+          title="Payroll Ledger"
+          subtitle={isAdmin
+            ? 'Generate monthly faculty salaries, apply deduction/bonus adjustments, and authorize payouts.'
+            : 'Review your payroll histories details, bonuses, deductions, and salary disbursement logs.'}
+          actions={isAdmin && (
+            <Button variant="primary" onClick={() => setIsWizardOpen(true)} className="flex items-center gap-2">
               <DollarSign size={16} />
               <span>Bulk Generation Wizard</span>
             </Button>
           )}
-        </div>
+        />
 
         {/* Alerts toast */}
         {alert && (

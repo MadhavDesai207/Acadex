@@ -4,6 +4,7 @@ import { Calendar, CheckCircle, Clock, AlertTriangle, Users, BookOpen } from 'lu
 import Table from '../../components/Table';
 import Select from '../../components/Select';
 import Button from '../../components/Button';
+import PageHeader from '../../components/PageHeader';
 import Modal from '../../components/Modal';
 import attendanceService from '../../services/attendanceService';
 import facultyService from '../../services/facultyService';
@@ -229,30 +230,18 @@ const AttendancePage = () => {
       <div className="flex flex-col gap-6">
         
         {/* Header Toolbar */}
-        <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
-          <div>
-            <h1 className="text-2xl md:text-3xl font-extrabold tracking-tight text-white font-heading">
-              Attendance Logs
-            </h1>
-            <p className="text-xs md:text-sm text-slate-400">
-              {isAdmin 
-                ? 'Audit faculty monthly logs summaries and perform daily presence roll-calls.' 
-                : 'Monitor your monthly schedule check-ins, leaves records, and duty aggregates.'
-              }
-            </p>
-          </div>
-
-          {isAdmin && (
-            <Button
-              variant="primary"
-              onClick={() => navigate('/attendance/mark')}
-              className="flex items-center gap-2"
-            >
+        <PageHeader
+          title="Attendance Logs"
+          subtitle={isAdmin
+            ? 'Audit faculty monthly logs summaries and perform daily presence roll-calls.'
+            : 'Monitor your monthly schedule check-ins, leaves records, and duty aggregates.'}
+          actions={isAdmin && (
+            <Button variant="primary" onClick={() => navigate('/attendance/mark')} className="flex items-center gap-2">
               <Calendar size={16} />
               <span>Mark Attendance</span>
             </Button>
           )}
-        </div>
+        />
 
         {/* Filters Box */}
         <div className="glass-card flex flex-wrap gap-4 items-end max-w-lg">

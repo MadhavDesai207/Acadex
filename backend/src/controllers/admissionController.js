@@ -451,10 +451,11 @@ const enrollAdmission = async (req, res, next) => {
 
     // Generate unique roll number with retry on concurrent collision
     let student;
+    let tempPassword;
     for (let attempt = 0; attempt < 3; attempt++) {
       const lastStudent = await prisma.student.findFirst({
         where: { rollNumber: { startsWith: prefix } },
-        orderBy: { createdAt: 'desc' }
+        orderBy: { enrolledAt: 'desc' }
       });
       let sequence = 1;
       if (lastStudent) {
@@ -463,7 +464,7 @@ const enrollAdmission = async (req, res, next) => {
         if (!isNaN(n)) sequence = n + 1;
       }
       const rollNumber = `${prefix}${String(sequence).padStart(4, '0')}`;
-      const tempPassword = generateTempPassword();
+      tempPassword = generateTempPassword();
       const salt = await bcrypt.genSalt(10);
       const hashedPassword = await bcrypt.hash(tempPassword, salt);
 

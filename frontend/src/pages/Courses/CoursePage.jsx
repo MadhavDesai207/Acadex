@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { Plus, Search, Edit2, ToggleLeft, ToggleRight, CheckCircle, AlertCircle } from 'lucide-react';
 import Table from '../../components/Table';
 import Button from '../../components/Button';
+import PageHeader from '../../components/PageHeader';
 import Modal from '../../components/Modal';
 import CourseForm from './CourseForm';
 import courseService from '../../services/courseService';
@@ -148,16 +149,10 @@ const CoursePage = () => {
     <>
       <div className="flex flex-col gap-6">
         {/* Header */}
-        <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
-          <div>
-            <h1 className="text-2xl md:text-3xl font-extrabold tracking-tight text-white font-heading">
-              Courses
-            </h1>
-            <p className="text-xs md:text-sm text-slate-400">
-              Manage all course offerings. Courses are required before creating batches or subjects.
-            </p>
-          </div>
-          {isAdmin && (
+        <PageHeader
+          title="Courses"
+          subtitle="Manage all course offerings. Courses are required before creating batches or subjects."
+          actions={isAdmin && (
             <Button
               variant="primary"
               onClick={() => {
@@ -170,7 +165,7 @@ const CoursePage = () => {
               <span>New Course</span>
             </Button>
           )}
-        </div>
+        />
 
         {/* Alert */}
         {alert && (

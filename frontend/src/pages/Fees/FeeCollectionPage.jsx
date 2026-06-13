@@ -3,6 +3,7 @@ import { Search, Receipt, CheckCircle, AlertCircle } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import Table from '../../components/Table';
 import Button from '../../components/Button';
+import PageHeader from '../../components/PageHeader';
 import Modal from '../../components/Modal';
 import FeePaymentBadge from '../../components/FeePaymentBadge';
 import feeService from '../../services/feeService';
@@ -101,34 +102,44 @@ const CollectForm = ({ onClose, onSuccess }) => {
   return (
     <div className="flex flex-col gap-4">
       {/* Step indicator */}
-      <div className="flex items-center justify-between relative mb-6 mt-2">
-        <div className="absolute left-0 top-3 w-full h-0.5 bg-slate-800" />
-        <div 
-          className="absolute left-0 top-3 h-0.5 bg-brand transition-all duration-300"
-          style={{ width: `${((step - 1) / 2) * 100}%` }}
+      <div className="relative mb-6 mt-3">
+        {/* Track background */}
+        <div className="absolute top-[18px] left-[16.67%] right-[16.67%] h-px bg-slate-800/80" />
+        {/* Track progress fill */}
+        <div
+          className="absolute top-[18px] left-[16.67%] h-px bg-status-success/60 transition-[width] duration-500 ease-in-out"
+          style={{ width: `${Math.max(0, (step - 1) * 33.33)}%` }}
         />
-        {['Find Student', 'Select Fee', 'Record Payment'].map((label, i) => {
-          const isActive = step === i + 1;
-          const isPast = step > i + 1;
-          return (
-            <div key={label} className="relative z-10 flex flex-col items-center gap-1.5 bg-bg-surface px-2">
-              <div className={`w-6 h-6 rounded-full flex items-center justify-center text-[10px] font-bold transition-all duration-300 ${
-                isActive ? 'bg-brand text-white shadow-[0_0_10px_rgba(79,70,229,0.5)] scale-110' :
-                isPast ? 'bg-status-success text-white' :
-                'bg-slate-800 text-slate-400'
-              }`}>
-                {isPast ? <CheckCircle size={12} /> : i + 1}
+        <div className="grid grid-cols-3">
+          {['Find Student', 'Select Fee', 'Record Payment'].map((label, i) => {
+            const n = i + 1;
+            const isActive = step === n;
+            const isPast = step > n;
+            return (
+              <div key={label} className="flex flex-col items-center gap-2">
+                <div className={`relative z-10 flex items-center justify-center rounded-full font-bold transition-all duration-300
+                  ${isActive
+                    ? 'w-9 h-9 text-sm bg-brand text-white shadow-lg shadow-brand/40 ring-4 ring-brand/20 scale-105'
+                    : isPast
+                    ? 'w-9 h-9 text-sm bg-bg-deep border-2 border-status-success/70 text-status-success'
+                    : 'w-9 h-9 text-xs bg-bg-deep border-2 border-slate-700/80 text-slate-600'
+                  }`}>
+                  {isPast ? <CheckCircle size={15} strokeWidth={2.5} /> : n}
+                </div>
+                <div className="text-center leading-none space-y-1">
+                  <p className={`text-[11px] font-semibold tracking-wide transition-colors
+                    ${isActive ? 'text-white' : isPast ? 'text-slate-400' : 'text-slate-600'}`}>
+                    {label}
+                  </p>
+                  <p className={`text-[9px] font-bold uppercase tracking-widest transition-colors
+                    ${isActive ? 'text-brand-light' : isPast ? 'text-status-success/60' : 'text-slate-700'}`}>
+                    {isActive ? 'In progress' : isPast ? 'Complete' : 'Upcoming'}
+                  </p>
+                </div>
               </div>
-              <span className={`text-[10px] uppercase tracking-wider font-bold transition-colors ${
-                isActive ? 'text-brand-light' :
-                isPast ? 'text-slate-300' :
-                'text-slate-500'
-              }`}>
-                {label}
-              </span>
-            </div>
-          );
-        })}
+            );
+          })}
+        </div>
       </div>
 
       {/* Step 1: Search student */}
@@ -428,15 +439,15 @@ const FeeCollectionPage = () => {
   return (
     <>
       <div className="flex flex-col gap-6">
-        <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
-          <div>
-            <h1 className="text-2xl md:text-3xl font-extrabold tracking-tight text-white font-heading">Fee Collection</h1>
-            <p className="text-xs md:text-sm text-slate-400">Record payments and view transaction history.</p>
-          </div>
-          <Button variant="primary" onClick={() => setIsCollectOpen(true)} className="flex items-center gap-2">
-            <Receipt size={16} /> Collect Payment
-          </Button>
-        </div>
+        <PageHeader
+          title="Fee Collection"
+          subtitle="Record payments and view transaction history."
+          actions={
+            <Button variant="primary" onClick={() => setIsCollectOpen(true)} className="flex items-center gap-2">
+              <Receipt size={16} /> Collect Payment
+            </Button>
+          }
+        />
 
         {alert && (
           <div className={`flex items-center gap-2.5 p-3 rounded-lg text-sm border ${alert.type === 'success' ? 'bg-status-success/15 border-status-success/30 text-status-success' : 'bg-status-danger/15 border-status-danger/30 text-status-danger'}`}>
