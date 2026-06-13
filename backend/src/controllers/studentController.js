@@ -627,10 +627,39 @@ const getMyResults = async (req, res, next) => {
   }
 };
 
+/**
+ * @desc    Get own student profile (for STUDENT role)
+ * @route   GET /api/v1/students/me
+ * @access  Private (STUDENT)
+ */
+const getMyStudent = async (req, res, next) => {
+  try {
+    const student = await prisma.student.findFirst({
+      where: { userId: req.user.userId },
+      include: {
+        user: {
+          select: { id: true, name: true, email: true, phone: true, role: true, isActive: true }
+        },
+        course: { select: { id: true, name: true, code: true } },
+        batch: { select: { id: true, name: true } }
+      }
+    });
+
+    if (!student) {
+      return res.status(404).json({ success: false, message: 'Student profile not found for your account.' });
+    }
+
+    return res.status(200).json(student);
+  } catch (error) {
+    next(error);
+  }
+};
+
 module.exports = {
   createStudent,
   getStudents,
   getStudentById,
+  getMyStudent,
   updateStudent,
   deleteStudent,
   getStudentResults,

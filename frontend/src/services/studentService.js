@@ -6,6 +6,11 @@ const studentService = {
     return response.data.students || response.data;
   },
 
+  getMyStudent: async () => {
+    const response = await apiClient.get('/students/me');
+    return response.data;
+  },
+
   getCourses: async () => {
     const response = await apiClient.get('/courses');
     return response.data.courses || response.data;

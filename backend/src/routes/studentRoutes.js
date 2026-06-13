@@ -4,6 +4,7 @@ const {
   createStudent,
   getStudents,
   getStudentById,
+  getMyStudent,
   updateStudent,
   deleteStudent,
   getStudentResults,
@@ -24,6 +25,14 @@ router.get('/', authenticate, authorize('ADMIN', 'FACULTY'), getStudents);
  * @access  Private (ADMIN)
  */
 router.post('/', authenticate, authorize('ADMIN'), createStudent);
+
+/**
+ * @route   GET /api/v1/students/me
+ * @desc    Get own student profile
+ * @access  Private (STUDENT only)
+ * NOTE: must be registered before /:id to avoid "me" being treated as an ID
+ */
+router.get('/me', authenticate, authorize('STUDENT'), getMyStudent);
 
 /**
  * @route   GET /api/v1/students/my-results

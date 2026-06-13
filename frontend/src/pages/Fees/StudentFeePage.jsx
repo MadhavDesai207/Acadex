@@ -8,6 +8,7 @@ import InstallmentTimeline from '../../components/InstallmentTimeline';
 import feeService from '../../services/feeService';
 import apiClient from '../../services/apiClient';
 import authService from '../../services/authService';
+import studentService from '../../services/studentService';
 
 const fmt = (v) =>
   new Intl.NumberFormat('en-IN', { style: 'currency', currency: 'INR', maximumFractionDigits: 0 }).format(v);
@@ -148,8 +149,18 @@ const StudentFeePage = () => {
     setTimeout(() => setAlert(null), 3500);
   };
 
+  // Auto-load for STUDENT role — load their own fees immediately
+  useEffect(() => {
+    if (currentUser.role !== 'STUDENT') return;
+    setLoading(true);
+    studentService.getMyStudent()
+      .then((s) => { if (s?.id) loadStudentFees(s); })
+      .catch(() => setLoading(false));
+  }, []);
+
   // Auto-load student when navigated with ?studentId=
   useEffect(() => {
+    if (currentUser.role === 'STUDENT') return; // handled above
     const sid = searchParams.get('studentId');
     if (!sid) return;
     setLoading(true);
@@ -211,8 +222,8 @@ const StudentFeePage = () => {
           </div>
         )}
 
-        {/* Student Search */}
-        <div className="glass-card flex flex-col gap-3">
+        {/* Student Search — hidden for STUDENT role (auto-loaded above) */}
+        {currentUser.role !== 'STUDENT' && <div className="glass-card flex flex-col gap-3">
           <p className="text-sm font-semibold text-slate-300">Search Student</p>
           <div className="flex gap-2">
             <div className="relative flex-1">
@@ -247,7 +258,7 @@ const StudentFeePage = () => {
               ))}
             </div>
           )}
-        </div>
+        </div>}
 
         {/* Student Fee Details */}
         {selectedStudent && (
