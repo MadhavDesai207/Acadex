@@ -235,6 +235,13 @@ const Sidebar = ({ isOpen, toggleSidebar }) => {
       icon: DollarSign,
       roles: ['SUPER_ADMIN', 'ADMIN', 'FACULTY'],
     },
+    {
+      type: 'item',
+      label: 'User Accounts',
+      path: '/users/admin',
+      icon: Users,
+      roles: ['SUPER_ADMIN', 'ADMIN'],
+    },
     { type: 'section', label: 'Academics' },
     {
       type: 'group',
