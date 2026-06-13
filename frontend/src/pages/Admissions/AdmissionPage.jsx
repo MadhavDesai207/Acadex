@@ -8,9 +8,12 @@ import AdmissionForm from './AdmissionForm';
 import AdmissionReviewModal from './AdmissionReviewModal';
 import admissionService from '../../services/admissionService';
 import studentService from '../../services/studentService';
+import authService from '../../services/authService';
 
 const AdmissionPage = () => {
   const navigate = useNavigate();
+  const currentUser = authService.getLocalUser() || {};
+  const userRole = currentUser.role || '';
 
   // Filters State
   const [activeTab, setActiveTab] = useState('ALL'); // ALL, APPLIED, UNDER_REVIEW, APPROVED, REJECTED, ENROLLED
@@ -249,6 +252,7 @@ const AdmissionPage = () => {
           {selectedAdmission && (
             <AdmissionReviewModal
               admission={selectedAdmission}
+              userRole={userRole}
               onClose={() => {
                 setIsReviewOpen(false);
                 setSelectedAdmission(null);

@@ -6,7 +6,8 @@ import Input from '../../components/Input';
 import admissionService from '../../services/admissionService';
 import studentService from '../../services/studentService';
 
-const AdmissionReviewModal = ({ admission, onClose, onRefresh }) => {
+const AdmissionReviewModal = ({ admission, userRole, onClose, onRefresh }) => {
+  const canReview = userRole !== 'RECEPTIONIST';
   const [remarks, setRemarks] = useState(admission.remarks || '');
   const [selectedBatch, setSelectedBatch] = useState('');
   const [dateOfBirth, setDateOfBirth] = useState('');
@@ -151,8 +152,8 @@ const AdmissionReviewModal = ({ admission, onClose, onRefresh }) => {
         </div>
       )}
 
-      {/* 2. Review Decision Block (APPLIED, UNDER_REVIEW) */}
-      {(admission.status === 'APPLIED' || admission.status === 'UNDER_REVIEW') && (
+      {/* 2. Review Decision Block (APPLIED, UNDER_REVIEW) — Admin/Super_Admin only */}
+      {canReview && (admission.status === 'APPLIED' || admission.status === 'UNDER_REVIEW') && (
         <div className="flex flex-col gap-4 border-t border-slate-800 pt-4">
           <div className="flex flex-col gap-1.5">
             <label htmlFor="remarks" className="text-xs font-semibold text-slate-400 uppercase tracking-wider">
@@ -199,8 +200,8 @@ const AdmissionReviewModal = ({ admission, onClose, onRefresh }) => {
         </div>
       )}
 
-      {/* 3. Enrollment Wizard (APPROVED) */}
-      {admission.status === 'APPROVED' && (
+      {/* 3. Enrollment Wizard (APPROVED) — Admin/Super_Admin only */}
+      {canReview && admission.status === 'APPROVED' && (
         <form onSubmit={handleEnroll} className="flex flex-col gap-4 border-t border-slate-800 pt-4">
           <div className="flex gap-2.5 p-3 rounded-lg bg-status-success/10 border border-status-success/30 text-status-success text-xs">
             <ShieldCheck size={18} className="shrink-0 mt-0.5" />
@@ -303,6 +304,22 @@ const AdmissionReviewModal = ({ admission, onClose, onRefresh }) => {
             </Button>
           </div>
         </form>
+      )}
+
+      {/* Read-only notice for Receptionist on actionable applications */}
+      {!canReview && (admission.status === 'APPLIED' || admission.status === 'UNDER_REVIEW' || admission.status === 'APPROVED') && (
+        <div className="flex flex-col gap-3 border-t border-slate-800 pt-4">
+          <div className="flex items-start gap-2.5 p-3 rounded-lg bg-slate-900/50 border border-slate-700/30 text-xs">
+            <HelpCircle size={16} className="text-slate-400 shrink-0 mt-0.5" />
+            <div>
+              <p className="font-bold text-slate-300">Read-Only View</p>
+              <p className="text-slate-400 mt-1">Approval and enrollment actions are restricted to administrators.</p>
+            </div>
+          </div>
+          <div className="flex justify-end pt-2">
+            <Button variant="outline" type="button" onClick={onClose}>Close</Button>
+          </div>
+        </div>
       )}
 
       {/* 4. Historical Locked States (REJECTED, ENROLLED) */}
