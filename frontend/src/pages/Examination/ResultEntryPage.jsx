@@ -25,17 +25,20 @@ const ResultEntryPage = () => {
       setExam(examData);
 
       const batchId = examData?.batchId;
+      const courseId = examData?.courseId;
 
       const [studentsRes, existingResults] = await Promise.all([
         batchId
           ? apiClient.get('/students', { params: { batchId, isActive: 'true' } })
-          : Promise.resolve({ data: [] }),
+          : courseId
+            ? apiClient.get('/students', { params: { courseId, isActive: 'true' } })
+            : Promise.resolve({ data: [] }),
         resultService.getResultsByExam(id).catch(() => [])
       ]);
 
       const students = Array.isArray(studentsRes.data)
         ? studentsRes.data
-        : studentsRes.data?.data || [];
+        : studentsRes.data?.data || studentsRes.data?.students || [];
 
       const existingMap = {};
       (Array.isArray(existingResults) ? existingResults : []).forEach((r) => {
@@ -166,8 +169,8 @@ const ResultEntryPage = () => {
 
         {rows.length === 0 ? (
           <div className="glass-card flex flex-col items-center justify-center py-12 gap-2">
-            <p className="text-slate-400">No students found for this exam's batch.</p>
-            <p className="text-xs text-slate-500">Ensure the exam has a batch assigned and students are enrolled in it.</p>
+            <p className="text-slate-400">No students found for this exam.</p>
+            <p className="text-xs text-slate-500">Ensure students are enrolled in the exam's course or batch.</p>
           </div>
         ) : (
           <div className="glass-card overflow-x-auto">
