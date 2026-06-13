@@ -37,6 +37,12 @@ const createUnit = async (req, res, next) => {
     ]);
     if (!course) return res.status(400).json({ success: false, message: 'Course not found' });
     if (!subject) return res.status(400).json({ success: false, message: 'Subject not found' });
+    if (subject.courseId !== courseId) return res.status(400).json({ success: false, message: 'Subject does not belong to this course' });
+
+    const duplicate = await prisma.syllabusUnit.findFirst({
+      where: { subjectId, unitNumber: Number(unitNumber), isActive: true }
+    });
+    if (duplicate) return res.status(400).json({ success: false, message: `Unit number ${unitNumber} already exists for this subject` });
 
     const unit = await prisma.syllabusUnit.create({
       data: { courseId, subjectId, unitNumber: Number(unitNumber), title, description: description || null }

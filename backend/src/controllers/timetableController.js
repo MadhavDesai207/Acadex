@@ -64,7 +64,10 @@ const createSlot = async (req, res, next) => {
     ]);
     if (!batch) return res.status(400).json({ success: false, message: 'Batch not found' });
     if (!subject) return res.status(400).json({ success: false, message: 'Subject not found' });
+    if (!subject.isActive) return res.status(400).json({ success: false, message: 'Subject is inactive' });
+    if (subject.courseId !== batch.courseId) return res.status(400).json({ success: false, message: 'Subject does not belong to the batch course' });
     if (!faculty) return res.status(400).json({ success: false, message: 'Faculty not found' });
+    if (!faculty.isActive) return res.status(400).json({ success: false, message: 'Faculty is inactive' });
 
     const existingBatchSlots = await prisma.timetable.findMany({
       where: { batchId, dayOfWeek: Number(dayOfWeek), isActive: true }
@@ -141,6 +144,19 @@ const updateSlot = async (req, res, next) => {
       if (slotsOverlap(newStart, newEnd, slot.startTime, slot.endTime)) {
         return res.status(400).json({ success: false, message: 'Faculty is double-booked at this time' });
       }
+    }
+
+    if (subjectId) {
+      const newSubject = await prisma.subject.findUnique({ where: { id: subjectId } });
+      if (!newSubject) return res.status(400).json({ success: false, message: 'Subject not found' });
+      if (!newSubject.isActive) return res.status(400).json({ success: false, message: 'Subject is inactive' });
+      const batchRecord = await prisma.batch.findUnique({ where: { id: existing.batchId }, select: { courseId: true } });
+      if (newSubject.courseId !== batchRecord.courseId) return res.status(400).json({ success: false, message: 'Subject does not belong to the batch course' });
+    }
+    if (facultyId && facultyId !== existing.facultyId) {
+      const newFaculty = await prisma.faculty.findUnique({ where: { id: facultyId } });
+      if (!newFaculty) return res.status(400).json({ success: false, message: 'Faculty not found' });
+      if (!newFaculty.isActive) return res.status(400).json({ success: false, message: 'Faculty is inactive' });
     }
 
     const data = {};
